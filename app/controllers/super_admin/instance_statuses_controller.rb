@@ -5,7 +5,7 @@ class SuperAdmin::InstanceStatusesController < SuperAdmin::ApplicationController
     sha
     postgres_status
     redis_metrics
-    chatwoot_edition
+    # chatwoot_edition
     instance_meta
   end
 
@@ -24,7 +24,7 @@ class SuperAdmin::InstanceStatusesController < SuperAdmin::ApplicationController
   end
 
   def chatwoot_version
-    @metrics['Chatwoot version'] = Chatwoot.config[:version]
+    @metrics['Base version'] = Chatwoot.config[:version]
   end
 
   def sha
