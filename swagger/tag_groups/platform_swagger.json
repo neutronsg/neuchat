@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.4",
   "info": {
-    "title": "Chatwoot",
-    "description": "This is the API documentation for Chatwoot server.",
+    "title": "NeuChat",
+    "description": "This is the API documentation for NeuChat server.",
     "version": "1.1.0",
     "termsOfService": "https://www.chatwoot.com/terms-of-service/",
     "contact": {
@@ -1755,7 +1755,7 @@
               "busy",
               "offline"
             ],
-            "description": "The availability status of the agent computed by Chatwoot."
+            "description": "The availability status of the agent computed by NeuChat."
           },
           "auto_offline": {
             "type": "boolean",
@@ -2279,7 +2279,7 @@
             "properties": {
               "latest_chatwoot_version": {
                 "type": "string",
-                "description": "Latest version of Chatwoot available",
+                "description": "Latest version of NeuChat available",
                 "example": "3.0.0"
               },
               "subscribed_features": {
@@ -3173,7 +3173,7 @@
                     "type": "object",
                     "description": "The processed param values for template variables in template",
                     "example": {
-                      "1": "Chatwoot"
+                      "1": "NeuChat"
                     }
                   }
                 }
@@ -3253,7 +3253,7 @@
                 "type": "object",
                 "description": "The processed param values for template variables in template",
                 "example": {
-                  "1": "Chatwoot"
+                  "1": "NeuChat"
                 }
               }
             }
@@ -5105,7 +5105,7 @@
         "schema": {
           "type": "string"
         },
-        "description": "Id of the session for which the conversation is created.\n\n\n\n Source Ids can be obtained through contactable inboxes API or via generated.<br/><br/>Website: Chatwoot generated string which can be obtained from webhook events. <br/> Phone Channels(Twilio): Phone number in e164 format <br/> Email Channels: Contact Email address <br/> API Channel: Any Random String"
+        "description": "Id of the session for which the conversation is created.\n\n\n\n Source Ids can be obtained through contactable inboxes API or via generated.<br/><br/>Website: NeuChat generated string which can be obtained from webhook events. <br/> Phone Channels(Twilio): Phone number in e164 format <br/> Email Channels: Contact Email address <br/> API Channel: Any Random String"
       },
       "contact_sort_param": {
         "in": "query",
