@@ -140,7 +140,7 @@ export default {
     :class="{ 'app-rtl--wrapper': isRTL }"
     :dir="isRTL ? 'rtl' : 'ltr'"
   >
-    <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />
+<!--    <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />-->
     <template v-if="currentAccountId">
       <PendingEmailVerificationBanner v-if="hideOnOnboardingView" />
       <PaymentPendingBanner v-if="hideOnOnboardingView" />
