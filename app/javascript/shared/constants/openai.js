@@ -6,6 +6,7 @@ export const OPEN_AI_OPTIONS = {
   MAKE_FRIENDLY: 'make_friendly',
   MAKE_FORMAL: 'make_formal',
   SIMPLIFY: 'simplify',
+  TRANSLATE: 'translate',
   REPLY_SUGGESTION: 'reply_suggestion',
   SUMMARIZE: 'summarize',
 };

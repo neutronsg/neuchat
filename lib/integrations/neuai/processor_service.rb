@@ -49,6 +49,11 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
                                       "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'simplify'))
   end
 
+  def translate_message
+    # NeuAI agent已经写好prompt，只需要传递消息和历史消息
+    make_api_call(translate_body)
+  end
+
   private
 
   def prompt_from_file(file_name, enterprise: false)
@@ -158,6 +163,20 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
         sessionId: "conversation_#{conversation.id}",
         vars: {
           action: 'label_suggestion'
+        }
+      }
+    }.to_json
+  end
+
+  def translate_body
+    # FlowiseAI API format for translation - 传递当前消息和历史消息
+    {
+      question: "Current message: #{event['data']['content']}\n\nConversation history:\n#{conversation_messages}",
+      streaming: false,
+      overrideConfig: {
+        sessionId: "conversation_#{conversation.id}",
+        vars: {
+          action: 'translate'
         }
       }
     }.to_json

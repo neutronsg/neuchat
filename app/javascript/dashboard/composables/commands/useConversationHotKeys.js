@@ -136,6 +136,11 @@ const createDraftMessageAIAssistActions = t => {
       key: 'simplify',
       icon: ICON_AI_ASSIST,
     },
+    {
+      label: t('INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.TRANSLATE'),
+      key: 'translate',
+      icon: ICON_AI_ASSIST,
+    },
   ];
 };
 

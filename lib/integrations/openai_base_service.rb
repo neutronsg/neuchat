@@ -7,7 +7,8 @@ class Integrations::OpenaiBaseService
   API_URL = 'https://api.openai.com/v1/chat/completions'.freeze
   GPT_MODEL = ENV.fetch('OPENAI_GPT_MODEL', 'gpt-4o-mini').freeze
 
-  ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion fix_spelling_grammar shorten expand make_friendly make_formal simplify].freeze
+  ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion fix_spelling_grammar shorten expand make_friendly make_formal simplify
+                           translate].freeze
   CACHEABLE_EVENTS = %w[].freeze
 
   pattr_initialize [:hook!, :event!]

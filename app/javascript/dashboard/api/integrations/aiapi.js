@@ -29,6 +29,7 @@ class AIAPI extends ApiClient {
       'summarize',
       'reply_suggestion',
       'label_suggestion',
+      'translate',
     ];
 
     /**
@@ -61,6 +62,10 @@ class AIAPI extends ApiClient {
       data = {
         conversation_display_id: conversationId,
       };
+      // translate 需要同时传递 content 和 conversation_display_id
+      if (type === 'translate') {
+        data.content = content;
+      }
     }
 
     return axios.post(`${this.url}/hooks/${hookId}/process_event`, {

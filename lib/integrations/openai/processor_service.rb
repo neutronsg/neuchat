@@ -44,6 +44,10 @@ class Integrations::Openai::ProcessorService < Integrations::OpenaiBaseService
                                       "#{LANGUAGE_INSTRUCTION}"))
   end
 
+  def translate_message
+    make_api_call(translate_body)
+  end
+
   private
 
   def prompt_from_file(file_name, enterprise: false)
@@ -130,6 +134,22 @@ class Integrations::Openai::ProcessorService < Integrations::OpenaiBaseService
         { role: 'system',
           content: prompt_from_file('reply', enterprise: false) }
       ].concat(conversation_messages(in_array_format: true))
+    }.to_json
+  end
+
+  def translate_body
+    # OpenAI translation with conversation context
+    translate_prompt = 'You are a helpful translation assistant. Based on the conversation history, translate the current message to the language that the user typically uses in this conversation. ' \
+                       'If the conversation history shows the user primarily communicates in a specific language, translate to that language. ' \
+                       "If there's no clear pattern or the message is already in the user's language, keep it as is. " \
+                       'Only return the translated text without any additional explanation.'
+
+    {
+      model: GPT_MODEL,
+      messages: [
+        { role: 'system', content: translate_prompt },
+        { role: 'user', content: "Current message to translate: #{event['data']['content']}\n\nConversation history:\n#{conversation_messages}" }
+      ]
     }.to_json
   end
 end

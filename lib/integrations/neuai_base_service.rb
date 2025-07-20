@@ -6,7 +6,7 @@ class Integrations::NeuaiBaseService
   TOKEN_LIMIT = 400_000
 
   ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion label_suggestion fix_spelling_grammar shorten expand make_friendly make_formal
-                           simplify].freeze
+                           simplify translate].freeze
   CACHEABLE_EVENTS = %w[].freeze
 
   pattr_initialize [:hook!, :event!]
