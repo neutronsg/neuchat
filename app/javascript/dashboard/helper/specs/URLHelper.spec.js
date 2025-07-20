@@ -170,7 +170,9 @@ describe('#URL Helpers', () => {
 
   describe('hasValidAvatarUrl', () => {
     test('should return true for valid non-Gravatar URL', () => {
-      expect(hasValidAvatarUrl('https://neuchat.neutron.sg/avatar.jpg')).toBe(true);
+      expect(hasValidAvatarUrl('https://neuchat.neutron.sg/avatar.jpg')).toBe(
+        true
+      );
     });
 
     test('should return false for a Gravatar URL (www.gravatar.com)', () => {

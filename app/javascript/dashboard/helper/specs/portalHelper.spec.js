@@ -22,7 +22,9 @@ describe('PortalHelper', () => {
       };
       expect(
         buildPortalArticleURL('handbook', 'culture', 'fr', 'article-slug')
-      ).toEqual('https://help.neuchat.neutron.sg/hc/handbook/articles/article-slug');
+      ).toEqual(
+        'https://help.neuchat.neutron.sg/hc/handbook/articles/article-slug'
+      );
       window.chatwootConfig = {};
     });
 
@@ -65,7 +67,9 @@ describe('PortalHelper', () => {
       };
       expect(
         buildPortalArticleURL('handbook', 'culture', 'fr', 'article-slug')
-      ).toEqual('https://app.neuchat.neutron.sg/hc/handbook/articles/article-slug');
+      ).toEqual(
+        'https://app.neuchat.neutron.sg/hc/handbook/articles/article-slug'
+      );
     });
   });
 });

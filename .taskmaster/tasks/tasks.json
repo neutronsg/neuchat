@@ -1,0 +1,336 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Analyze Existing OpenAI Integration Architecture",
+        "description": "Conduct comprehensive analysis of the current OpenAI integration codebase to identify all components that need to be replicated for NeuAI",
+        "details": "Use search tools to identify all OpenAI-related files across the codebase including: backend services in app/services/integrations/openai/, hook definitions, API clients, prompt templates, frontend components and composables (useAI.ts), configuration files (config/integration/apps.yml), and any other related code. Create a comprehensive mapping document listing file paths, their purposes, and dependencies. Focus on understanding the complete flow from configuration to API calls to UI interactions.",
+        "testStrategy": "Verify completeness by checking that all identified files compile and function correctly. Cross-reference with git history to ensure no OpenAI-related files are missed. Test existing OpenAI functionality to understand expected behavior patterns.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "in-progress",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Create NeuAI Backend Service Architecture",
+        "description": "Replicate the entire OpenAI backend service structure under neuai namespace, maintaining identical class structures and method signatures",
+        "details": "Copy all files from app/services/integrations/openai/ to app/services/integrations/neuai/. Rename all classes, modules, and constants from OpenAI to NeuAI while preserving the exact same structure. Update all internal references and namespaces. Ensure Ruby naming conventions are followed (NeuaiService, Integrations::Neuai, etc.). Maintain identical method signatures and return types to ensure drop-in compatibility with the frontend.",
+        "testStrategy": "Run bundle exec rubocop -a to ensure code style compliance. Create basic unit tests by copying and adapting existing OpenAI service tests. Verify that all classes can be instantiated and basic methods can be called without errors.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement NeuAI API Client",
+        "description": "Replace OpenAI API calls with NeuAI-compatible HTTP client that handles the specific request format and authentication",
+        "details": "Modify the API client within the NeuAI service to make POST requests to NeuAI format: POST https://<api_url>/api/v1/prediction/{agent_id} with Authorization: Bearer {api_key} header. Transform internal message formats to NeuAI's expected format: {\"question\": \"...\", \"overrideConfig\": {\"sessionId\": \"conversation_#{conversation_id}\"}}. Handle response parsing to maintain compatibility with existing frontend expectations. Use Ruby's HTTP client libraries (Net::HTTP or Faraday) for reliability.",
+        "testStrategy": "Create integration tests with mock NeuAI API endpoints. Test error handling for network failures, authentication errors, and malformed responses. Verify that response format matches what the frontend expects from OpenAI integration.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Configure NeuAI Integration Settings",
+        "description": "Add NeuAI configuration to the integration apps configuration with required fields for agent_url and api_key",
+        "details": "Update config/integration/apps.yml to include a new neuai entry with id: neuai. Define configuration schema with agent_url (full NeuAI prediction endpoint URL) and api_key fields. Follow the exact same structure as the existing OpenAI configuration but adapt field names to match NeuAI requirements. Ensure proper validation rules and default values where appropriate.",
+        "testStrategy": "Verify configuration loads correctly on application startup. Test configuration validation with valid and invalid inputs. Ensure NeuAI appears in the integrations list alongside OpenAI without conflicts.",
+        "priority": "medium",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Create NeuAI Hook Definitions",
+        "description": "Replicate all OpenAI hook definitions for NeuAI, maintaining identical functionality and event handling patterns",
+        "details": "Copy all hook-related files from OpenAI integration and adapt them for NeuAI. Maintain identical hook trigger conditions, event handling, and integration points. Update hook registration to use neuai namespace while preserving all existing functionality like reply suggestions, message rewriting, and conversation summaries. Ensure hooks can coexist with OpenAI hooks without interference.",
+        "testStrategy": "Test hook registration and trigger mechanisms. Verify that NeuAI hooks fire at appropriate times and don't interfere with OpenAI hooks. Create scenarios where both integrations are active to ensure proper isolation.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Replicate Frontend NeuAI Composables",
+        "description": "Copy and adapt all OpenAI frontend composables to create useNeuAI.ts and related utilities with identical interfaces",
+        "details": "Copy composables/useAI.ts to composables/useNeuAI.ts and update all internal references to use neuai endpoints and configuration. Maintain identical method signatures and return types to ensure UI components work without modification. Update API endpoint calls to target neuai routes. Follow Vue 3 Composition API best practices with <script setup> syntax. Ensure TypeScript types are properly maintained.",
+        "testStrategy": "Create unit tests for composables using Vue Test Utils. Test all composable methods return expected data structures. Verify reactivity works correctly and state management is isolated from OpenAI composables.",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Create NeuAI API Routes and Controllers",
+        "description": "Duplicate OpenAI API routes and controllers for NeuAI endpoints, ensuring identical request/response patterns",
+        "details": "Copy all OpenAI API route definitions and create equivalent /api/neuai/* endpoints. Replicate controller logic while updating service calls to use NeuAI services. Maintain identical request validation, response formatting, and error handling. Ensure proper authentication and authorization patterns are preserved. Follow Rails routing conventions and maintain RESTful API design.",
+        "testStrategy": "Create API integration tests covering all endpoints. Test request/response cycles with valid and invalid inputs. Verify authentication and authorization work correctly. Test that API responses match frontend expectations.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Adapt Frontend UI Components for NeuAI",
+        "description": "Copy and modify OpenAI UI components to work with NeuAI, maintaining visual consistency while updating backend connections",
+        "details": "Identify all OpenAI-specific UI components and create NeuAI variants that use useNeuAI composables. Update component imports and service calls while maintaining identical visual appearance and user interactions. Ensure components follow Tailwind-only styling approach without custom CSS. Update any hard-coded references to OpenAI with NeuAI configuration. Maintain PascalCase for component names and camelCase for events.",
+        "testStrategy": "Test UI components in isolation and integration. Verify visual consistency with OpenAI components. Test all user interactions including configuration, enabling/disabling, and AI feature usage. Ensure proper error handling and loading states.",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Configuration Management UI",
+        "description": "Create configuration interface for NeuAI that allows users to input agent_url and api_key while maintaining UI consistency with OpenAI",
+        "details": "Create configuration forms and validation for NeuAI agent_url and api_key fields. Implement proper form validation, error handling, and success messaging. Ensure the configuration UI is visually identical to OpenAI configuration but clearly labeled as NeuAI. Add connection testing functionality to verify credentials work with NeuAI endpoints. Follow existing form patterns and i18n practices (update en.json for frontend translations).",
+        "testStrategy": "Test configuration form with valid and invalid inputs. Verify connection testing works correctly. Test configuration persistence and retrieval. Ensure proper error messages and user feedback throughout the configuration process.",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Integration Testing and Coexistence Validation",
+        "description": "Conduct comprehensive testing to ensure NeuAI and OpenAI integrations can coexist without conflicts and provide identical user experiences",
+        "details": "Test scenarios with both OpenAI and NeuAI configured simultaneously. Verify that users can switch between services seamlessly and that each integration operates independently. Test all AI features (reply suggestions, message rewriting, conversation summaries) work identically with both services. Validate that configuration changes to one service don't affect the other. Run comprehensive end-to-end tests covering the complete user journey from configuration to AI feature usage.",
+        "testStrategy": "Create automated test suites covering dual-integration scenarios. Test user workflows including enabling/disabling each service, switching between services, and using AI features. Verify data isolation and proper service routing. Conduct manual testing to ensure user experience is indistinguishable between services except for configuration.",
+        "priority": "high",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Analyze OpenAI Integration Architecture",
+        "description": "Conduct comprehensive analysis of existing OpenAI integration codebase to identify all components, files, and dependencies that need to be replicated for NeuAI",
+        "details": "Use grep/ripgrep to search for 'openai', 'OpenAI', 'OPENAI' patterns across the entire codebase. Identify: 1) Backend services in app/services/integrations/openai/, 2) Frontend components and composables, 3) API routes and controllers, 4) Configuration files, 5) Database migrations and models, 6) Vue components in components-next/ and legacy components, 7) i18n translation files (en.yml, en.json), 8) Integration hooks and webhook handlers. Document the complete file structure and interdependencies using a dependency map to ensure no files are missed during replication.",
+        "testStrategy": "Create a comprehensive checklist of all identified files and verify each one is accounted for in the replication plan. Test search patterns to ensure no OpenAI references are missed.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Create NeuAI Integration Configuration Structure",
+        "description": "Establish the foundational configuration structure for NeuAI integration in the Chatwoot integrations system",
+        "details": "Add NeuAI to the integrations configuration: 1) Add 'neuai' entry to INTEGRATIONS_CONFIG with id: 'neuai', name: 'NeuAI', 2) Create app/models/integrations/neuai/ directory structure, 3) Add neuai integration to any integration registry or factory patterns, 4) Update any integration enumeration or listing logic to include neuai, 5) Ensure neuai appears in integration selection dropdowns and lists. Follow existing OpenAI configuration patterns exactly, replacing only the identifier and display name.",
+        "testStrategy": "Verify neuai appears in integration lists, configuration forms load correctly, and no errors occur when selecting neuai as an integration option.",
+        "priority": "high",
+        "dependencies": [
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Replicate Backend Service Layer",
+        "description": "Create complete backend service layer for NeuAI by copying and adapting OpenAI service implementations",
+        "details": "Copy app/services/integrations/openai/ to app/services/integrations/neuai/: 1) Replicate all service classes (ProcessorService, CompletionService, etc.), 2) Update class names and module namespaces from OpenAI to NeuAI, 3) Maintain identical method signatures and return types, 4) Keep all error handling and logging patterns, 5) Preserve all business logic flows and state management, 6) Update only the API endpoint configuration and authentication headers. Ensure RuboCop compliance with 150 character line limits.",
+        "testStrategy": "Unit tests for each service class method, verify identical behavior compared to OpenAI services, test error handling scenarios and API response processing.",
+        "priority": "high",
+        "dependencies": [
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Implement NeuAI API Integration Layer",
+        "description": "Modify the API integration layer to communicate with NeuAI endpoints while maintaining OpenAI-compatible interfaces",
+        "details": "Update API client to call NeuAI endpoints: 1) Change base URL to use agent_url configuration, 2) Modify authentication to use Bearer token with api_key, 3) Transform request payload to NeuAI format: {question: content, overrideConfig: {sessionId: conversation_#{id}}}, 4) Handle NeuAI response format and map back to OpenAI-compatible structure, 5) Implement proper error handling for NeuAI-specific error codes, 6) Add request/response logging for debugging, 7) Implement retry logic and timeout handling using existing patterns.",
+        "testStrategy": "Integration tests with mock NeuAI API responses, verify request format matches NeuAI specification, test error scenarios and response mapping accuracy.",
+        "priority": "high",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Create NeuAI Database Models and Migrations",
+        "description": "Establish database schema and ActiveRecord models for NeuAI integration configuration and data storage",
+        "details": "Create database models for NeuAI: 1) Copy OpenAI integration model to create NeuAI equivalent, 2) Add migration for neuai_integrations table with agent_url and api_key fields, 3) Implement validation for agent_url format (must be valid URL), 4) Add presence validation for api_key, 5) Create indexes for performance optimization, 6) Add encrypted storage for api_key using Rails encrypted attributes, 7) Implement model relationships with Account and User models following existing patterns.",
+        "testStrategy": "Test model validations, verify encrypted storage works correctly, test database constraints and indexes, verify model relationships function properly.",
+        "priority": "high",
+        "dependencies": [
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Replicate Frontend Vue Components",
+        "description": "Copy and adapt all Vue components related to OpenAI integration for NeuAI, maintaining identical UI/UX",
+        "details": "Replicate Vue components: 1) Copy components from components-next/ related to OpenAI to create NeuAI versions, 2) Update component names and imports (OpenAI → NeuAI), 3) Modify API calls to use neuai endpoints, 4) Update configuration forms to use agent_url and api_key fields, 5) Maintain identical styling using existing Tailwind classes, 6) Use Composition API with <script setup> at top, 7) Ensure all PropTypes validation remains intact, 8) Update any component registration or routing as needed.",
+        "testStrategy": "Component unit tests using Vue Test Utils, visual regression testing to ensure UI consistency, test all user interactions and form validations.",
+        "priority": "medium",
+        "dependencies": [
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Create NeuAI API Routes and Controllers",
+        "description": "Implement backend API endpoints for NeuAI integration management and chat functionality",
+        "details": "Create API controllers for NeuAI: 1) Copy OpenAI API controller to create NeuAI version, 2) Update routes in config/routes.rb to include neuai endpoints, 3) Implement CRUD operations for NeuAI configuration, 4) Add connection testing endpoint, 5) Implement chat completion endpoints with proper parameter validation, 6) Add proper authentication and authorization checks, 7) Use strong parameters for input validation, 8) Follow RESTful conventions and existing API patterns, 9) Add proper error handling with custom exceptions from lib/custom_exceptions/.",
+        "testStrategy": "API integration tests for all endpoints, test authentication and authorization, verify input validation and error responses, test rate limiting if applicable.",
+        "priority": "high",
+        "dependencies": [
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Implement NeuAI Composables and State Management",
+        "description": "Create Vue composables and state management for NeuAI integration following existing OpenAI patterns",
+        "details": "Create frontend state management: 1) Copy useOpenAI.ts to create useNeuAI.ts composable, 2) Update API calls to use neuai endpoints, 3) Maintain identical state structure and reactive properties, 4) Implement connection status checking, 5) Add configuration management methods, 6) Handle loading states and error management, 7) Implement chat functionality with proper message handling, 8) Add TypeScript types for NeuAI configuration and responses, 9) Ensure proper cleanup and memory management.",
+        "testStrategy": "Unit tests for composable functions, test reactive state updates, verify API integration works correctly, test error handling and loading states.",
+        "priority": "medium",
+        "dependencies": [
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Create NeuAI Integration Hooks and Webhooks",
+        "description": "Implement integration hooks and webhook handlers for NeuAI following the existing webhook architecture",
+        "details": "Implement webhook system: 1) Copy OpenAI webhook handlers to create NeuAI versions, 2) Create app/models/integrations/hooks/neuai_hook.rb, 3) Implement webhook verification and signature validation, 4) Add proper event processing and message routing, 5) Implement retry logic for failed webhook deliveries, 6) Add webhook endpoint registration during NeuAI setup, 7) Ensure proper error handling and logging, 8) Follow existing Integrations::Hook patterns and inheritance.",
+        "testStrategy": "Test webhook delivery and processing, verify signature validation, test retry mechanisms, integration tests with mock webhook payloads.",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Add NeuAI Internationalization Support",
+        "description": "Create translation keys and internationalization support for NeuAI integration UI elements",
+        "details": "Add i18n support: 1) Copy OpenAI translation keys from config/locales/en.yml and app/javascript/dashboard/i18n/locale/en.json, 2) Replace OpenAI references with NeuAI in translation keys and values, 3) Update integration display names and descriptions, 4) Add configuration field labels (agent_url, api_key), 5) Include error messages specific to NeuAI, 6) Ensure all user-facing text is translatable, 7) Follow existing translation key naming conventions, 8) Only update English translations as per project guidelines.",
+        "testStrategy": "Verify all UI text displays correctly, test translation key resolution, ensure no bare strings remain in templates.",
+        "priority": "low",
+        "dependencies": [
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Implement NeuAI Integration Settings UI",
+        "description": "Create configuration interface for NeuAI integration settings and connection management",
+        "details": "Build settings interface: 1) Copy OpenAI settings page to create NeuAI equivalent, 2) Create form fields for agent_url and api_key configuration, 3) Add URL validation for agent_url field, 4) Implement connection testing functionality, 5) Add toggle for enabling/disabling NeuAI integration, 6) Include status indicators for connection health, 7) Use Tailwind utility classes for styling, 8) Implement proper form validation and error display, 9) Add save/update functionality with proper feedback messages.",
+        "testStrategy": "Test form validation, verify connection testing works, test save/update operations, ensure proper error handling and user feedback.",
+        "priority": "medium",
+        "dependencies": [
+          18,
+          20
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Create NeuAI Chat Integration Features",
+        "description": "Implement core chat functionality including reply suggestions, message rewriting, and conversation summaries",
+        "details": "Implement chat features: 1) Copy OpenAI chat feature implementations to NeuAI versions, 2) Implement reply suggestion generation using NeuAI API, 3) Add message rewriting and improvement features, 4) Create conversation summary functionality, 5) Implement real-time chat assistance, 6) Add proper context management for conversations, 7) Ensure proper error handling and fallback mechanisms, 8) Implement caching for frequently used features, 9) Add rate limiting and token usage tracking.",
+        "testStrategy": "Test all chat features with real NeuAI API responses, verify context preservation, test error scenarios and fallback behavior, performance testing for response times.",
+        "priority": "high",
+        "dependencies": [
+          14,
+          21
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Add NeuAI Integration to Admin Panel",
+        "description": "Integrate NeuAI management into the admin panel for system-wide configuration and monitoring",
+        "details": "Add admin functionality: 1) Copy OpenAI admin components to create NeuAI versions, 2) Add NeuAI to integration listing in admin panel, 3) Implement system-wide NeuAI configuration options, 4) Add usage monitoring and analytics dashboard, 5) Implement admin controls for enabling/disabling NeuAI per account, 6) Add configuration templates and defaults, 7) Include health monitoring and status dashboards, 8) Implement audit logging for NeuAI configuration changes.",
+        "testStrategy": "Test admin functionality, verify proper permissions and access control, test configuration management and monitoring features.",
+        "priority": "medium",
+        "dependencies": [
+          21
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Implement NeuAI Performance Optimization",
+        "description": "Add caching, request optimization, and performance monitoring for NeuAI integration",
+        "details": "Optimize performance: 1) Implement Redis caching for frequent NeuAI API responses, 2) Add request batching and connection pooling, 3) Implement circuit breaker pattern for API failures, 4) Add response compression and request optimization, 5) Create performance monitoring and metrics collection, 6) Implement intelligent caching based on conversation context, 7) Add background job processing for non-critical operations, 8) Optimize database queries and add proper indexing.",
+        "testStrategy": "Performance testing under load, verify caching works correctly, test circuit breaker functionality, monitor response times and resource usage.",
+        "priority": "medium",
+        "dependencies": [
+          22
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Create Comprehensive Test Suite for NeuAI Integration",
+        "description": "Develop complete test coverage for all NeuAI integration components including unit, integration, and end-to-end tests",
+        "details": "Implement comprehensive testing: 1) Create RSpec tests for all Ruby classes and services, 2) Add Jest/Vue Test Utils tests for all Vue components, 3) Implement integration tests for API endpoints, 4) Create mock NeuAI API responses for testing, 5) Add end-to-end tests using Cypress or similar framework, 6) Test error scenarios and edge cases, 7) Implement performance and load testing, 8) Add security testing for API key handling, 9) Create test fixtures and factories for consistent test data.",
+        "testStrategy": "Achieve >90% code coverage for NeuAI components, verify all critical paths are tested, run test suite in CI/CD pipeline, validate test reliability and consistency.",
+        "priority": "high",
+        "dependencies": [
+          23,
+          24
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-20T16:30:31.043Z",
+      "updated": "2025-07-20T16:42:04.396Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

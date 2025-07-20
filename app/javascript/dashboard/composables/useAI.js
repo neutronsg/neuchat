@@ -7,7 +7,7 @@ import {
 import { useAlert, useTrack } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { OPEN_AI_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
-import OpenAPI from 'dashboard/api/integrations/openapi';
+import AIAPI from 'dashboard/api/integrations/aiapi';
 
 /**
  * Cleans and normalizes a list of labels.
@@ -43,15 +43,32 @@ export function useAI() {
   const replyMode = useMapGetter('draftMessages/getReplyEditorMode');
 
   /**
-   * Computed property for the AI integration.
+   * Computed property for the AI integration (supports multiple AI providers).
    * @type {import('vue').ComputedRef<Object|undefined>}
    */
-  const aiIntegration = computed(
-    () =>
-      appIntegrations.value.find(
-        integration => integration.id === 'openai' && !!integration.hooks.length
-      )?.hooks[0]
-  );
+  const aiIntegration = computed(() => {
+    // Supported AI integration types in order of preference
+    const supportedAITypes = ['openai', 'neuai'];
+
+    let foundHook = null;
+
+    supportedAITypes.some(aiType => {
+      const integration = appIntegrations.value.find(
+        item => item.id === aiType && item.hooks.length > 0
+      );
+      if (integration) {
+        foundHook = integration.hooks[0];
+        return true; // 终止 .some() 的遍历
+      }
+      return false;
+    });
+
+    if (foundHook) {
+      return foundHook;
+    }
+
+    return undefined;
+  });
 
   /**
    * Computed property to check if AI integration is enabled.
@@ -139,7 +156,7 @@ export function useAI() {
     if (!conversationId.value) return [];
 
     try {
-      const result = await OpenAPI.processEvent({
+      const result = await AIAPI.processEvent({
         type: 'label_suggestion',
         hookId: hookId.value,
         conversationId: conversationId.value,
@@ -162,7 +179,7 @@ export function useAI() {
    */
   const processEvent = async (type = 'rephrase') => {
     try {
-      const result = await OpenAPI.processEvent({
+      const result = await AIAPI.processEvent({
         hookId: hookId.value,
         type,
         content: draftMessage.value,
@@ -173,10 +190,8 @@ export function useAI() {
       } = result;
       return generatedMessage;
     } catch (error) {
-      const errorData = error.response.data.error;
-      const errorMessage =
-        errorData?.error?.message ||
-        t('INTEGRATION_SETTINGS.OPEN_AI.GENERATE_ERROR');
+      const errorData = error.response?.data?.error;
+      const errorMessage = errorData?.error?.message || t('AI_GENERATE_ERROR');
       useAlert(errorMessage);
       return '';
     }
