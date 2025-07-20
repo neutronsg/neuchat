@@ -1,7 +1,4 @@
 class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
-  AGENT_INSTRUCTION = 'You are a helpful support agent.'.freeze
-  LANGUAGE_INSTRUCTION = 'Ensure that the reply should be in user language.'.freeze
-
   def reply_suggestion_message
     make_api_call(reply_suggestion_body)
   end
@@ -15,38 +12,31 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def rephrase_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please rephrase the following response. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'rephrase'))
+    make_api_call(simple_message_body('rephrase'))
   end
 
   def fix_spelling_grammar_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please fix the spelling and grammar of the following response. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'fix_spelling_grammar'))
+    make_api_call(simple_message_body('fix_spelling_grammar'))
   end
 
   def shorten_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please shorten the following response. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'shorten'))
+    make_api_call(simple_message_body('shorten'))
   end
 
   def expand_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please expand the following response. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'expand'))
+    make_api_call(simple_message_body('expand'))
   end
 
   def make_friendly_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please make the following response more friendly. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'make_friendly'))
+    make_api_call(simple_message_body('make_friendly'))
   end
 
   def make_formal_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please make the following response more formal. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'make_formal'))
+    make_api_call(simple_message_body('make_formal'))
   end
 
   def simplify_message
-    make_api_call(build_api_call_body("#{AGENT_INSTRUCTION} Please simplify the following response. " \
-                                      "#{LANGUAGE_INSTRUCTION}", event['data']['content'], 'simplify'))
+    make_api_call(simple_message_body('simplify'))
   end
 
   def translate_message
@@ -56,18 +46,12 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
 
   private
 
-  def prompt_from_file(file_name, enterprise: false)
-    path = enterprise ? 'enterprise/lib/enterprise/integrations/neuai_prompts' : 'lib/integrations/neuai/neuai_prompts'
-    Rails.root.join(path, "#{file_name}.txt").read
-  end
-
-  def build_api_call_body(system_content, user_content = event['data']['content'], action = nil)
-    # FlowiseAI API format
+  def simple_message_body(action)
+    # FlowiseAI API format - agent已经包含prompt，只传递消息内容
     {
-      question: "#{system_content}\n\n#{user_content}",
+      question: event['data']['content'],
       streaming: false,
       overrideConfig: {
-        sessionId: "conversation_#{conversation.id}",
         vars: {
           action: action
         }
@@ -118,7 +102,8 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def format_message_in_array(message)
-    { role: (message.incoming? ? 'user' : 'assistant'), content: message.content }
+    # FlowiseAI history format: apiMessage for agent, userMessage for customer
+    { role: (message.incoming? ? 'userMessage' : 'apiMessage'), content: message.content }
   end
 
   def format_message_in_string(message)
@@ -127,12 +112,12 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def summarize_body
-    # FlowiseAI API format for conversation-level operation
+    # FlowiseAI API format - agent已经包含prompt，传递对话历史到history数组
     {
-      question: "#{prompt_from_file('summary', enterprise: false)}\n\n#{conversation_messages}",
+      question: '',
+      history: conversation_messages(in_array_format: true),
       streaming: false,
       overrideConfig: {
-        sessionId: "conversation_#{conversation.id}",
         vars: {
           action: 'summarize'
         }
@@ -141,12 +126,12 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def reply_suggestion_body
-    # FlowiseAI API format for conversation-level operation
+    # FlowiseAI API format - agent已经包含prompt，传递对话历史到history数组
     {
-      question: "#{prompt_from_file('reply', enterprise: false)}\n\n#{conversation_messages}",
+      question: '',
+      history: conversation_messages(in_array_format: true),
       streaming: false,
       overrideConfig: {
-        sessionId: "conversation_#{conversation.id}",
         vars: {
           action: 'reply_suggestion'
         }
@@ -155,12 +140,12 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def label_suggestion_body
-    # FlowiseAI API format for label suggestion (enterprise feature)
+    # FlowiseAI API format - agent已经包含prompt，传递对话历史到history数组
     {
-      question: "Based on the following conversation, suggest relevant labels:\n\n#{conversation_messages}",
+      question: '',
+      history: conversation_messages(in_array_format: true),
       streaming: false,
       overrideConfig: {
-        sessionId: "conversation_#{conversation.id}",
         vars: {
           action: 'label_suggestion'
         }
@@ -169,12 +154,12 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def translate_body
-    # FlowiseAI API format for translation - 传递当前消息和历史消息
+    # FlowiseAI API format for translation - 当前消息作为question，历史消息放在history数组
     {
-      question: "Current message: #{event['data']['content']}\n\nConversation history:\n#{conversation_messages}",
+      question: event['data']['content'],
+      history: conversation_messages(in_array_format: true),
       streaming: false,
       overrideConfig: {
-        sessionId: "conversation_#{conversation.id}",
         vars: {
           action: 'translate'
         }
