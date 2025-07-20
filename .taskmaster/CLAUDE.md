@@ -415,3 +415,19 @@ These commands make AI calls and may take up to a minute:
 ---
 
 _This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows._
+
+## 集成开发参考
+
+本项目包含完整的集成架构文档，位于 `docs/INTEGRATIONS.md`，包含：
+
+- **集成架构概述和核心组件** - `Integrations::App`、`Integrations::Hook`、配置管理
+- **4种集成类型的详细实现模式** - 业务工具、AI服务、消息渠道、Webhook集成
+- **添加新集成的11步详细指南** - 从配置到测试的完整流程
+- **安全、性能、监控最佳实践** - 错误处理、令牌管理、限流、健康检查
+- **常见问题故障排查指南** - OAuth认证失败、Webhook丢失、API调用问题等
+
+在开发集成相关功能时，请参考此文档确保遵循项目架构模式和最佳实践。集成系统支持：
+- 消息渠道：WhatsApp、Telegram、Facebook Messenger 等
+- 业务工具：Slack、Linear、Notion、Shopify 等  
+- AI服务：OpenAI、Dialogflow、Google Translate 等
+- CRM系统：LeadSquared 等

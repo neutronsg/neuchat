@@ -58,6 +58,34 @@
 
 - Use compact `module/class` definitions; avoid nested styles
 
+## 集成开发参考
+
+本项目包含完整的集成架构文档，位于 `docs/INTEGRATIONS.md`，包含：
+
+- **集成架构概述和核心组件** - `Integrations::App`、`Integrations::Hook`、配置管理
+- **4种集成类型的详细实现模式** - 业务工具、AI服务、消息渠道、Webhook集成
+- **添加新集成的完整指南** - 从配置到测试的11步详细流程
+- **安全、性能、监控最佳实践** - 错误处理、令牌管理、限流、健康检查
+- **常见问题故障排查指南** - OAuth认证失败、Webhook丢失、API调用问题等
+
+在开发集成相关功能时，请参考此文档确保遵循项目架构模式。集成系统支持：
+- 消息渠道：WhatsApp、Telegram、Facebook Messenger 等
+- 业务工具：Slack、Linear、Notion、Shopify 等  
+- AI服务：OpenAI、Dialogflow、Google Translate 等
+- CRM系统：LeadSquared 等
+
+### OpenAI 集成深度分析
+
+项目还包含 OpenAI 集成的详细实现分析，位于 `docs/OPENAI_INTEGRATION_ANALYSIS.md`，深度解析：
+
+- **连接状态检测机制** - 前后端如何判断 OpenAI 是否已连接配置
+- **完整功能列表和使用场景** - Reply Suggestion、消息重写、对话摘要等
+- **后端代理架构模式** - 安全的 API 调用流程和数据处理
+- **Reply Suggestion 完整流程** - 从用户点击到 AI 响应的 10 步详细流程
+- **性能优化和安全机制** - 缓存策略、令牌限制、权限控制
+
+开发 AI 相关功能时请参考此分析文档了解具体实现细节和最佳实践。
+
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
 @./.taskmaster/CLAUDE.md
