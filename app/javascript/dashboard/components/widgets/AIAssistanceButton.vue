@@ -19,6 +19,12 @@ export default {
     AICTAModal,
     AIAssistanceCTAButton,
   },
+  props: {
+    isPrivateNote: {
+      type: Boolean,
+      default: false,
+    },
+  },
   emits: ['replaceText'],
   setup(props, { emit }) {
     const { uiSettings, updateUISettings } = useUISettings();
@@ -145,6 +151,7 @@ export default {
       >
         <AIAssistanceModal
           :ai-option="aiOption"
+          :is-private-note="isPrivateNote"
           @apply-text="insertText"
           @close="hideAIAssistanceModal"
         />

@@ -14,6 +14,10 @@ export default {
       type: String,
       required: true,
     },
+    isPrivateNote: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['close', 'applyText'],
   setup() {
@@ -38,6 +42,25 @@ export default {
           })
         : '';
     },
+    // 判断是否应该显示"Use this suggestion"按钮
+    // Private Note模式：所有功能都显示应用按钮
+    // Reply模式：summarize不显示应用按钮，其他功能显示
+    shouldShowApplyButton() {
+      if (this.isPrivateNote) {
+        return true; // Private Note模式下所有功能都有应用按钮
+      }
+      return this.aiOption !== 'summarize'; // Reply模式下summarize没有应用按钮
+    },
+    // 判断是否应该显示确认按钮（Reply模式下的summarize）
+    shouldShowConfirmButton() {
+      return !this.isPrivateNote && this.aiOption === 'summarize';
+    },
+    // 应用按钮的文本
+    applyButtonText() {
+      return this.$t(
+        'INTEGRATION_SETTINGS.OPEN_AI.ASSISTANCE_MODAL.BUTTONS.APPLY'
+      );
+    },
   },
   mounted() {
     this.generateAIContent(this.aiOption);
@@ -56,6 +79,11 @@ export default {
     applyText() {
       this.recordAnalytics(this.aiOption);
       this.$emit('applyText', this.generatedContent);
+      this.onClose();
+    },
+    confirmAndClose() {
+      // Reply模式下summarize的确认按钮，只关闭弹窗
+      this.recordAnalytics(this.aiOption);
       this.onClose();
     },
   },
@@ -96,11 +124,17 @@ export default {
           @click.prevent="onClose"
         />
         <NextButton
+          v-if="shouldShowApplyButton"
           type="submit"
           :disabled="!generatedContent"
-          :label="
-            $t('INTEGRATION_SETTINGS.OPEN_AI.ASSISTANCE_MODAL.BUTTONS.APPLY')
-          "
+          :label="applyButtonText"
+        />
+        <NextButton
+          v-if="shouldShowConfirmButton"
+          type="button"
+          :disabled="!generatedContent"
+          label="Confirm"
+          @click.prevent="confirmAndClose"
         />
       </div>
     </form>

@@ -88,6 +88,11 @@ const createNonDraftMessageAIAssistActions = (t, replyMode) => {
         key: 'reply_suggestion',
         icon: ICON_AI_ASSIST,
       },
+      {
+        label: t('INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.SUMMARIZE'),
+        key: 'summarize',
+        icon: ICON_AI_SUMMARY,
+      },
     ];
   }
   return [
@@ -348,9 +353,25 @@ export function useConversationHotKeys() {
   });
 
   const AIAssistActions = computed(() => {
-    const aiOptions = draftMessage.value
-      ? createDraftMessageAIAssistActions(t)
-      : createNonDraftMessageAIAssistActions(t, replyMode.value);
+    let aiOptions = [];
+
+    if (draftMessage.value) {
+      // 有草稿文字时，显示针对文字内容的操作
+      aiOptions = createDraftMessageAIAssistActions(t);
+
+      // 在 Reply 模式下，额外添加 summarize 功能（不针对文字内容，而是针对对话）
+      if (replyMode.value === REPLY_EDITOR_MODES.REPLY) {
+        aiOptions.push({
+          label: t('INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.SUMMARIZE'),
+          key: 'summarize',
+          icon: ICON_AI_SUMMARY,
+        });
+      }
+    } else {
+      // 没有草稿文字时，显示针对对话的操作
+      aiOptions = createNonDraftMessageAIAssistActions(t, replyMode.value);
+    }
+
     const options = aiOptions.map(item => ({
       id: `ai-assist-${item.key}`,
       title: item.label,
