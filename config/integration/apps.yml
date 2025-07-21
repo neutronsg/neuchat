@@ -68,36 +68,36 @@ neuai:
       'type': 'object',
       'properties':
         {
-          'agent_url': { 'type': 'string' },
+          'agent_id': { 'type': 'string' },
+          'neuai_url': { 'type': 'string' },
           'api_key': { 'type': 'string' },
           'label_suggestion': { 'type': 'boolean' },
         },
-      'required': ['agent_url', 'api_key'],
+      'required': ['neuai_url', 'agent_id', 'api_key'],
       'additionalProperties': false,
     }
   settings_form_schema:
     [
       {
-        'label': 'Agent URL',
+        'label': 'NeuAI URL',
         'type': 'text',
-        'name': 'agent_url',
-        'validation': 'required',
-        'help': 'https://<api_url>/api/v1/prediction/{agent_id}',
+        'name': 'neuai_url',
+        'validation': 'required'
+      },
+      {
+        'label': 'Agent ID',
+        'type': 'text',
+        'name': 'agent_id',
+        'validation': 'required'
       },
       {
         'label': 'API Key',
         'type': 'text',
         'name': 'api_key',
         'validation': 'required',
-      },
-      {
-        'label': 'Show label suggestions',
-        'type': 'checkbox',
-        'name': 'label_suggestion',
-        'validation': '',
-      },
+      }
     ]
-  visible_properties: ['agent_url', 'api_key', 'label_suggestion']
+  visible_properties: ['neuai_url', 'api_key', 'agent_id']
 linear:
   id: linear
   logo: linear.png

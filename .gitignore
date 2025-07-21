@@ -114,3 +114,6 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+# Docker Compose
+.pnpm-store/
+.tool-versions

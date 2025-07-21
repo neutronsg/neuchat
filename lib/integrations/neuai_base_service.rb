@@ -7,7 +7,7 @@ class Integrations::NeuaiBaseService
 
   ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion label_suggestion fix_spelling_grammar shorten expand make_friendly make_formal
                            simplify translate].freeze
-  CACHEABLE_EVENTS = %w[].freeze
+  CACHEABLE_EVENTS = %w[summarize].freeze
 
   pattr_initialize [:hook!, :event!]
 
@@ -87,7 +87,8 @@ class Integrations::NeuaiBaseService
     }
 
     Rails.logger.info("NeuAI API request: #{body}")
-    response = HTTParty.post(hook.settings['agent_url'], headers: headers, body: body)
+    url = "#{hook.settings['neuai_url']}/prediction/#{hook.settings['agent_id']}"
+    response = HTTParty.post(url, headers: headers, body: body)
     Rails.logger.info("NeuAI API response: #{response.body}")
 
     return { error: response.parsed_response, error_code: response.code } unless response.success?
