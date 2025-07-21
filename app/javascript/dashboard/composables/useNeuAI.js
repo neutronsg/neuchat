@@ -6,8 +6,8 @@ import {
 } from 'dashboard/composables/store';
 import { useAlert, useTrack } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
-import { OPEN_AI_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
-import OpenAPI from 'dashboard/api/integrations/openapi';
+import { NEUAI_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
+import NeuAIAPI from 'dashboard/api/integrations/neuaiapi';
 
 /**
  * Cleans and normalizes a list of labels.
@@ -24,10 +24,10 @@ const cleanLabels = labels => {
 };
 
 /**
- * A composable function for AI-related operations in the dashboard.
- * @returns {Object} An object containing AI-related methods and computed properties.
+ * A composable function for NeuAI-related operations in the dashboard.
+ * @returns {Object} An object containing NeuAI-related methods and computed properties.
  */
-export function useAI() {
+export function useNeuAI() {
   const store = useStore();
   const getters = useStoreGetters();
   const { t } = useI18n();
@@ -43,29 +43,29 @@ export function useAI() {
   const replyMode = useMapGetter('draftMessages/getReplyEditorMode');
 
   /**
-   * Computed property for the AI integration.
+   * Computed property for the NeuAI integration.
    * @type {import('vue').ComputedRef<Object|undefined>}
    */
-  const aiIntegration = computed(
+  const neuaiIntegration = computed(
     () =>
       appIntegrations.value.find(
-        integration => integration.id === 'openai' && !!integration.hooks.length
+        integration => integration.id === 'neuai' && !!integration.hooks.length
       )?.hooks[0]
   );
 
   /**
-   * Computed property to check if AI integration is enabled.
+   * Computed property to check if NeuAI integration is enabled.
    * @type {import('vue').ComputedRef<boolean>}
    */
-  const isAIIntegrationEnabled = computed(() => !!aiIntegration.value);
+  const isNeuAIIntegrationEnabled = computed(() => !!neuaiIntegration.value);
 
   /**
    * Computed property to check if label suggestion feature is enabled.
    * @type {import('vue').ComputedRef<boolean>}
    */
   const isLabelSuggestionFeatureEnabled = computed(() => {
-    if (aiIntegration.value) {
-      const { settings = {} } = aiIntegration.value || {};
+    if (neuaiIntegration.value) {
+      const { settings = {} } = neuaiIntegration.value || {};
       return settings.label_suggestion;
     }
     return false;
@@ -81,7 +81,7 @@ export function useAI() {
    * Computed property for the hook ID.
    * @type {import('vue').ComputedRef<string|undefined>}
    */
-  const hookId = computed(() => aiIntegration.value?.id);
+  const hookId = computed(() => neuaiIntegration.value?.id);
 
   /**
    * Computed property for the conversation ID.
@@ -116,16 +116,17 @@ export function useAI() {
   };
 
   /**
-   * Records analytics for AI-related events.
+   * Records analytics for NeuAI-related events.
    * @param {string} type - The type of event.
    * @param {Object} payload - Additional data for the event.
    * @returns {Promise<void>}
    */
   const recordAnalytics = async (type, payload) => {
-    const event = OPEN_AI_EVENTS[type.toUpperCase()];
+    const event = NEUAI_EVENTS[type.toUpperCase()];
     if (event) {
       useTrack(event, {
         type,
+        provider: 'neuai',
         ...payload,
       });
     }
@@ -139,7 +140,7 @@ export function useAI() {
     if (!conversationId.value) return [];
 
     try {
-      const result = await OpenAPI.processEvent({
+      const result = await NeuAIAPI.processEvent({
         type: 'label_suggestion',
         hookId: hookId.value,
         conversationId: conversationId.value,
@@ -156,13 +157,13 @@ export function useAI() {
   };
 
   /**
-   * Processes an AI event, such as rephrasing content.
-   * @param {string} [type='rephrase'] - The type of AI event to process.
+   * Processes a NeuAI event, such as rephrasing content.
+   * @param {string} [type='rephrase'] - The type of NeuAI event to process.
    * @returns {Promise<string>} The generated message or an empty string if an error occurs.
    */
   const processEvent = async (type = 'rephrase') => {
     try {
-      const result = await OpenAPI.processEvent({
+      const result = await NeuAIAPI.processEvent({
         hookId: hookId.value,
         type,
         content: draftMessage.value,
@@ -176,7 +177,7 @@ export function useAI() {
       const errorData = error.response.data.error;
       const errorMessage =
         errorData?.error?.message ||
-        t('INTEGRATION_SETTINGS.OPEN_AI.GENERATE_ERROR');
+        t('INTEGRATION_SETTINGS.NEUAI.GENERATE_ERROR');
       useAlert(errorMessage);
       return '';
     }
@@ -192,7 +193,7 @@ export function useAI() {
     appIntegrations,
     currentChat,
     replyMode,
-    isAIIntegrationEnabled,
+    isNeuAIIntegrationEnabled,
     isLabelSuggestionFeatureEnabled,
     isFetchingAppIntegrations,
     fetchIntegrationsIfRequired,

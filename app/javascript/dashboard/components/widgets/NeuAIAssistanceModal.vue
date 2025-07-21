@@ -1,12 +1,12 @@
 <script>
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
-import { useAI } from 'dashboard/composables/useAI';
-import AILoader from './AILoader.vue';
+import { useNeuAI } from 'dashboard/composables/useNeuAI';
+import NeuAILoader from './NeuAILoader.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
 export default {
   components: {
-    AILoader,
+    NeuAILoader,
     NextButton,
   },
   props: {
@@ -18,7 +18,7 @@ export default {
   emits: ['close', 'applyText'],
   setup() {
     const { formatMessage } = useMessageFormatter();
-    const { draftMessage, processEvent, recordAnalytics } = useAI();
+    const { draftMessage, processEvent, recordAnalytics } = useNeuAI();
     return { draftMessage, processEvent, recordAnalytics, formatMessage };
   },
   data() {
@@ -31,9 +31,9 @@ export default {
     headerTitle() {
       const translationKey = this.aiOption?.toUpperCase();
       return translationKey
-        ? this.$t(`INTEGRATION_SETTINGS.OPEN_AI.WITH_AI`, {
+        ? this.$t(`INTEGRATION_SETTINGS.NEUAI.WITH_AI`, {
             option: this.$t(
-              `INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.${translationKey}`
+              `INTEGRATION_SETTINGS.NEUAI.OPTIONS.${translationKey}`
             ),
           })
         : '';
@@ -71,27 +71,27 @@ export default {
     >
       <div v-if="draftMessage" class="w-full">
         <h4 class="mt-1 text-base text-n-slate-12">
-          {{ $t('INTEGRATION_SETTINGS.OPEN_AI.ASSISTANCE_MODAL.DRAFT_TITLE') }}
+          {{ $t('INTEGRATION_SETTINGS.NEUAI.ASSISTANCE_MODAL.DRAFT_TITLE') }}
         </h4>
         <p v-dompurify-html="formatMessage(draftMessage, false)" />
         <h4 class="mt-1 text-base text-n-slate-12">
           {{
-            $t('INTEGRATION_SETTINGS.OPEN_AI.ASSISTANCE_MODAL.GENERATED_TITLE')
+            $t('INTEGRATION_SETTINGS.NEUAI.ASSISTANCE_MODAL.GENERATED_TITLE')
           }}
         </h4>
       </div>
       <div>
-        <AILoader v-if="isGenerating" />
+        <NeuAILoader v-if="isGenerating" />
         <p v-else v-dompurify-html="formatMessage(generatedContent, false)" />
       </div>
 
-      <div class="flex flex-row justify-end w-full gap-2 px-0 py-2">
+      <div class="flex flex-row gap-2 justify-end px-0 py-2 w-full">
         <NextButton
           faded
           slate
           type="reset"
           :label="
-            $t('INTEGRATION_SETTINGS.OPEN_AI.ASSISTANCE_MODAL.BUTTONS.CANCEL')
+            $t('INTEGRATION_SETTINGS.NEUAI.ASSISTANCE_MODAL.BUTTONS.CANCEL')
           "
           @click.prevent="onClose"
         />
@@ -99,7 +99,7 @@ export default {
           type="submit"
           :disabled="!generatedContent"
           :label="
-            $t('INTEGRATION_SETTINGS.OPEN_AI.ASSISTANCE_MODAL.BUTTONS.APPLY')
+            $t('INTEGRATION_SETTINGS.NEUAI.ASSISTANCE_MODAL.BUTTONS.APPLY')
           "
         />
       </div>

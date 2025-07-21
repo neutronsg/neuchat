@@ -100,6 +100,23 @@ export const OPEN_AI_EVENTS = Object.freeze({
   DISMISS_AI_SUGGESTION: 'OpenAI: Dismiss AI suggestions',
 });
 
+export const NEUAI_EVENTS = Object.freeze({
+  SUMMARIZE: 'NeuAI: Used summarize',
+  REPLY_SUGGESTION: 'NeuAI: Used reply suggestion',
+  REPHRASE: 'NeuAI: Used rephrase',
+  FIX_SPELLING_AND_GRAMMAR: 'NeuAI: Used fix spelling and grammar',
+  SHORTEN: 'NeuAI: Used shorten',
+  EXPAND: 'NeuAI: Used expand',
+  MAKE_FRIENDLY: 'NeuAI: Used make friendly',
+  MAKE_FORMAL: 'NeuAI: Used make formal',
+  SIMPLIFY: 'NeuAI: Used simplify',
+  APPLY_LABEL_SUGGESTION: 'NeuAI: Apply label from suggestion',
+  DISMISS_LABEL_SUGGESTION: 'NeuAI: Dismiss label suggestions',
+  ADDED_AI_INTEGRATION_VIA_CTA_BUTTON:
+    'NeuAI: Added AI integration via CTA button',
+  DISMISS_AI_SUGGESTION: 'NeuAI: Dismiss AI suggestions',
+});
+
 export const COPILOT_EVENTS = Object.freeze({
   SEND_SUGGESTED: 'Copilot: Send suggested message',
   SEND_MESSAGE: 'Copilot: Sent a message',

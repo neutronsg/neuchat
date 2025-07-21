@@ -3,7 +3,7 @@
 import ApiClient from '../ApiClient';
 
 /**
- * Represents the data object for an AI hook.
+ * Represents the data object for a NeuAI hook.
  * @typedef {Object} ConversationMessageData
  * @property {string} [tone] - The tone of the message.
  * @property {string} [content] - The content of the message.
@@ -11,12 +11,12 @@ import ApiClient from '../ApiClient';
  */
 
 /**
- * A unified client for AI APIs (OpenAI, NeuAI, etc.).
+ * A client for the NeuAI API.
  * @extends ApiClient
  */
-class AIAPI extends ApiClient {
+class NeuAIAPI extends ApiClient {
   /**
-   * Creates a new AIAPI instance.
+   * Creates a new NeuAIAPI instance.
    */
   constructor() {
     super('integrations', { accountScoped: true });
@@ -29,7 +29,6 @@ class AIAPI extends ApiClient {
       'summarize',
       'reply_suggestion',
       'label_suggestion',
-      'translate',
     ];
 
     /**
@@ -40,7 +39,7 @@ class AIAPI extends ApiClient {
   }
 
   /**
-   * Processes an event using the AI API.
+   * Processes an event using the NeuAI API.
    * @param {Object} options - The options for the event.
    * @param {string} [options.type='rephrase'] - The type of event to process.
    * @param {string} [options.content] - The content of the event.
@@ -62,19 +61,18 @@ class AIAPI extends ApiClient {
       data = {
         conversation_display_id: conversationId,
       };
-      // translate 需要同时传递 content 和 conversation_display_id
-      if (type === 'translate') {
-        data.content = content;
-      }
     }
 
-    return axios.post(`${this.url}/hooks/${hookId}/process_event`, {
+    const url = `${this.url}/hooks/${hookId}/process_event`;
+    const payload = {
       event: {
         name: type,
         data,
       },
-    });
+    };
+
+    return axios.post(url, payload);
   }
 }
 
-export default new AIAPI();
+export default new NeuAIAPI();

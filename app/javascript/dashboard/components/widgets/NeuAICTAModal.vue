@@ -3,8 +3,8 @@ import { useVuelidate } from '@vuelidate/core';
 import { required } from '@vuelidate/validators';
 import { useAlert } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
-import { useAI } from 'dashboard/composables/useAI';
-import { OPEN_AI_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
+import { useNeuAI } from 'dashboard/composables/useNeuAI';
+import { NEUAI_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
 
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
@@ -16,7 +16,7 @@ export default {
 
   setup() {
     const { updateUISettings } = useUISettings();
-    const { recordAnalytics } = useAI();
+    const { recordAnalytics } = useNeuAI();
     const v$ = useVuelidate();
 
     return { updateUISettings, v$, recordAnalytics };
@@ -37,18 +37,16 @@ export default {
     },
 
     onDismiss() {
-      useAlert(
-        this.$t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.DISMISS_MESSAGE')
-      );
+      useAlert(this.$t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.DISMISS_MESSAGE'));
       this.updateUISettings({
-        is_open_ai_cta_modal_dismissed: true,
+        is_neuai_cta_modal_dismissed: true,
       });
       this.onClose();
     },
 
-    async finishOpenAI() {
+    async finishNeuAI() {
       const payload = {
-        app_id: 'openai',
+        app_id: 'neuai',
         settings: {
           api_key: this.value,
         },
@@ -56,11 +54,9 @@ export default {
       try {
         await this.$store.dispatch('integrations/createHook', payload);
         this.alertMessage = this.$t(
-          'INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.SUCCESS_MESSAGE'
+          'INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.SUCCESS_MESSAGE'
         );
-        this.recordAnalytics(
-          OPEN_AI_EVENTS.ADDED_AI_INTEGRATION_VIA_CTA_BUTTON
-        );
+        this.recordAnalytics(NEUAI_EVENTS.ADDED_AI_INTEGRATION_VIA_CTA_BUTTON);
         this.onClose();
       } catch (error) {
         const errorMessage = error?.response?.data?.message;
@@ -70,9 +66,9 @@ export default {
         useAlert(this.alertMessage);
       }
     },
-    openOpenAIDoc() {
-      window.open('https://www.chatwoot.com/blog/v2-17', '_blank');
-    },
+    // openNeuAIDoc() {
+    //   window.open('https://neuai.neutron.sg', '_blank');
+    // },
   },
 };
 </script>
@@ -80,12 +76,12 @@ export default {
 <template>
   <div class="flex-1 px-0 min-w-0">
     <woot-modal-header
-      :header-title="$t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.TITLE')"
-      :header-content="$t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.DESC')"
+      :header-title="$t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.TITLE')"
+      :header-content="$t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.DESC')"
     />
     <form
       class="flex flex-col flex-wrap modal-content"
-      @submit.prevent="finishOpenAI"
+      @submit.prevent="finishNeuAI"
     >
       <div class="mt-2 w-full">
         <woot-input
@@ -93,35 +89,33 @@ export default {
           type="text"
           :class="{ error: v$.value.$error }"
           :placeholder="
-            $t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.KEY_PLACEHOLDER')
+            $t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.KEY_PLACEHOLDER')
           "
           @blur="v$.value.$touch"
         />
       </div>
       <div class="flex flex-row gap-2 justify-between px-0 py-2 w-full">
-        <NextButton
+        <!-- <NextButton
           ghost
           type="button"
           class="!px-3"
           :label="
-            $t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.BUTTONS.NEED_HELP')
+            $t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.BUTTONS.NEED_HELP')
           "
-          @click.prevent="openOpenAIDoc"
-        />
+          @click.prevent="oNeupenAIDoc"
+        /> -->
         <div class="flex gap-1 items-center">
           <NextButton
             faded
             slate
             type="reset"
-            :label="
-              $t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.BUTTONS.DISMISS')
-            "
+            :label="$t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.BUTTONS.DISMISS')"
             @click.prevent="onDismiss"
           />
           <NextButton
             type="submit"
             :disabled="v$.value.$invalid"
-            :label="$t('INTEGRATION_SETTINGS.OPEN_AI.CTA_MODAL.BUTTONS.FINISH')"
+            :label="$t('INTEGRATION_SETTINGS.NEUAI.CTA_MODAL.BUTTONS.FINISH')"
           />
         </div>
       </div>
