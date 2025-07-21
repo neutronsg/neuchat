@@ -38,6 +38,9 @@ export default {
           })
         : '';
     },
+    isReadOnlyMode() {
+      return this.aiOption === 'summarize_readonly';
+    },
   },
   mounted() {
     this.generateAIContent(this.aiOption);
@@ -50,7 +53,9 @@ export default {
 
     async generateAIContent(type = 'rephrase') {
       this.isGenerating = true;
-      this.generatedContent = await this.processEvent(type);
+      // Convert readonly type to regular type for API call
+      const apiType = type === 'summarize_readonly' ? 'summarize' : type;
+      this.generatedContent = await this.processEvent(apiType);
       this.isGenerating = false;
     },
     applyText() {
@@ -96,11 +101,21 @@ export default {
           @click.prevent="onClose"
         />
         <NextButton
+          v-if="!isReadOnlyMode"
           type="submit"
           :disabled="!generatedContent"
           :label="
             $t('INTEGRATION_SETTINGS.NEUAI.ASSISTANCE_MODAL.BUTTONS.APPLY')
           "
+        />
+        <NextButton
+          v-if="isReadOnlyMode"
+          type="button"
+          :disabled="!generatedContent"
+          :label="
+            $t('INTEGRATION_SETTINGS.NEUAI.ASSISTANCE_MODAL.BUTTONS.CONFIRM')
+          "
+          @click="onClose"
         />
       </div>
     </form>
