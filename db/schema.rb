@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_14_104358) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_21_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -492,6 +492,19 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_14_104358) do
     t.boolean "continuity_via_email", default: true, null: false
     t.index ["hmac_token"], name: "index_channel_web_widgets_on_hmac_token", unique: true
     t.index ["website_token"], name: "index_channel_web_widgets_on_website_token", unique: true
+  end
+
+  create_table "channel_wechat", force: :cascade do |t|
+    t.string "app_id", null: false
+    t.string "app_secret", null: false
+    t.string "token", null: false
+    t.string "encoding_aes_key"
+    t.string "app_name"
+    t.integer "account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_channel_wechat_on_account_id"
+    t.index ["app_id"], name: "index_channel_wechat_on_app_id", unique: true
   end
 
   create_table "channel_whatsapp", force: :cascade do |t|
