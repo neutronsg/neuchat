@@ -63,6 +63,15 @@ class NeuAIAPI extends ApiClient {
       };
     }
 
+    // translate needs both content and conversation_display_id
+    if (type === 'translate') {
+      data = {
+        tone,
+        content,
+        conversation_display_id: conversationId,
+      };
+    }
+
     const url = `${this.url}/hooks/${hookId}/process_event`;
     const payload = {
       event: {
