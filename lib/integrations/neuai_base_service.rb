@@ -87,7 +87,7 @@ class Integrations::NeuaiBaseService
     }
 
     Rails.logger.info("NeuAI API request: #{body}")
-    url = "#{hook.settings['neuai_url']}/prediction/#{hook.settings['agent_id']}"
+    url = "#{hook.settings['neuai_url']}/api/v1/prediction/#{hook.settings['agent_id']}"
     response = HTTParty.post(url, headers: headers, body: body)
     Rails.logger.info("NeuAI API response: #{response.body}")
 
