@@ -13,7 +13,7 @@ import {
   ALLOWED_FILE_TYPES_FOR_INSTAGRAM,
 } from 'shared/constants/messages';
 import VideoCallButton from '../VideoCallButton.vue';
-import AIAssistanceButton from '../AIAssistanceButton.vue';
+// import AIAssistanceButton from '../AIAssistanceButton.vue';
 import NeuAIAssistanceButton from '../NeuAIAssistanceButton.vue';
 import { REPLY_EDITOR_MODES } from './constants';
 import { mapGetters } from 'vuex';
@@ -25,7 +25,7 @@ export default {
     NextButton,
     FileUpload,
     VideoCallButton,
-    AIAssistanceButton,
+    // AIAssistanceButton,
     NeuAIAssistanceButton,
   },
   mixins: [inboxMixin],
@@ -352,13 +352,13 @@ export default {
         v-if="(isAWebWidgetInbox || isAPIInbox) && !isOnPrivateNote"
         :conversation-id="conversationId"
       />
-      <AIAssistanceButton
+      <!-- <AIAssistanceButton
         v-if="!isFetchingAppIntegrations"
         :conversation-id="conversationId"
         :is-private-note="isOnPrivateNote"
         :message="message"
         @replace-text="replaceText"
-      />
+      /> -->
       <NeuAIAssistanceButton
         v-if="!isFetchingAppIntegrations"
         :conversation-id="conversationId"
