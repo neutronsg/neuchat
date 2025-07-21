@@ -37,9 +37,13 @@ class Webhooks::WechatEventsJob < ApplicationJob
     webhook_data = extract_webhook_data(params)
     return unless webhook_data
 
+    # For WeChat Customer Service, we handle regular messages, not subscription events
     if webhook_data['MsgType'] == 'event' || webhook_data['msgtype'] == 'event'
-      process_event_message(channel, webhook_data)
+      Rails.logger.info "WeChat Customer Service received event: #{webhook_data['Event'] || webhook_data['event']}"
+      # Customer service doesn't handle subscription events - these are for Official Accounts
+      return
     else
+      # Handle customer service messages (text, image, etc.)
       Wechat::IncomingMessageService.new(inbox: channel.inbox, params: webhook_data).perform
     end
   end
@@ -61,20 +65,5 @@ class Webhooks::WechatEventsJob < ApplicationJob
   rescue => e
     Rails.logger.error "WeChat webhook data extraction error: #{e.message}"
     nil
-  end
-
-  def process_event_message(channel, webhook_data)
-    event_type = webhook_data['Event'] || webhook_data['event']
-
-    case event_type
-    when 'subscribe'
-      # User subscribed to Official Account
-      Wechat::SubscribeEventService.new(inbox: channel.inbox, params: webhook_data).perform
-    when 'unsubscribe'
-      # User unsubscribed from Official Account
-      Wechat::UnsubscribeEventService.new(inbox: channel.inbox, params: webhook_data).perform
-    else
-      Rails.logger.info "Unhandled WeChat event: #{event_type}"
-    end
   end
 end

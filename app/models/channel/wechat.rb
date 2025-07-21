@@ -17,6 +17,12 @@
 #  index_channel_wechat_on_account_id  (account_id)
 #  index_channel_wechat_on_app_id      (app_id) UNIQUE
 #
+# WeChat Mini Program Channel
+# Supports WeChat Mini Program and Official Account customer service messages
+# Uses WeChat Customer Service API: https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/kf-mgnt/kf-message/sendCustomMessage.html
+# Handles regular messages (text, image, voice, video, location, links, mini program cards)
+# Does NOT handle subscription/unsubscription events (those are for Official Account followers, not customer service)
+#
 class Channel::Wechat < ApplicationRecord
   include Channelable
 
@@ -29,7 +35,7 @@ class Channel::Wechat < ApplicationRecord
   before_save :setup_wechat_webhook
 
   def name
-    'WeChat Customer Service'
+    'WeChat Mini Program'
   end
 
   def wechat_api_url
@@ -37,8 +43,20 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def send_message_on_wechat(message)
-    message_id = send_message(message) if message.outgoing_content.present?
-    message_id = Wechat::SendAttachmentsService.new(message: message).perform if message.attachments.present?
+    message_id = nil
+
+    # Send text content if present
+    if message.outgoing_content.present?
+      message_id = send_message(message)
+    end
+
+    # Send attachments if present
+    if message.attachments.present?
+      attachment_message_id = Wechat::SendAttachmentsService.new(message: message).perform
+      # Use attachment message_id if text wasn't sent, otherwise keep text message_id
+      message_id = attachment_message_id if message_id.nil?
+    end
+
     message_id
   end
 
@@ -88,7 +106,7 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def openid(message)
-    message.conversation[:additional_attributes]['openid']
+    message.conversation.contact_inbox.source_id
   end
 
   def msg_id(message)

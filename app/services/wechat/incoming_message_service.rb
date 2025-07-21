@@ -80,8 +80,10 @@ class Wechat::IncomingMessageService
 
   def conversation_additional_attributes
     {
-      openid: wechat_from_user,
-      wechat_app_id: inbox.channel.app_id
+      wechat_openid: wechat_from_user,
+      wechat_app_id: inbox.channel.app_id,
+      wechat_user_type: determine_user_type,
+      channel_type: 'wechat_customer_service'
     }
   end
 

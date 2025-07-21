@@ -1,5 +1,5 @@
 module Wechat::ParamHelpers
-  # WeChat message types from JSON/XML webhook
+  # WeChat Customer Service message types from JSON/XML webhook
   def wechat_message_content
     msg_type = params[:MsgType] || params[:msgtype] || params['MsgType'] || params['msgtype']
 
@@ -19,6 +19,9 @@ module Wechat::ParamHelpers
       title = params[:Title] || params[:title] || params['Title'] || params['title']
       url = params[:Url] || params[:url] || params['Url'] || params['url']
       "链接: #{title} - #{url}" # Link: in Chinese
+    when 'miniprogrampage'
+      title = params[:Title] || params[:title] || params['Title'] || params['title']
+      "[小程序] #{title}" # [Mini Program] in Chinese
     else
       '[不支持的消息类型]' # [Unsupported message type] in Chinese
     end
@@ -38,7 +41,8 @@ module Wechat::ParamHelpers
     when 'voice'
       {
         media_id: get_param_value(:MediaId, :media_id),
-        format: get_param_value(:Format, :format)
+        format: get_param_value(:Format, :format),
+        recognition: get_param_value(:Recognition, :recognition) # Voice recognition result if available
       }
     when 'video', 'shortvideo'
       {
@@ -59,17 +63,24 @@ module Wechat::ParamHelpers
         description: get_param_value(:Description, :description),
         url: get_param_value(:Url, :url)
       }
+    when 'miniprogrampage'
+      {
+        title: get_param_value(:Title, :title),
+        appid: get_param_value(:AppId, :appid),
+        pagepath: get_param_value(:PagePath, :pagepath),
+        thumb_media_id: get_param_value(:ThumbMediaId, :thumb_media_id)
+      }
     else
       {}
     end
   end
 
   def wechat_from_user
-    get_param_value(:FromUserName, :from_user_name)
+    get_param_value(:FromUserName, :from_user_name, :FromUser, :from_user)
   end
 
   def wechat_to_user
-    get_param_value(:ToUserName, :to_user_name)
+    get_param_value(:ToUserName, :to_user_name, :ToUser, :to_user)
   end
 
   private
