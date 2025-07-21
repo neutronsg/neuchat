@@ -16,17 +16,123 @@ webhooks:
   action: /webhook
   hook_type: account
   allow_multiple_hooks: true
-dashboard_apps:
-  id: dashboard_apps
-  logo: dashboard_apps.png
-  i18n_key: dashboard_apps
+# dashboard_apps:
+#   id: dashboard_apps
+#   logo: dashboard_apps.png
+#   i18n_key: dashboard_apps
+#   hook_type: account
+#   allow_multiple_hooks: true
+# openai:
+#   id: openai
+#   logo: openai.png
+#   i18n_key: openai
+#   action: /openai
+#   hook_type: account
+#   allow_multiple_hooks: false
+#   settings_json_schema:
+#     {
+#       'type': 'object',
+#       'properties':
+#         {
+#           'api_key': { 'type': 'string' },
+#           'label_suggestion': { 'type': 'boolean' },
+#         },
+#       'required': ['api_key'],
+#       'additionalProperties': false,
+#     }
+#   settings_form_schema:
+#     [
+#       {
+#         'label': 'API Key',
+#         'type': 'text',
+#         'name': 'api_key',
+#         'validation': 'required',
+#       },
+#       {
+#         'label': 'Show label suggestions',
+#         'type': 'checkbox',
+#         'name': 'label_suggestion',
+#         'validation': '',
+#       },
+#     ]
+#   visible_properties: ['api_key', 'label_suggestion']
+# linear:
+#   id: linear
+#   logo: linear.png
+#   i18n_key: linear
+#   action: https://linear.app/oauth/authorize
+#   hook_type: account
+#   allow_multiple_hooks: false
+notion:
+  id: notion
+  logo: notion.png
+  i18n_key: notion
   hook_type: account
-  allow_multiple_hooks: true
-openai:
-  id: openai
-  logo: openai.png
-  i18n_key: openai
-  action: /openai
+  allow_multiple_hooks: false
+slack:
+  id: slack
+  logo: slack.png
+  i18n_key: slack
+  action: https://slack.com/oauth/v2/authorize?scope=commands,chat:write,channels:read,channels:manage,channels:join,groups:read,groups:write,im:write,mpim:write,users:read,users:read.email,chat:write.customize,channels:history,groups:history,mpim:history,im:history,files:read,files:write
+  hook_type: account
+  allow_multiple_hooks: false
+# dialogflow:
+#   id: dialogflow
+#   logo: dialogflow.png
+#   i18n_key: dialogflow
+#   action: /dialogflow
+#   hook_type: inbox
+#   allow_multiple_hooks: true
+#   settings_json_schema:
+#     {
+#       'type': 'object',
+#       'properties':
+#         {
+#           'project_id': { 'type': 'string' },
+#           'credentials': { 'type': 'object' },
+#           'region': { 'type': 'string' },
+#         },
+#       'required': ['project_id', 'credentials'],
+#       'additionalProperties': false,
+#     }
+#   settings_form_schema:
+#     [
+#       {
+#         'label': 'Dialogflow Project ID',
+#         'type': 'text',
+#         'name': 'project_id',
+#         'validation': 'required',
+#         'validationName': 'Project Id',
+#       },
+#       {
+#         'label': 'Dialogflow Project Key File',
+#         'type': 'textarea',
+#         'name': 'credentials',
+#         'validation': 'required|JSON',
+#         'validationName': 'Credentials',
+#         'validation-messages':
+#           { 'JSON': 'Invalid JSON', 'required': 'Credentials is required' },
+#       },
+#       {
+#         'label': 'Dialogflow Region',
+#         'type': 'select',
+#         'name': 'region',
+#         'default': 'global',
+#         'options': [
+#           { 'label': 'Global - Default', 'value': 'global' },
+#           { 'label': 'AS-NE1 - Tokyo, Japan', 'value': 'asia-northeast1' },
+#           { 'label': 'AU-SE1 - Sydney, Australia', 'value': 'australia-southeast1' },
+#           { 'label': 'EU-W1 - St. Ghislain, Belgium', 'value': 'europe-west1' },
+#           { 'label': 'EU-W2 - London, England', 'value': 'europe-west2' },
+#         ],
+#       },
+#     ]
+#   visible_properties: ['project_id', 'region']
+google_translate:
+  id: google_translate
+  logo: google-translate.png
+  i18n_key: google_translate
+  action: /google_translate
   hook_type: account
   allow_multiple_hooks: false
   settings_json_schema:
@@ -34,28 +140,150 @@ openai:
       'type': 'object',
       'properties':
         {
-          'api_key': { 'type': 'string' },
-          'label_suggestion': { 'type': 'boolean' },
+          'project_id': { 'type': 'string' },
+          'credentials': { 'type': 'object' },
         },
-      'required': ['api_key'],
+      'required': ['project_id', 'credentials'],
       'additionalProperties': false,
     }
   settings_form_schema:
     [
       {
-        'label': 'API Key',
+        'label': 'Google Cloud Project ID',
         'type': 'text',
-        'name': 'api_key',
+        'name': 'project_id',
         'validation': 'required',
+        'validationName': 'Project Id',
       },
       {
-        'label': 'Show label suggestions',
-        'type': 'checkbox',
-        'name': 'label_suggestion',
-        'validation': '',
+        'label': 'Google Cloud Project Key File',
+        'type': 'textarea',
+        'name': 'credentials',
+        'validation': 'required|JSON',
+        'validationName': 'Credentials',
+        'validation-messages':
+          { 'JSON': 'Invalid JSON', 'required': 'Credentials is required' },
       },
     ]
-  visible_properties: ['api_key', 'label_suggestion']
+  visible_properties: ['project_id']
+# dyte:
+#   id: dyte
+#   logo: dyte.png
+#   i18n_key: dyte
+#   action: /dyte
+#   hook_type: account
+#   allow_multiple_hooks: false
+#   settings_json_schema:
+#     {
+#       'type': 'object',
+#       'properties':
+#         {
+#           'api_key': { 'type': 'string' },
+#           'organization_id': { 'type': 'string' },
+#         },
+#       'required': ['api_key', 'organization_id'],
+#       'additionalProperties': false,
+#     }
+#   settings_form_schema:
+#     [
+#       {
+#         'label': 'Organization ID',
+#         'type': 'text',
+#         'name': 'organization_id',
+#         'validation': 'required',
+#       },
+#       {
+#         'label': 'API Key',
+#         'type': 'text',
+#         'name': 'api_key',
+#         'validation': 'required',
+#       },
+#     ]
+#   visible_properties: ['organization_id']
+
+shopify:
+  id: shopify
+  logo: shopify.png
+  i18n_key: shopify
+  hook_type: account
+  allow_multiple_hooks: false
+
+# leadsquared:
+#   id: leadsquared
+#   feature_flag: crm_integration
+#   logo: leadsquared.png
+#   i18n_key: leadsquared
+#   action: /leadsquared
+#   hook_type: account
+#   allow_multiple_hooks: false
+#   settings_json_schema:
+#     {
+#       'type': 'object',
+#       'properties':
+#         {
+#           'access_key': { 'type': 'string' },
+#           'secret_key': { 'type': 'string' },
+#           'endpoint_url': { 'type': 'string' },
+#           'app_url': { 'type': 'string' },
+#           'timezone': { 'type': 'string' },
+#           'enable_conversation_activity': { 'type': 'boolean' },
+#           'enable_transcript_activity': { 'type': 'boolean' },
+#           'conversation_activity_score': { 'type': 'string' },
+#           'transcript_activity_score': { 'type': 'string' },
+#           'conversation_activity_code': { 'type': 'integer' },
+#           'transcript_activity_code': { 'type': 'integer' },
+#         },
+#       'required': ['access_key', 'secret_key'],
+#       'additionalProperties': false,
+#     }
+#   settings_form_schema:
+#     [
+#       {
+#         'label': 'Access Key',
+#         'type': 'text',
+#         'name': 'access_key',
+#         'validation': 'required',
+#       },
+#       {
+#         'label': 'Secret Key',
+#         'type': 'text',
+#         'name': 'secret_key',
+#         'validation': 'required',
+#       },
+#       {
+#         'label': 'Push Conversation Activity',
+#         'type': 'checkbox',
+#         'name': 'enable_conversation_activity',
+#         'help': 'Enable this option to push an activity when a conversation is created',
+#       },
+#       {
+#         'label': 'Conversation Activity Score',
+#         'type': 'number',
+#         'name': 'conversation_activity_score',
+#         'help': 'Score to assign to the conversation created activity, default is 0',
+#       },
+#       {
+#         'label': 'Push Transcript Activity',
+#         'type': 'checkbox',
+#         'name': 'enable_transcript_activity',
+#         'help': 'Enable this option to push an activity when a transcript is created',
+#       },
+#       {
+#         'label': 'Transcript Activity Score',
+#         'type': 'number',
+#         'name': 'transcript_activity_score',
+#         'help': 'Score to assign to the conversation transcript activity, default is 0',
+#       },
+#     ]
+#   visible_properties:
+#     [
+#       'access_key',
+#       'endpoint_url',
+#       'enable_conversation_activity',
+#       'enable_transcript_activity',
+#       'conversation_activity_score',
+#       'transcript_activity_score',
+#     ]
 neuai:
   id: neuai
   logo: openai.png
@@ -98,231 +326,91 @@ neuai:
       }
     ]
   visible_properties: ['neuai_url', 'api_key', 'agent_id']
-linear:
-  id: linear
-  logo: linear.png
-  i18n_key: linear
-  action: https://linear.app/oauth/authorize
+jsm:
+  id: jsm
+  logo: jira.png
+  i18n_key: jsm
+  action: /jsm
   hook_type: account
   allow_multiple_hooks: false
-notion:
-  id: notion
-  logo: notion.png
-  i18n_key: notion
-  hook_type: account
-  allow_multiple_hooks: false
-slack:
-  id: slack
-  logo: slack.png
-  i18n_key: slack
-  action: https://slack.com/oauth/v2/authorize?scope=commands,chat:write,channels:read,channels:manage,channels:join,groups:read,groups:write,im:write,mpim:write,users:read,users:read.email,chat:write.customize,channels:history,groups:history,mpim:history,im:history,files:read,files:write
-  hook_type: account
-  allow_multiple_hooks: false
-dialogflow:
-  id: dialogflow
-  logo: dialogflow.png
-  i18n_key: dialogflow
-  action: /dialogflow
-  hook_type: inbox
-  allow_multiple_hooks: true
   settings_json_schema:
     {
       'type': 'object',
       'properties':
         {
-          'project_id': { 'type': 'string' },
-          'credentials': { 'type': 'object' },
-          'region': { 'type': 'string' },
+          'domain': { 'type': 'string' },
+          'email': { 'type': 'string' },
+          'api_token': { 'type': 'string' },
+          'project_key': { 'type': 'string' },
+          'issue_type': { 'type': 'string' },
+          'default_priority': { 'type': 'string' },
+          'sync_comments': { 'type': 'boolean' }
         },
-      'required': ['project_id', 'credentials'],
+      'required': ['domain', 'email', 'api_token', 'project_key'],
       'additionalProperties': false,
     }
   settings_form_schema:
     [
       {
-        'label': 'Dialogflow Project ID',
+        'label': 'JSM Domain',
         'type': 'text',
-        'name': 'project_id',
+        'name': 'domain',
         'validation': 'required',
-        'validationName': 'Project Id',
+        'help': 'Your Jira domain (e.g., yourcompany.atlassian.net)',
       },
       {
-        'label': 'Dialogflow Project Key File',
-        'type': 'textarea',
-        'name': 'credentials',
-        'validation': 'required|JSON',
-        'validationName': 'Credentials',
-        'validation-messages':
-          { 'JSON': 'Invalid JSON', 'required': 'Credentials is required' },
+        'label': 'Email',
+        'type': 'email',
+        'name': 'email',
+        'validation': 'required|email',
+        'help': 'Email address for JSM authentication',
       },
       {
-        'label': 'Dialogflow Region',
+        'label': 'API Token',
+        'type': 'password',
+        'name': 'api_token',
+        'validation': 'required',
+        'help': 'Your Jira API token (create from Atlassian Account Settings)',
+      },
+      {
+        'label': 'Project Key',
+        'type': 'text',
+        'name': 'project_key',
+        'validation': 'required',
+        'help': 'JSM project key (e.g., HELP, SUP, IT)',
+      },
+      {
+        'label': 'Default Issue Type',
         'type': 'select',
-        'name': 'region',
-        'default': 'global',
+        'name': 'issue_type',
+        'default': 'Task',
         'options': [
-          { 'label': 'Global - Default', 'value': 'global' },
-          { 'label': 'AS-NE1 - Tokyo, Japan', 'value': 'asia-northeast1' },
-          { 'label': 'AU-SE1 - Sydney, Australia', 'value': 'australia-southeast1' },
-          { 'label': 'EU-W1 - St. Ghislain, Belgium', 'value': 'europe-west1' },
-          { 'label': 'EU-W2 - London, England', 'value': 'europe-west2' },
+          { 'label': 'Task', 'value': 'Task' },
+          { 'label': 'Bug', 'value': 'Bug' },
+          { 'label': 'Story', 'value': 'Story' },
+          { 'label': 'Service Request', 'value': 'Service Request' },
         ],
-      },
-    ]
-  visible_properties: ['project_id', 'region']
-google_translate:
-  id: google_translate
-  logo: google-translate.png
-  i18n_key: google_translate
-  action: /google_translate
-  hook_type: account
-  allow_multiple_hooks: false
-  settings_json_schema:
-    {
-      'type': 'object',
-      'properties':
-        {
-          'project_id': { 'type': 'string' },
-          'credentials': { 'type': 'object' },
-        },
-      'required': ['project_id', 'credentials'],
-      'additionalProperties': false,
-    }
-  settings_form_schema:
-    [
-      {
-        'label': 'Google Cloud Project ID',
-        'type': 'text',
-        'name': 'project_id',
-        'validation': 'required',
-        'validationName': 'Project Id',
+        'help': 'Default issue type for created tickets',
       },
       {
-        'label': 'Google Cloud Project Key File',
-        'type': 'textarea',
-        'name': 'credentials',
-        'validation': 'required|JSON',
-        'validationName': 'Credentials',
-        'validation-messages':
-          { 'JSON': 'Invalid JSON', 'required': 'Credentials is required' },
-      },
-    ]
-  visible_properties: ['project_id']
-dyte:
-  id: dyte
-  logo: dyte.png
-  i18n_key: dyte
-  action: /dyte
-  hook_type: account
-  allow_multiple_hooks: false
-  settings_json_schema:
-    {
-      'type': 'object',
-      'properties':
-        {
-          'api_key': { 'type': 'string' },
-          'organization_id': { 'type': 'string' },
-        },
-      'required': ['api_key', 'organization_id'],
-      'additionalProperties': false,
-    }
-  settings_form_schema:
-    [
-      {
-        'label': 'Organization ID',
-        'type': 'text',
-        'name': 'organization_id',
-        'validation': 'required',
+        'label': 'Default Priority',
+        'type': 'select',
+        'name': 'default_priority',
+        'default': 'Medium',
+        'options': [
+          { 'label': 'Highest', 'value': 'Highest' },
+          { 'label': 'High', 'value': 'High' },
+          { 'label': 'Medium', 'value': 'Medium' },
+          { 'label': 'Low', 'value': 'Low' },
+          { 'label': 'Lowest', 'value': 'Lowest' },
+        ],
+        'help': 'Default priority for created tickets',
       },
       {
-        'label': 'API Key',
-        'type': 'text',
-        'name': 'api_key',
-        'validation': 'required',
-      },
-    ]
-  visible_properties: ['organization_id']
-
-shopify:
-  id: shopify
-  logo: shopify.png
-  i18n_key: shopify
-  hook_type: account
-  allow_multiple_hooks: false
-
-leadsquared:
-  id: leadsquared
-  feature_flag: crm_integration
-  logo: leadsquared.png
-  i18n_key: leadsquared
-  action: /leadsquared
-  hook_type: account
-  allow_multiple_hooks: false
-  settings_json_schema:
-    {
-      'type': 'object',
-      'properties':
-        {
-          'access_key': { 'type': 'string' },
-          'secret_key': { 'type': 'string' },
-          'endpoint_url': { 'type': 'string' },
-          'app_url': { 'type': 'string' },
-          'timezone': { 'type': 'string' },
-          'enable_conversation_activity': { 'type': 'boolean' },
-          'enable_transcript_activity': { 'type': 'boolean' },
-          'conversation_activity_score': { 'type': 'string' },
-          'transcript_activity_score': { 'type': 'string' },
-          'conversation_activity_code': { 'type': 'integer' },
-          'transcript_activity_code': { 'type': 'integer' },
-        },
-      'required': ['access_key', 'secret_key'],
-      'additionalProperties': false,
-    }
-  settings_form_schema:
-    [
-      {
-        'label': 'Access Key',
-        'type': 'text',
-        'name': 'access_key',
-        'validation': 'required',
-      },
-      {
-        'label': 'Secret Key',
-        'type': 'text',
-        'name': 'secret_key',
-        'validation': 'required',
-      },
-      {
-        'label': 'Push Conversation Activity',
+        'label': 'Sync Comments',
         'type': 'checkbox',
-        'name': 'enable_conversation_activity',
-        'help': 'Enable this option to push an activity when a conversation is created',
-      },
-      {
-        'label': 'Conversation Activity Score',
-        'type': 'number',
-        'name': 'conversation_activity_score',
-        'help': 'Score to assign to the conversation created activity, default is 0',
-      },
-      {
-        'label': 'Push Transcript Activity',
-        'type': 'checkbox',
-        'name': 'enable_transcript_activity',
-        'help': 'Enable this option to push an activity when a transcript is created',
-      },
-      {
-        'label': 'Transcript Activity Score',
-        'type': 'number',
-        'name': 'transcript_activity_score',
-        'help': 'Score to assign to the conversation transcript activity, default is 0',
+        'name': 'sync_comments',
+        'help': 'Sync conversation messages as JSM comments',
       },
     ]
-  visible_properties:
-    [
-      'access_key',
-      'endpoint_url',
-      'enable_conversation_activity',
-      'enable_transcript_activity',
-      'conversation_activity_score',
-      'transcript_activity_score',
-    ]
+  visible_properties: ['domain', 'project_key', 'issue_type', 'default_priority', 'sync_comments']
