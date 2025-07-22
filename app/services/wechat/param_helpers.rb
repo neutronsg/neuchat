@@ -5,7 +5,7 @@ module Wechat::ParamHelpers
 
     case msg_type
     when 'text'
-      params[:Content] || params[:content] || params['Content'] || params['content']
+      params[:Content]
     when 'image'
       '[图片]' # [Image] in Chinese
     when 'voice'
@@ -13,14 +13,14 @@ module Wechat::ParamHelpers
     when 'video', 'shortvideo'
       '[视频]' # [Video] in Chinese
     when 'location'
-      label = params[:Label] || params[:label] || params['Label'] || params['label']
+      label = params[:Label] || params[:label]
       "位置: #{label}" # Location: in Chinese
     when 'link'
-      title = params[:Title] || params[:title] || params['Title'] || params['title']
-      url = params[:Url] || params[:url] || params['Url'] || params['url']
+      title = params[:Title] || params[:title]
+      url = params[:Url] || params[:url]
       "链接: #{title} - #{url}" # Link: in Chinese
     when 'miniprogrampage'
-      title = params[:Title] || params[:title] || params['Title'] || params['title']
+      title = params[:Title] || params[:title]
       "[小程序] #{title}" # [Mini Program] in Chinese
     else
       '[不支持的消息类型]' # [Unsupported message type] in Chinese
@@ -28,7 +28,7 @@ module Wechat::ParamHelpers
   end
 
   def wechat_content_attributes
-    msg_type = params[:MsgType] || params[:msgtype] || params['MsgType'] || params['msgtype']
+    msg_type = params[:MsgType]
 
     case msg_type
     when 'text'
@@ -97,24 +97,24 @@ module Wechat::ParamHelpers
   end
 
   def wechat_message_id
-    get_param_value(:MsgId, :msg_id)
+    get_param_value(:MsgId)
   end
 
   def wechat_create_time
-    timestamp = get_param_value(:CreateTime, :create_time)
+    timestamp = get_param_value(:timestamp)
     Time.at(timestamp.to_i) if timestamp
   end
 
   def wechat_msg_type
-    get_param_value(:MsgType, :msgtype)
+    get_param_value(:MsgType)
   end
 
   def wechat_event_type
-    get_param_value(:Event, :event)
+    get_param_value(:Event)
   end
 
   def wechat_event_key
-    get_param_value(:EventKey, :event_key)
+    get_param_value(:EventKey)
   end
 
   # Media file handling

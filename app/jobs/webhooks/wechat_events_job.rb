@@ -34,12 +34,12 @@ class Webhooks::WechatEventsJob < ApplicationJob
 
   def process_event_params(channel, params)
     # Handle both JSON and XML webhook data formats
-    webhook_data = extract_webhook_data(params)
+    webhook_data = params
     return unless webhook_data
 
     # For WeChat Customer Service, we handle regular messages, not subscription events
-    if webhook_data['MsgType'] == 'event' || webhook_data['msgtype'] == 'event'
-      Rails.logger.info "WeChat Customer Service received event: #{webhook_data['Event'] || webhook_data['event']}"
+    if webhook_data[:MsgType] == 'event'
+      Rails.logger.info "WeChat Customer Service received event: #{webhook_data[:Event] || webhook_data[:event]}"
       # Customer service doesn't handle subscription events - these are for Official Accounts
       return
     else
@@ -48,22 +48,4 @@ class Webhooks::WechatEventsJob < ApplicationJob
     end
   end
 
-  def extract_webhook_data(params)
-    # Try JSON format first (new WeChat API)
-    if params.key?('msgtype') || params.key?('MsgType')
-      return params
-    end
-
-    # Fallback to XML format (legacy)
-    if params[:xml].present?
-      xml_data = Hash.from_xml(params[:xml])['xml']
-      return xml_data if xml_data
-    end
-
-    # Direct params (already parsed)
-    params.except(:token, :controller, :action)
-  rescue => e
-    Rails.logger.error "WeChat webhook data extraction error: #{e.message}"
-    nil
-  end
 end

@@ -5,13 +5,7 @@ class Webhooks::WechatController < ActionController::API
     # Handle WeChat webhook events (now supporting JSON format)
     webhook_params = parse_webhook_data
     Webhooks::WechatEventsJob.perform_later(webhook_params.merge(token: params[:token]))
-
-    # Return appropriate response format
-    if request.content_type&.include?('application/json')
-      render json: { status: 'success' }
-    else
-      render xml: 'success'
-    end
+    head :ok
   end
 
   def verify
@@ -27,20 +21,6 @@ class Webhooks::WechatController < ActionController::API
   private
 
   def parse_webhook_data
-    if request.content_type&.include?('application/json')
-      # Handle JSON format (new WeChat API)
-      JSON.parse(request.body.read).with_indifferent_access
-    else
-      # Handle XML format (legacy WeChat API)
-      xml_body = request.body.read
-      if xml_body.present?
-        Hash.from_xml(xml_body)['xml']&.with_indifferent_access || {}
-      else
-        params.to_unsafe_hash
-      end
-    end
-  rescue JSON::ParserError, REXML::ParseException => e
-    Rails.logger.error "WeChat webhook parse error: #{e.message}"
     params.to_unsafe_hash
   end
 
