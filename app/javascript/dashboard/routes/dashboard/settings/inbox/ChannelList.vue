@@ -26,6 +26,7 @@ export default {
         { key: 'website', name: 'Website' },
         { key: 'facebook', name: 'Messenger' },
         { key: 'whatsapp', name: 'WhatsApp' },
+        { key: 'wechat', name: 'WeChat' },
         { key: 'sms', name: 'SMS' },
         { key: 'email', name: 'Email' },
         {

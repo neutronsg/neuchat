@@ -355,6 +355,44 @@
           "ERROR_MESSAGE": "We were not able to save the api channel"
         }
       },
+      "WECHAT_CHANNEL": {
+        "TITLE": "WeChat Channel",
+        "DESC": "Integrate with WeChat Mini Program and start supporting your customers.",
+        "CHANNEL_NAME": {
+          "LABEL": "Channel Name",
+          "PLACEHOLDER": "Please enter a channel name",
+          "ERROR": "This field is required"
+        },
+        "APP_NAME": {
+          "LABEL": "Mini Program Name",
+          "PLACEHOLDER": "Enter your Mini Program name",
+          "ERROR": "This field is required"
+        },
+        "APP_ID": {
+          "LABEL": "Mini Program ID",
+          "PLACEHOLDER": "Enter your Mini Program ID",
+          "ERROR": "This field is required"
+        },
+        "APP_SECRET": {
+          "LABEL": "Mini Program Secret",
+          "PLACEHOLDER": "Enter your Mini Program Secret",
+          "ERROR": "This field is required"
+        },
+        "ENCODING_AES_KEY": {
+          "LABEL": "Encoding AES Key",
+          "PLACEHOLDER": "Enter your Encoding AES Key",
+          "ERROR": "This field is required"
+        },
+        "TOKEN": {
+          "LABEL": "Verify Token",
+          "PLACEHOLDER": "Enter your Verify Token",
+          "ERROR": "This field is required"
+        },
+        "SUBMIT_BUTTON": "Create WeChat Channel",
+        "API": {
+          "ERROR_MESSAGE": "We were not able to save the wechat channel"
+        }
+      },
       "EMAIL_CHANNEL": {
         "TITLE": "Email Channel",
         "DESC": "Integrate your email inbox.",
@@ -859,7 +897,8 @@
       "LINE": "Line",
       "API": "API Channel",
       "INSTAGRAM": "Instagram",
-      "VOICE": "Voice"
+      "VOICE": "Voice",
+      "WECHAT": "WeChat Mini Program"
     }
   }
 }

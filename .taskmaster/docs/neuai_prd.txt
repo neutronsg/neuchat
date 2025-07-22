@@ -10,6 +10,7 @@ NeuAI 集成 - 产品需求文档（PRD）
 - 不修改任何现有的 OpenAI 集成相关代码
 - 完整复制 OpenAI 的所有代码（前后端），在此基础上创建 NeuAI 集成
 - 仅修改配置项和后端调用的 API，其余逻辑、结构和交互保持完全一致
+- UI 界面 NeuAI 与 OpenAI 保持一致，但 NeuAI 的代码和入口都是完全一套新的，比如：同时开启的话，按钮是2个，点击后弹出的 Modal 实际也是2个，只是他们现阶段都长得一样
 
 ========================
 项目目标
@@ -20,6 +21,7 @@ NeuAI 集成 - 产品需求文档（PRD）
 3. 配置支持 NeuAI 所需字段
 4. 用户在界面上无法区分是使用 OpenAI 还是 NeuAI，除了配置页面
 5. OpenAI 和 NeuAI 集成可同时存在，用户可在设置中自由选择使用哪个
+6. 方便后续pull上游代码时，新增的 NeuAI 尽量不会产生冲突
 
 ========================
 实施计划
@@ -38,7 +40,7 @@ NeuAI 集成 - 产品需求文档（PRD）
 
 第三步：修改配置项和 API 调用
 - 替换调用为 NeuAI API 格式：
-  POST https://<api_url>/api/v1/prediction/{agent_id} HTTP/1.1
+  POST https://<neuai_url>/api/v1/prediction/{agent_id} HTTP/1.1
    Authorization: Bearer <api_key>
    Content-Type: application/json
    Accept: */*
@@ -82,7 +84,7 @@ NeuAI 集成 - 产品需求文档（PRD）
    }
    }
 
-- NeuAI的配置项为：agent_url(https://<api_url>/api/v1/prediction/{agent_id}), api_key
+- NeuAI的配置项为：neuai_url, agent_id, api_key
 
 ========================
 UI/UX 要求
@@ -107,8 +109,8 @@ UI/UX 要求
 关键开发原则总结
 ========================
 
-✅ 不修改任何 OpenAI 代码  
-✅ 完整复制代码并命名为 neuai  
-✅ 仅修改配置项和 API 调用逻辑  
-✅ 保持功能和界面完全一致  
+✅ 不修改任何 OpenAI 代码
+✅ 完整复制代码并命名为 neuai
+✅ 仅修改配置项和 API 调用逻辑
+✅ 保持功能和界面完全一致
 ✅ 支持 OpenAI 与 NeuAI 共存运行

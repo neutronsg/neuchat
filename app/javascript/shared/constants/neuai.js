@@ -1,4 +1,4 @@
-export const OPEN_AI_OPTIONS = {
+export const NEUAI_OPTIONS = {
   IMPROVE_WRITING: 'improve_writing',
   FIX_SPELLING_GRAMMAR: 'fix_spelling_grammar',
   SHORTEN: 'shorten',

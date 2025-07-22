@@ -13,14 +13,21 @@ import {
   ALLOWED_FILE_TYPES_FOR_INSTAGRAM,
 } from 'shared/constants/messages';
 import VideoCallButton from '../VideoCallButton.vue';
-import AIAssistanceButton from '../AIAssistanceButton.vue';
+// import AIAssistanceButton from '../AIAssistanceButton.vue';
+import NeuAIAssistanceButton from '../NeuAIAssistanceButton.vue';
 import { REPLY_EDITOR_MODES } from './constants';
 import { mapGetters } from 'vuex';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
 export default {
   name: 'ReplyBottomPanel',
-  components: { NextButton, FileUpload, VideoCallButton, AIAssistanceButton },
+  components: {
+    NextButton,
+    FileUpload,
+    VideoCallButton,
+    // AIAssistanceButton,
+    NeuAIAssistanceButton,
+  },
   mixins: [inboxMixin],
   props: {
     mode: {
@@ -345,7 +352,14 @@ export default {
         v-if="(isAWebWidgetInbox || isAPIInbox) && !isOnPrivateNote"
         :conversation-id="conversationId"
       />
-      <AIAssistanceButton
+      <!-- <AIAssistanceButton
+        v-if="!isFetchingAppIntegrations"
+        :conversation-id="conversationId"
+        :is-private-note="isOnPrivateNote"
+        :message="message"
+        @replace-text="replaceText"
+      /> -->
+      <NeuAIAssistanceButton
         v-if="!isFetchingAppIntegrations"
         :conversation-id="conversationId"
         :is-private-note="isOnPrivateNote"
@@ -355,7 +369,7 @@ export default {
       <transition name="modal-fade">
         <div
           v-show="uploadRef && uploadRef.dropActive"
-          class="fixed top-0 bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-center w-full h-full gap-2 text-n-slate-12 bg-modal-backdrop-light dark:bg-modal-backdrop-dark"
+          class="flex fixed top-0 right-0 bottom-0 left-0 z-20 flex-col gap-2 justify-center items-center w-full h-full text-n-slate-12 bg-modal-backdrop-light dark:bg-modal-backdrop-dark"
         >
           <fluent-icon icon="cloud-backup" size="40" />
           <h4 class="text-2xl break-words text-n-slate-12">

@@ -5,7 +5,9 @@ import { useRoute } from 'vue-router';
 import { emitter } from 'shared/helpers/mitt';
 import { useConversationLabels } from 'dashboard/composables/useConversationLabels';
 import { useAI } from 'dashboard/composables/useAI';
+import { useNeuAI } from 'dashboard/composables/useNeuAI';
 import { useAgentsList } from 'dashboard/composables/useAgentsList';
+import { createNeuAIAssistActions } from './neuaiCommands';
 import { CMD_AI_ASSIST } from 'dashboard/helper/commandbar/events';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 
@@ -88,11 +90,6 @@ const createNonDraftMessageAIAssistActions = (t, replyMode) => {
         key: 'reply_suggestion',
         icon: ICON_AI_ASSIST,
       },
-      {
-        label: t('INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.SUMMARIZE'),
-        key: 'summarize',
-        icon: ICON_AI_SUMMARY,
-      },
     ];
   }
   return [
@@ -141,11 +138,6 @@ const createDraftMessageAIAssistActions = t => {
       key: 'simplify',
       icon: ICON_AI_ASSIST,
     },
-    {
-      label: t('INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.TRANSLATE'),
-      key: 'translate',
-      icon: ICON_AI_ASSIST,
-    },
   ];
 };
 
@@ -162,6 +154,7 @@ export function useConversationHotKeys() {
   } = useConversationLabels();
 
   const { isAIIntegrationEnabled } = useAI();
+  const { isNeuAIIntegrationEnabled } = useNeuAI();
   const { agentsList } = useAgentsList();
 
   const currentChat = useMapGetter('getSelectedChat');
@@ -353,25 +346,9 @@ export function useConversationHotKeys() {
   });
 
   const AIAssistActions = computed(() => {
-    let aiOptions = [];
-
-    if (draftMessage.value) {
-      // 有草稿文字时，显示针对文字内容的操作
-      aiOptions = createDraftMessageAIAssistActions(t);
-
-      // 在 Reply 模式下，额外添加 summarize 功能（不针对文字内容，而是针对对话）
-      if (replyMode.value === REPLY_EDITOR_MODES.REPLY) {
-        aiOptions.push({
-          label: t('INTEGRATION_SETTINGS.OPEN_AI.OPTIONS.SUMMARIZE'),
-          key: 'summarize',
-          icon: ICON_AI_SUMMARY,
-        });
-      }
-    } else {
-      // 没有草稿文字时，显示针对对话的操作
-      aiOptions = createNonDraftMessageAIAssistActions(t, replyMode.value);
-    }
-
+    const aiOptions = draftMessage.value
+      ? createDraftMessageAIAssistActions(t)
+      : createNonDraftMessageAIAssistActions(t, replyMode.value);
     const options = aiOptions.map(item => ({
       id: `ai-assist-${item.key}`,
       title: item.label,
@@ -393,6 +370,15 @@ export function useConversationHotKeys() {
     ];
   });
 
+  const NeuAIAssistActions = computed(() => {
+    return createNeuAIAssistActions({
+      t,
+      draftMessage,
+      replyMode,
+      emitter,
+    });
+  });
+
   const isConversationOrInboxRoute = computed(() => {
     return isAConversationRoute(route.name) || isAInboxViewRoute(route.name);
   });
@@ -412,10 +398,14 @@ export function useConversationHotKeys() {
       ...labelActions.value,
       ...assignPriorityActions.value,
     ];
+    let aiAssistActions = [];
     if (isAIIntegrationEnabled.value) {
-      return [...defaultConversationHotKeys, ...AIAssistActions.value];
+      aiAssistActions = [...aiAssistActions, ...AIAssistActions.value];
     }
-    return defaultConversationHotKeys;
+    if (isNeuAIIntegrationEnabled.value) {
+      aiAssistActions = [...aiAssistActions, ...NeuAIAssistActions.value];
+    }
+    return [...defaultConversationHotKeys, ...aiAssistActions];
   });
 
   const conversationHotKeys = computed(() => {

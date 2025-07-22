@@ -190,13 +190,15 @@
       "OPTIONS": {
         "REPLY_SUGGESTION": "Reply Suggestion",
         "SUMMARIZE": "Summarize",
+        "SUMMARIZE_READONLY": "Summarize",
         "REPHRASE": "Improve Writing",
         "FIX_SPELLING_GRAMMAR": "Fix Spelling and Grammar",
         "SHORTEN": "Shorten",
         "EXPAND": "Expand",
         "MAKE_FRIENDLY": "Change message tone to friendly",
         "MAKE_FORMAL": "Use formal tone",
-        "SIMPLIFY": "Simplify"
+        "SIMPLIFY": "Simplify",
+        "TRANSLATE": "Translate"
       },
       "ASSISTANCE_MODAL": {
         "DRAFT_TITLE": "Draft content",
@@ -204,7 +206,8 @@
         "AI_WRITING": "AI is writing",
         "BUTTONS": {
           "APPLY": "Use this suggestion",
-          "CANCEL": "Cancel"
+          "CANCEL": "Cancel",
+          "CONFIRM": "Confirm"
         }
       },
       "CTA_MODAL": {

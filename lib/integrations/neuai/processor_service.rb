@@ -102,20 +102,17 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def format_message_in_array(message)
-    # FlowiseAI history format: apiMessage for agent, userMessage for customer
     { role: (message.incoming? ? 'userMessage' : 'apiMessage'), content: message.content }
   end
 
   def format_message_in_string(message)
     sender_type = message.incoming? ? 'Customer' : 'Agent'
-    "#{sender_type} #{message.sender&.name} : #{message.content}\n"
+    "#{sender_type}: #{message.content}\n"
   end
 
   def summarize_body
-    # FlowiseAI API format - agent已经包含prompt，传递对话历史到history数组
     {
-      question: '',
-      history: conversation_messages(in_array_format: true),
+      question: conversation_messages(in_array_format: false),
       streaming: false,
       overrideConfig: {
         vars: {
@@ -126,10 +123,8 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def reply_suggestion_body
-    # FlowiseAI API format - agent已经包含prompt，传递对话历史到history数组
     {
-      question: '',
-      history: conversation_messages(in_array_format: true),
+      question: conversation_messages(in_array_format: false),
       streaming: false,
       overrideConfig: {
         vars: {
@@ -140,10 +135,8 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def label_suggestion_body
-    # FlowiseAI API format - agent已经包含prompt，传递对话历史到history数组
     {
-      question: '',
-      history: conversation_messages(in_array_format: true),
+      question: conversation_messages(in_array_format: false),
       streaming: false,
       overrideConfig: {
         vars: {
@@ -154,10 +147,10 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
   end
 
   def translate_body
-    # FlowiseAI API format for translation - 当前消息作为question，历史消息放在history数组
+    str = "Chat History:\n #{conversation_messages(in_array_format: false)}"
+    str += "\nProposed Agent Response:\n #{event['data']['content']}"
     {
-      question: event['data']['content'],
-      history: conversation_messages(in_array_format: true),
+      question: str,
       streaming: false,
       overrideConfig: {
         vars: {

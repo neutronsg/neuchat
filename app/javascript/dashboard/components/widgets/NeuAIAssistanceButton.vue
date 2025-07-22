@@ -4,26 +4,27 @@ import { mapGetters } from 'vuex';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
-import { useAI } from 'dashboard/composables/useAI';
-import AICTAModal from './AICTAModal.vue';
-import AIAssistanceModal from './AIAssistanceModal.vue';
-import { CMD_AI_ASSIST } from 'dashboard/helper/commandbar/events';
-import AIAssistanceCTAButton from './AIAssistanceCTAButton.vue';
+import { useNeuAI } from 'dashboard/composables/useNeuAI';
+import NeuAICTAModal from './NeuAICTAModal.vue';
+import NeuAIAssistanceModal from './NeuAIAssistanceModal.vue';
+import { CMD_NEUAI_ASSIST } from 'dashboard/helper/commandbar/events';
+import NeuAIAssistanceCTAButton from './NeuAIAssistanceCTAButton.vue';
 import { emitter } from 'shared/helpers/mitt';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
 export default {
   components: {
     NextButton,
-    AIAssistanceModal,
-    AICTAModal,
-    AIAssistanceCTAButton,
+    NeuAIAssistanceModal,
+    NeuAICTAModal,
+    NeuAIAssistanceCTAButton,
   },
   emits: ['replaceText'],
   setup(props, { emit }) {
     const { uiSettings, updateUISettings } = useUISettings();
 
-    const { isAIIntegrationEnabled, draftMessage, recordAnalytics } = useAI();
+    const { isNeuAIIntegrationEnabled, draftMessage, recordAnalytics } =
+      useNeuAI();
 
     const { isAdmin } = useAdmin();
 
@@ -52,7 +53,7 @@ export default {
       initialMessage,
       initializeMessage,
       recordAnalytics,
-      isAIIntegrationEnabled,
+      isNeuAIIntegrationEnabled,
       draftMessage,
     };
   },
@@ -72,19 +73,19 @@ export default {
     shouldShowAIAssistCTAButtonForAdmin() {
       return (
         this.isAdmin &&
-        !this.isAIIntegrationEnabled &&
+        !this.isNeuAIIntegrationEnabled &&
         !this.isAICTAModalDismissed &&
         this.isAChatwootInstance
       );
     },
     // Display a AI CTA button for agents and other admins who have not yet opened the AI assistance modal.
     shouldShowAIAssistCTAButton() {
-      return this.isAIIntegrationEnabled && !this.isAICTAModalDismissed;
+      return this.isNeuAIIntegrationEnabled && !this.isAICTAModalDismissed;
     },
   },
 
   mounted() {
-    emitter.on(CMD_AI_ASSIST, this.onAIAssist);
+    emitter.on(CMD_NEUAI_ASSIST, this.onAIAssist);
     this.initializeMessage(this.draftMessage);
   },
 
@@ -104,7 +105,7 @@ export default {
       }
       this.initializeMessage(this.draftMessage);
       const ninja = document.querySelector('ninja-keys');
-      ninja.open({ parent: 'ai_assist' });
+      ninja.open({ parent: 'neuai_assist' });
     },
     hideAICtaModal() {
       this.showAICtaModal = false;
@@ -125,14 +126,14 @@ export default {
 
 <template>
   <div>
-    <div v-if="isAIIntegrationEnabled" class="relative">
-      <AIAssistanceCTAButton
+    <div v-if="isNeuAIIntegrationEnabled" class="relative">
+      <NeuAIAssistanceCTAButton
         v-if="shouldShowAIAssistCTAButton"
         @open="openAIAssist"
       />
       <NextButton
         v-else
-        v-tooltip.top-end="$t('INTEGRATION_SETTINGS.OPEN_AI.AI_ASSIST')"
+        v-tooltip.top-end="$t('INTEGRATION_SETTINGS.NEUAI.AI_ASSIST')"
         icon="i-ph-magic-wand"
         slate
         faded
@@ -143,7 +144,7 @@ export default {
         v-model:show="showAIAssistanceModal"
         :on-close="hideAIAssistanceModal"
       >
-        <AIAssistanceModal
+        <NeuAIAssistanceModal
           :ai-option="aiOption"
           @apply-text="insertText"
           @close="hideAIAssistanceModal"
@@ -151,9 +152,9 @@ export default {
       </woot-modal>
     </div>
     <div v-else-if="shouldShowAIAssistCTAButtonForAdmin" class="relative">
-      <AIAssistanceCTAButton @click="openAICta" />
+      <NeuAIAssistanceCTAButton @click="openAICta" />
       <woot-modal v-model:show="showAICtaModal" :on-close="hideAICtaModal">
-        <AICTAModal @close="hideAICtaModal" />
+        <NeuAICTAModal @close="hideAICtaModal" />
       </woot-modal>
     </div>
   </div>

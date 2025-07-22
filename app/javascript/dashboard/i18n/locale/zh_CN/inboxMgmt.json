@@ -326,6 +326,44 @@
           "ERROR_MESSAGE": "我们无法保存 api 频道"
         }
       },
+      "WECHAT_CHANNEL": {
+        "TITLE": "微信频道",
+        "DESC": "与微信小程序集成，开始为您的客户提供支持",
+        "CHANNEL_NAME": {
+          "LABEL": "频道名称",
+          "PLACEHOLDER": "请输入频道名称",
+          "ERROR": "此字段是必填项"
+        },
+        "APP_NAME": {
+          "LABEL": "小程序名称",
+          "PLACEHOLDER": "请输入您的小程序名称",
+          "ERROR": "此字段是必填项"
+        },
+        "APP_ID": {
+          "LABEL": "小程序 ID",
+          "PLACEHOLDER": "请输入您的小程序 ID",
+          "ERROR": "此字段是必填项"
+        },
+        "APP_SECRET": {
+          "LABEL": "小程序密钥",
+          "PLACEHOLDER": "请输入您的小程序密钥",
+          "ERROR": "此字段是必填项"
+        },
+        "ENCODING_AES_KEY": {
+          "LABEL": "消息加解密密钥",
+          "PLACEHOLDER": "请输入您的消息加解密密钥",
+          "ERROR": "此字段是必填项"
+        },
+        "TOKEN": {
+          "LABEL": "验证令牌",
+          "PLACEHOLDER": "请输入您的验证令牌",
+          "ERROR": "此字段是必填项"
+        },
+        "SUBMIT_BUTTON": "创建微信频道",
+        "API": {
+          "ERROR_MESSAGE": "我们无法保存微信频道"
+        }
+      },
       "EMAIL_CHANNEL": {
         "TITLE": "电子邮件频道",
         "DESC": "集成您的电子邮件收件箱。",
