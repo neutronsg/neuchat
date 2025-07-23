@@ -53,18 +53,17 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def get_wechat_profile_image(openid)
-    # Get user profile image from WeChat
-    access_token = get_access_token
-    response = HTTParty.get("#{wechat_api_url}/user/info",
-                            query: {
-                              access_token: access_token,
-                              openid: openid,
-                              lang: 'zh_CN'
-                            })
-    return nil unless response.success?
+    # Note: As of December 27, 2021, WeChat API no longer provides avatar/nickname information
+    # This method is kept for backward compatibility but will return nil
+    Rails.logger.info "WeChat no longer provides user avatar/nickname information (since Dec 2021)"
+    nil
+  end
 
-    user_info = response.parsed_response
-    (user_info['headimgurl'].presence)
+  def get_wechat_user_info(openid)
+    # Note: As of December 27, 2021, WeChat API no longer provides avatar/nickname information
+    # This method is kept for backward compatibility but will return nil
+    Rails.logger.info "WeChat no longer provides user avatar/nickname information (since Dec 2021)"
+    nil
   end
 
   def get_access_token

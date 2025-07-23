@@ -119,7 +119,8 @@ module Wechat::ParamHelpers
 
   # Media file handling
   def has_media_file?
-    %w[image voice video shortvideo].include?(wechat_msg_type)
+    %w[image voice video shortvideo].include?(wechat_msg_type) &&
+    (media_file_url.present? || media_id.present?)
   end
 
   def media_file_url
@@ -156,8 +157,23 @@ module Wechat::ParamHelpers
 
   # Contact info
   def contact_name
-    # WeChat doesn't provide real name in webhook, use OpenID as identifier
-    "WeChat User"
+    # WeChat no longer provides nicknames (since Dec 2021)
+    # Create meaningful identifier using OpenID and user type
+    user_type = determine_user_type_for_name
+    # Use first 4 and last 4 characters of OpenID for better identification
+    short_id = "#{contact_identifier[0..3]}...#{contact_identifier[-4..-1]}"
+
+    "#{user_type} (#{short_id})"
+  end
+
+  def determine_user_type_for_name
+    if contact_identifier.start_with?('o')
+      'WeChat User'  # Official Account user
+    elsif contact_identifier.start_with?('w')
+      'Mini Program User'  # Mini Program user
+    else
+      'WeChat User'  # Default
+    end
   end
 
   def contact_identifier
