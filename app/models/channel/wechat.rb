@@ -68,7 +68,6 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def get_access_token
-    return '1234567890'
     # WeChat access token with 2-hour expiry
     Rails.cache.fetch("wechat_access_token_#{app_id}", expires_in: 110.minutes) do
       response = HTTParty.get("#{wechat_api_url}/token",
