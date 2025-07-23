@@ -5,7 +5,9 @@ module Wechat::ParamHelpers
 
     case msg_type
     when 'text'
-      params[:Content]
+      raw_content = params[:Content]
+      # Convert WeChat emoji codes to Unicode emojis for better readability
+      Wechat::EmojiConverter.convert_with_fallback(raw_content)
     when 'image'
       '[图片]' # [Image] in Chinese
     when 'voice'
