@@ -22,6 +22,7 @@ class Channel::Wechat < ApplicationRecord
 
   self.table_name = 'channel_wechat'
   EDITABLE_ATTRS = [:app_id, :app_secret, :token, :encoding_aes_key].freeze
+  MAX_RETRY_ATTEMPTS = 2
 
   before_validation :ensure_valid_app_credentials, on: :create
   validates :app_id, :app_secret, :token, presence: true
@@ -129,17 +130,31 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def send_message(message)
-    access_token = get_access_token
-    return nil unless access_token
+    attempt = 0
 
-    response = message_request(
-      access_token,
-      openid(message),
-      message.outgoing_content
-    )
+    loop do
+      attempt += 1
+      access_token = get_access_token
+      return nil unless access_token
 
-    process_error(message, response)
-    response.parsed_response['msgid'] if response.success?
+      response = message_request(
+        access_token,
+        openid(message),
+        message.outgoing_content
+      )
+
+      if response.success?
+        return response.parsed_response['msgid']
+      elsif attempt < MAX_RETRY_ATTEMPTS
+        # Delete access token and retry
+        Rails.cache.delete("wechat_access_token_#{app_id}")
+        Rails.logger.info "WeChat message send failed, retrying (attempt #{attempt + 1}/#{MAX_RETRY_ATTEMPTS})"
+      else
+        # Max retries reached, process error and return
+        process_error(message, response)
+        return nil
+      end
+    end
   end
 
   def message_request(access_token, to_user, content)
