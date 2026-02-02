@@ -26,6 +26,53 @@ import vue from '@vitejs/plugin-vue';
 const isLibraryMode = process.env.BUILD_MODE === 'library';
 const isTestMode = process.env.TEST === 'true';
 
+// Remote API proxy configuration (bypasses CORS)
+// Usage: API_PROXY_TARGET=https://neuchat.neutron.sg pnpm dev:remote
+// Then access http://localhost:3036 instead of localhost:3000
+const apiProxyTarget = process.env.API_PROXY_TARGET;
+const buildProxyConfig = () => {
+  if (!apiProxyTarget) return undefined;
+
+  return {
+    // API requests → remote backend
+    '/api': {
+      target: apiProxyTarget,
+      changeOrigin: true,
+      secure: true,
+    },
+    // WebSocket → remote backend
+    '/cable': {
+      target: apiProxyTarget.replace(/^https?/, 'wss'),
+      ws: true,
+      changeOrigin: true,
+    },
+    // Rails routes → remote backend
+    '/rails': {
+      target: apiProxyTarget,
+      changeOrigin: true,
+      secure: true,
+    },
+    // Auth routes → remote backend
+    '/auth': {
+      target: apiProxyTarget,
+      changeOrigin: true,
+      secure: true,
+    },
+    // All other requests → local Rails (for HTML rendering)
+    '/': {
+      target: 'http://localhost:3000',
+      changeOrigin: true,
+      bypass: (req) => {
+        // Let Vite handle its own assets
+        if (req.url?.startsWith('/vite-dev/') || req.url?.startsWith('/@')) {
+          return req.url;
+        }
+        return null;
+      },
+    },
+  };
+};
+
 const vueOptions = {
   template: {
     compilerOptions: {
@@ -44,6 +91,9 @@ if (isLibraryMode) {
 
 export default defineConfig({
   plugins: plugins,
+  server: {
+    proxy: buildProxyConfig(),
+  },
   build: {
     rollupOptions: {
       output: {
