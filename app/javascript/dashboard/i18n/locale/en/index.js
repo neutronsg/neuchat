@@ -23,6 +23,7 @@ import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import integrationApps from './integrationApps.json';
+import knowledgeBase from './knowledgeBase.json';
 import integrations from './integrations.json';
 import labelsMgmt from './labelsMgmt.json';
 import login from './login.json';
@@ -67,6 +68,7 @@ export default {
   ...inboxMgmt,
   ...integrationApps,
   ...integrations,
+  ...knowledgeBase,
   ...labelsMgmt,
   ...login,
   ...macros,

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_04_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -905,6 +905,49 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
     t.jsonb "settings", default: {}
   end
 
+  create_table "kbase_documents", force: :cascade do |t|
+    t.bigint "knowledge_base_id", null: false
+    t.string "neuai_document_id", null: false
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.index ["created_by_id"], name: "index_kbase_documents_on_created_by_id"
+    t.index ["knowledge_base_id", "neuai_document_id"], name: "index_kbase_documents_on_kb_and_neuai_doc", unique: true
+    t.index ["knowledge_base_id"], name: "index_kbase_documents_on_knowledge_base_id"
+    t.index ["neuai_document_id"], name: "index_kbase_documents_on_neuai_document_id"
+    t.index ["updated_by_id"], name: "index_kbase_documents_on_updated_by_id"
+  end
+
+  create_table "kbase_knowledge_bases", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.string "neuai_dataset_id"
+    t.string "qa_document_id"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "name"], name: "index_kbase_knowledge_bases_on_account_id_and_name", unique: true
+    t.index ["account_id"], name: "index_kbase_knowledge_bases_on_account_id"
+    t.index ["neuai_dataset_id"], name: "index_kbase_knowledge_bases_on_neuai_dataset_id"
+  end
+
+  create_table "kbase_qa_pairs", force: :cascade do |t|
+    t.bigint "knowledge_base_id", null: false
+    t.text "question", null: false
+    t.text "answer", null: false
+    t.integer "position", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.index ["created_by_id"], name: "index_kbase_qa_pairs_on_created_by_id"
+    t.index ["knowledge_base_id", "position"], name: "index_kbase_qa_pairs_on_knowledge_base_id_and_position"
+    t.index ["knowledge_base_id"], name: "index_kbase_qa_pairs_on_knowledge_base_id"
+    t.index ["updated_by_id"], name: "index_kbase_qa_pairs_on_updated_by_id"
+  end
+
   create_table "labels", force: :cascade do |t|
     t.string "title"
     t.text "description"
@@ -1272,6 +1315,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "kbase_documents", "kbase_knowledge_bases", column: "knowledge_base_id"
+  add_foreign_key "kbase_documents", "users", column: "created_by_id"
+  add_foreign_key "kbase_documents", "users", column: "updated_by_id"
+  add_foreign_key "kbase_knowledge_bases", "accounts"
+  add_foreign_key "kbase_qa_pairs", "kbase_knowledge_bases", column: "knowledge_base_id"
+  add_foreign_key "kbase_qa_pairs", "users", column: "created_by_id"
+  add_foreign_key "kbase_qa_pairs", "users", column: "updated_by_id"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

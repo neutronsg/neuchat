@@ -83,6 +83,14 @@ Rails.application.routes.draw do
             end
           end
           resource :saml_settings, only: [:show, :create, :update, :destroy]
+          resources :knowledge_bases, only: [:index, :show] do
+            resources :documents, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/documents'
+            resources :qa_pairs, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/qa_pairs' do
+              collection do
+                post :sync
+              end
+            end
+          end
           resources :agent_bots, only: [:index, :create, :show, :update, :destroy] do
             delete :avatar, on: :member
             post :reset_access_token, on: :member
@@ -625,6 +633,11 @@ Rails.application.routes.draw do
       resources :installation_configs, only: [:index, :new, :create, :show, :edit, :update]
       resources :agent_bots, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
         delete :avatar, on: :member, action: :destroy_avatar
+      end
+      resources :knowledge_bases, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
+        collection do
+          post :check_status
+        end
       end
       resources :platform_apps, only: [:index, :new, :create, :show, :edit, :update, :destroy]
       resource :instance_status, only: [:show]
