@@ -95,6 +95,14 @@ yarn-debug.log*
 .claude/settings.local.json
 .cursor
 
+# Histoire deployment
+.netlify
+.histoire
+.pnpm-store/*
+local/
+
+.worktrees
+
 # Logs
 logs
 npm-debug.log*
@@ -117,3 +125,4 @@ node_modules/
 # Docker Compose
 .pnpm-store/
 .tool-versions
+refs/dify
