@@ -155,6 +155,11 @@ class Kbase::NeuaiClient
       "#{@base_url}#{path}",
       headers: { 'Authorization' => "Bearer #{@api_key}" },
       multipart: true,
+      # HTTParty will use streaming multipart body by default for file uploads.
+      # In practice, Dify/NeuAI may fail to parse streamed multipart requests and
+      # respond with "Please upload your file.".
+      # Disabling streaming makes HTTParty generate a standard multipart body.
+      stream_body: false,
       body: {
         file: file,
         data: data
