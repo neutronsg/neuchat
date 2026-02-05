@@ -1,0 +1,106 @@
+<header class="main-content__header">
+  <h1 class="main-content__page-title">Knowledge Bases</h1>
+  <div>
+    <%= link_to 'New Knowledge Base', new_super_admin_knowledge_basis_path, class: 'button button--primary' %>
+  </div>
+</header>
+
+<section class="main-content__body">
+  <table class="collection-data">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Account</th>
+        <th>Name</th>
+        <th>NeuAI Dataset ID</th>
+        <th>Link Status</th>
+        <th>Documents</th>
+        <th>Q&A Pairs</th>
+        <th class="cell-label--right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @knowledge_bases.each do |kb| %>
+        <tr data-kb-id="<%= kb.id %>">
+          <td><%= kb.id %></td>
+          <td><%= link_to kb.account.name, super_admin_account_path(kb.account) %></td>
+          <td><%= kb.name %></td>
+          <td class="cell-data--id"><%= kb.neuai_dataset_id || '-' %></td>
+          <td class="neuai-status" data-dataset-id="<%= kb.neuai_dataset_id %>">
+            <% if kb.neuai_dataset_id.blank? %>
+              <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-xs font-medium">Not linked</span>
+            <% else %>
+              <span class="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-medium">Checking...</span>
+            <% end %>
+          </td>
+          <td><%= kb.documents.count %></td>
+          <td><%= kb.qa_pairs.count %></td>
+          <td class="cell-label--right">
+            <%= link_to 'Show', super_admin_knowledge_basis_path(kb), class: 'action-show' %>
+            <%= link_to 'Edit', edit_super_admin_knowledge_basis_path(kb), class: 'action-edit' %>
+            <%= link_to 'Destroy', super_admin_knowledge_basis_path(kb),
+                        method: :delete,
+                        class: 'action-destroy text-red-600 hover:text-red-700',
+                        data: { confirm: 'Are you sure you want to delete this knowledge base?' } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const statusCells = document.querySelectorAll('.neuai-status[data-dataset-id]:not([data-dataset-id=""])');
+  if (statusCells.length === 0) return;
+
+  const kbIds = Array.from(document.querySelectorAll('tr[data-kb-id]'))
+    .filter(row => {
+      const cell = row.querySelector('.neuai-status');
+      return cell && cell.dataset.datasetId;
+    })
+    .map(row => row.dataset.kbId);
+
+  if (kbIds.length === 0) return;
+
+  fetch('<%= check_status_super_admin_knowledge_bases_path %>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: 'ids=' + kbIds.join(',')
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.error) {
+        console.warn('NeuAI status check failed:', data.error);
+        statusCells.forEach(cell => {
+          cell.innerHTML = '<span class="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-medium">Unknown</span>';
+        });
+        return;
+      }
+
+    Object.entries(data.statuses).forEach(([id, status]) => {
+      const row = document.querySelector(`tr[data-kb-id="${id}"]`);
+      if (!row) return;
+      const cell = row.querySelector('.neuai-status');
+      if (!cell) return;
+
+      if (status === 'connected') {
+        cell.innerHTML = '<span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-xs font-medium">Connected</span>';
+      } else if (status === 'missing') {
+        cell.innerHTML = '<span class="inline-flex items-center rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-xs font-medium">Missing in NeuAI</span>';
+      } else {
+        cell.innerHTML = '<span class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-xs font-medium">Not linked</span>';
+      }
+    });
+  })
+  .catch(error => {
+    console.error('Failed to check NeuAI status:', error);
+    statusCells.forEach(cell => {
+      cell.innerHTML = '<span class="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-medium">Error</span>';
+    });
+  });
+});
+</script>

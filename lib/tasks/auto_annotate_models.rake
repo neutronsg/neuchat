@@ -1,8 +1,11 @@
 # NOTE: only doing this in development as some production environments (Heroku)
 # NOTE: are sensitive to local FS writes, and besides -- it's just not proper
 # NOTE: to have a dev-mode tool do its thing in production.
-if Rails.env.development?
-  require 'annotate'
+if Rails.env.development? && ENV['SKIP_ANNOTATE_ON_MIGRATE'] != 'true'
+  require 'annotate_rb'
+
+  AnnotateRb::Core.load_rake_tasks
+
   task :set_annotation_options do
     # You can override any of these by setting an environment variable of the
     # same name.
