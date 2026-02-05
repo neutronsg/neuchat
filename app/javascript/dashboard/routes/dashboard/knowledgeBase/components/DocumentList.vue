@@ -21,6 +21,44 @@ const showAlert = useAlert;
 const fileInput = ref(null);
 const isUploading = ref(false);
 
+const KB_DOCUMENT_MAX_SIZE_MB = 15;
+const KB_DOCUMENT_ALLOWED_EXTENSIONS = [
+  'txt',
+  'markdown',
+  'md',
+  'mdx',
+  'pdf',
+  'html',
+  'htm',
+  'xlsx',
+  'xls',
+  'vtt',
+  'properties',
+  'doc',
+  'docx',
+  'csv',
+  'eml',
+  'msg',
+  'pptx',
+  'xml',
+  'epub',
+];
+
+const acceptedFileTypes = computed(() =>
+  KB_DOCUMENT_ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(',')
+);
+
+const allowedFileTypesLabel = computed(() =>
+  KB_DOCUMENT_ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(', ')
+);
+
+const documentUploadDescription = computed(() =>
+  t('KNOWLEDGE_BASE.DOCUMENT_UPLOAD_LIMITS', {
+    maxSize: KB_DOCUMENT_MAX_SIZE_MB,
+    fileTypes: allowedFileTypesLabel.value,
+  })
+);
+
 const documents = computed(() => store.getters['knowledgeBases/getDocuments']);
 const uiFlags = computed(() => store.getters['knowledgeBases/getUIFlags']);
 
@@ -107,24 +145,29 @@ const deleteDocument = async doc => {
 </script>
 
 <template>
-  <KBSectionCard :title="t('KNOWLEDGE_BASE.DOCUMENTS_TITLE')">
+  <KBSectionCard
+    :title="t('KNOWLEDGE_BASE.DOCUMENTS_TITLE')"
+    :description="documentUploadDescription"
+  >
     <template #actions>
-      <Button
-        :label="
-          isUploading
-            ? t('KNOWLEDGE_BASE.UPLOADING')
-            : t('KNOWLEDGE_BASE.UPLOAD_DOCUMENT')
-        "
-        :is-loading="isUploading"
-        @click="triggerUpload"
-      />
-      <input
-        ref="fileInput"
-        type="file"
-        class="hidden"
-        accept=".txt,.pdf,.docx,.md,.html,.csv,.xlsx"
-        @change="handleFileSelect"
-      />
+      <div class="shrink-0">
+        <Button
+          :label="
+            isUploading
+              ? t('KNOWLEDGE_BASE.UPLOADING')
+              : t('KNOWLEDGE_BASE.UPLOAD_DOCUMENT')
+          "
+          :is-loading="isUploading"
+          @click="triggerUpload"
+        />
+        <input
+          ref="fileInput"
+          type="file"
+          class="hidden"
+          :accept="acceptedFileTypes"
+          @change="handleFileSelect"
+        />
+      </div>
     </template>
 
     <div v-if="uiFlags.isFetchingDocuments" class="py-6 text-center">
@@ -145,19 +188,21 @@ const deleteDocument = async doc => {
         :key="doc.id"
         class="rounded-xl border border-n-weak bg-n-background px-4 py-4"
       >
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
-            <p class="text-sm font-semibold text-n-slate-12 truncate">
-              {{ doc.name }}
-            </p>
-            <div
-              class="mt-2 flex flex-wrap items-center gap-3 text-xs text-n-slate-11"
-            >
-              <span>{{ doc.word_count }} {{ t('KNOWLEDGE_BASE.WORDS') }}</span>
+            <div class="flex items-center gap-2 mb-4">
+              <div class="text-sm font-semibold text-n-slate-12 truncate">
+                {{ doc.name }}
+              </div>
               <KBStatusPill
                 :status="doc.display_status || 'unknown'"
                 :label="getStatusLabel(doc.display_status)"
               />
+            </div>
+            <div
+              class="flex flex-wrap items-center gap-3 text-xs text-n-slate-11"
+            >
+              <span>{{ doc.word_count }} {{ t('KNOWLEDGE_BASE.WORDS') }}</span>
               <span class="flex items-center gap-1">
                 {{ t('KNOWLEDGE_BASE.UPDATED_AT') }}
                 {{ formatDateTime(doc.updated_at) }}
@@ -171,7 +216,7 @@ const deleteDocument = async doc => {
               </span>
             </div>
           </div>
-          <div class="flex items-center gap-4 shrink-0">
+          <div class="flex items-center gap-8 shrink-0">
             <button
               class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-n-brand focus:ring-offset-2"
               :class="doc.enabled ? 'bg-n-brand' : 'bg-n-slate-5'"

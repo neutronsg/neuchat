@@ -14,6 +14,7 @@
     "DOCUMENTS_TITLE": "Documents",
     "UPLOAD_DOCUMENT": "Upload Document",
     "UPLOADING": "Uploading...",
+    "DOCUMENT_UPLOAD_LIMITS": "Max {maxSize}MB. Supported: {fileTypes}.",
     "DOCUMENT_UPLOADED": "Document uploaded successfully",
     "UPLOAD_FAILED": "Failed to upload document",
     "NO_DOCUMENTS": "No documents yet. Upload your first document.",
