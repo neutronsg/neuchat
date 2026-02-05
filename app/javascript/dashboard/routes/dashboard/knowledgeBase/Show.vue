@@ -19,6 +19,9 @@ const currentKB = computed(() => store.getters['knowledgeBases/getCurrentKB']);
 const hasProcessingDocuments = computed(
   () => store.getters['knowledgeBases/hasProcessingDocuments']
 );
+const isQaProcessing = computed(
+  () => store.getters['knowledgeBases/isQaDocumentProcessing']
+);
 
 const tabs = [
   { key: 'documents', label: 'KNOWLEDGE_BASE.TABS.DOCUMENTS' },
@@ -30,32 +33,107 @@ const backUrl = computed(() => ({
   params: { accountId: route.params.accountId },
 }));
 
+const loadKB = () => {
+  const kbs = store.getters['knowledgeBases/getKnowledgeBases'];
+  const cachedKB = kbs.find(
+    k => String(k.id) === String(knowledgeBaseId.value)
+  );
+
+  if (cachedKB) {
+    store.commit('knowledgeBases/setCurrentKB', cachedKB);
+  }
+
+  store.dispatch('knowledgeBases/fetchKnowledgeBase', {
+    id: knowledgeBaseId.value,
+    silent: !!cachedKB,
+  });
+};
+
+const loadData = () => {
+  if (activeTab.value === 'documents') {
+    const hasDocuments =
+      store.getters['knowledgeBases/getDocuments'].length > 0;
+    store.dispatch('knowledgeBases/fetchDocuments', {
+      knowledgeBaseId: knowledgeBaseId.value,
+      silent: hasDocuments,
+    });
+  } else if (activeTab.value === 'qa') {
+    const hasQaPairs = store.getters['knowledgeBases/getQaPairs'].length > 0;
+    store.dispatch('knowledgeBases/fetchQaPairs', {
+      knowledgeBaseId: knowledgeBaseId.value,
+      silent: hasQaPairs,
+    });
+  }
+};
+
 onMounted(() => {
-  store.dispatch('knowledgeBases/fetchKnowledgeBase', knowledgeBaseId.value);
-  store.dispatch('knowledgeBases/fetchDocuments', knowledgeBaseId.value);
+  loadKB();
+  loadData();
 });
 
-watch(hasProcessingDocuments, hasProcessing => {
-  if (hasProcessing && !pollInterval.value) {
+watch(knowledgeBaseId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    store.commit('knowledgeBases/resetState');
+
+    // We can't rely on caching here effectively because cache might be stale or not contain new ID
+    // But we can still try to find it in the list if available
+    const kbs = store.getters['knowledgeBases/getKnowledgeBases'];
+    const cachedKB = kbs.find(k => String(k.id) === String(newId));
+    if (cachedKB) {
+      store.commit('knowledgeBases/setCurrentKB', cachedKB);
+    }
+
+    store.dispatch('knowledgeBases/fetchKnowledgeBase', {
+      id: newId,
+      silent: !!cachedKB,
+    });
+
+    // Force non-silent fetch for sub-resources when switching KB (as state is reset)
+    if (activeTab.value === 'documents') {
+      store.dispatch('knowledgeBases/fetchDocuments', {
+        knowledgeBaseId: newId,
+      });
+    } else if (activeTab.value === 'qa') {
+      store.dispatch('knowledgeBases/fetchQaPairs', {
+        knowledgeBaseId: newId,
+      });
+    }
+  }
+});
+
+const shouldPoll = computed(
+  () => hasProcessingDocuments.value || isQaProcessing.value
+);
+
+watch(shouldPoll, needsPoll => {
+  if (needsPoll && !pollInterval.value) {
     pollInterval.value = setInterval(() => {
-      store.dispatch('knowledgeBases/fetchDocuments', knowledgeBaseId.value);
+      store.dispatch('knowledgeBases/fetchDocuments', {
+        knowledgeBaseId: knowledgeBaseId.value,
+        silent: true,
+      });
+      if (activeTab.value === 'qa' || isQaProcessing.value) {
+        store.dispatch('knowledgeBases/fetchQaPairs', {
+          knowledgeBaseId: knowledgeBaseId.value,
+          silent: true,
+        });
+      }
     }, 5000);
-  } else if (!hasProcessing && pollInterval.value) {
+  } else if (!needsPoll && pollInterval.value) {
     clearInterval(pollInterval.value);
     pollInterval.value = null;
   }
 });
 
-watch(activeTab, tab => {
-  if (tab === 'qa') {
-    store.dispatch('knowledgeBases/fetchQaPairs', knowledgeBaseId.value);
-  }
+watch(activeTab, () => {
+  loadData();
 });
 
 onUnmounted(() => {
   if (pollInterval.value) {
     clearInterval(pollInterval.value);
   }
+  store.commit('knowledgeBases/resetState');
 });
 </script>
 

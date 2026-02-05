@@ -89,11 +89,13 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
   end
 
   def document_response(doc, neuai_doc = nil)
+    indexing_status = neuai_doc&.dig('indexing_status') || 'unknown'
     {
       id: doc.id,
       name: doc.name,
       neuai_document_id: doc.neuai_document_id,
-      indexing_status: neuai_doc&.dig('indexing_status') || 'unknown',
+      indexing_status: indexing_status,
+      display_status: display_status(indexing_status),
       enabled: neuai_doc&.dig('enabled') || true,
       word_count: neuai_doc&.dig('word_count') || 0,
       created_at: doc.created_at,
@@ -101,6 +103,21 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
       updated_by: user_response(doc.updated_by),
       created_by: user_response(doc.created_by)
     }
+  end
+
+  def display_status(indexing_status)
+    return 'unknown' if indexing_status.blank?
+
+    case indexing_status
+    when 'waiting', 'parsing', 'cleaning', 'splitting', 'indexing'
+      'processing'
+    when 'error'
+      'error'
+    when 'completed'
+      'available'
+    else
+      'unknown'
+    end
   end
 
   def user_response(user)

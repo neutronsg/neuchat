@@ -8,7 +8,8 @@ class Api::V1::Accounts::KnowledgeBases::QaPairsController < Api::V1::Accounts::
     render json: {
       qa_pairs: @qa_pairs.map { |qa| qa_pair_response(qa) },
       sync_required: sync_service.needs_sync?,
-      qa_document_id: @knowledge_base.qa_document_id
+      qa_document_id: @knowledge_base.qa_document_id,
+      qa_document_status: sync_service.document_status
     }
   end
 
@@ -37,6 +38,11 @@ class Api::V1::Accounts::KnowledgeBases::QaPairsController < Api::V1::Accounts::
   end
 
   def sync
+    if sync_service.processing?
+      render json: { error: 'Document is being processed, please try again later' }, status: :unprocessable_entity
+      return
+    end
+
     sync_service.sync!
     render json: {
       success: true,

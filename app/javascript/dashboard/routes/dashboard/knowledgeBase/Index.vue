@@ -16,7 +16,8 @@ const knowledgeBases = computed(
 const uiFlags = computed(() => store.getters['knowledgeBases/getUIFlags']);
 
 onMounted(() => {
-  store.dispatch('knowledgeBases/fetchKnowledgeBases');
+  const hasData = store.getters['knowledgeBases/getKnowledgeBases'].length > 0;
+  store.dispatch('knowledgeBases/fetchKnowledgeBases', { silent: hasData });
 });
 
 const navigateToKB = kb => {

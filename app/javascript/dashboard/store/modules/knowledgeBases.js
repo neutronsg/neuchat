@@ -7,6 +7,7 @@ const state = {
   qaPairs: [],
   qaSyncRequired: false,
   qaDocumentId: null,
+  qaDocumentStatus: null,
   uiFlags: {
     isFetching: false,
     isFetchingDocuments: false,
@@ -22,41 +23,62 @@ const getters = {
   getDocuments: $state => $state.documents,
   getQaPairs: $state => $state.qaPairs,
   getQaSyncRequired: $state => $state.qaSyncRequired,
+  getQaDocumentStatus: $state => $state.qaDocumentStatus,
   getUIFlags: $state => $state.uiFlags,
   hasProcessingDocuments: $state =>
     $state.documents.some(d =>
-      ['waiting', 'indexing', 'parsing'].includes(d.indexing_status)
+      ['waiting', 'parsing', 'cleaning', 'splitting', 'indexing'].includes(
+        d.indexing_status
+      )
     ),
+  isQaDocumentProcessing: $state => {
+    const status = $state.qaDocumentStatus?.indexing_status;
+    return ['waiting', 'parsing', 'cleaning', 'splitting', 'indexing'].includes(
+      status
+    );
+  },
 };
 
 const actions = {
-  async fetchKnowledgeBases({ commit }) {
-    commit('setUIFlag', { isFetching: true });
+  async fetchKnowledgeBases({ commit }, { silent = false } = {}) {
+    if (!silent) {
+      commit('setUIFlag', { isFetching: true });
+    }
     try {
       const response = await KnowledgeBasesAPI.get();
       commit('setRecords', response.data);
     } finally {
-      commit('setUIFlag', { isFetching: false });
+      if (!silent) {
+        commit('setUIFlag', { isFetching: false });
+      }
     }
   },
 
-  async fetchKnowledgeBase({ commit }, id) {
-    commit('setUIFlag', { isFetching: true });
+  async fetchKnowledgeBase({ commit }, { id, silent = false }) {
+    if (!silent) {
+      commit('setUIFlag', { isFetching: true });
+    }
     try {
       const response = await KnowledgeBasesAPI.show(id);
       commit('setCurrentKB', response.data);
     } finally {
-      commit('setUIFlag', { isFetching: false });
+      if (!silent) {
+        commit('setUIFlag', { isFetching: false });
+      }
     }
   },
 
-  async fetchDocuments({ commit }, knowledgeBaseId) {
-    commit('setUIFlag', { isFetchingDocuments: true });
+  async fetchDocuments({ commit }, { knowledgeBaseId, silent = false }) {
+    if (!silent) {
+      commit('setUIFlag', { isFetchingDocuments: true });
+    }
     try {
       const response = await KnowledgeBasesAPI.getDocuments(knowledgeBaseId);
       commit('setDocuments', response.data.documents);
     } finally {
-      commit('setUIFlag', { isFetchingDocuments: false });
+      if (!silent) {
+        commit('setUIFlag', { isFetchingDocuments: false });
+      }
     }
   },
 
@@ -64,7 +86,7 @@ const actions = {
     commit('setUIFlag', { isCreating: true });
     try {
       await KnowledgeBasesAPI.createDocument(knowledgeBaseId, file, name);
-      dispatch('fetchDocuments', knowledgeBaseId);
+      dispatch('fetchDocuments', { knowledgeBaseId });
     } finally {
       commit('setUIFlag', { isCreating: false });
     }
@@ -79,18 +101,23 @@ const actions = {
 
   async deleteDocument({ dispatch }, { knowledgeBaseId, documentId }) {
     await KnowledgeBasesAPI.deleteDocument(knowledgeBaseId, documentId);
-    dispatch('fetchDocuments', knowledgeBaseId);
+    dispatch('fetchDocuments', { knowledgeBaseId });
   },
 
-  async fetchQaPairs({ commit }, knowledgeBaseId) {
-    commit('setUIFlag', { isFetchingQaPairs: true });
+  async fetchQaPairs({ commit }, { knowledgeBaseId, silent = false }) {
+    if (!silent) {
+      commit('setUIFlag', { isFetchingQaPairs: true });
+    }
     try {
       const response = await KnowledgeBasesAPI.getQaPairs(knowledgeBaseId);
       commit('setQaPairs', response.data.qa_pairs);
       commit('setQaSyncRequired', response.data.sync_required);
       commit('setQaDocumentId', response.data.qa_document_id);
+      commit('setQaDocumentStatus', response.data.qa_document_status);
     } finally {
-      commit('setUIFlag', { isFetchingQaPairs: false });
+      if (!silent) {
+        commit('setUIFlag', { isFetchingQaPairs: false });
+      }
     }
   },
 
@@ -119,12 +146,14 @@ const actions = {
     commit('setQaSyncRequired', true);
   },
 
-  async syncQaPairs({ commit }, knowledgeBaseId) {
+  async syncQaPairs({ commit, dispatch }, knowledgeBaseId) {
     commit('setUIFlag', { isSyncing: true });
     try {
       const response = await KnowledgeBasesAPI.syncQaPairs(knowledgeBaseId);
       commit('setQaSyncRequired', false);
       commit('setQaDocumentId', response.data.qa_document_id);
+      // Refresh status after sync starts
+      await dispatch('fetchQaPairs', { knowledgeBaseId });
     } finally {
       commit('setUIFlag', { isSyncing: false });
     }
@@ -167,6 +196,24 @@ const mutations = {
   },
   setQaDocumentId($state, value) {
     $state.qaDocumentId = value;
+  },
+  setQaDocumentStatus($state, value) {
+    $state.qaDocumentStatus = value;
+  },
+  resetState($state) {
+    $state.documents = [];
+    $state.qaPairs = [];
+    $state.currentKB = null;
+    $state.qaSyncRequired = false;
+    $state.qaDocumentId = null;
+    $state.qaDocumentStatus = null;
+    $state.uiFlags = {
+      isFetching: false,
+      isFetchingDocuments: false,
+      isFetchingQaPairs: false,
+      isCreating: false,
+      isSyncing: false,
+    };
   },
   setUIFlag($state, flag) {
     $state.uiFlags = { ...$state.uiFlags, ...flag };
