@@ -131,6 +131,7 @@ class Account < ApplicationRecord
   has_many :webhooks, dependent: :destroy_async
   has_many :whatsapp_channels, dependent: :destroy_async, class_name: '::Channel::Whatsapp'
   has_many :working_hours, dependent: :destroy_async
+  has_many :knowledge_bases, class_name: 'Kbase::KnowledgeBase', dependent: :destroy_async
 
   has_one_attached :contacts_export
 
