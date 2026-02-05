@@ -24,14 +24,11 @@ const isUploading = ref(false);
 const documents = computed(() => store.getters['knowledgeBases/getDocuments']);
 const uiFlags = computed(() => store.getters['knowledgeBases/getUIFlags']);
 
-const normalizeStatus = status =>
-  status === 'completed' ? 'available' : status;
-const getStatusLabel = status => {
-  const normalized = normalizeStatus(status);
-  if (normalized === 'available') {
-    return t('KNOWLEDGE_BASE.STATUS_AVAILABLE');
-  }
-  return normalized || 'unknown';
+const getStatusLabel = displayStatus => {
+  if (!displayStatus || displayStatus === 'unknown') return 'unknown';
+  return (
+    t(`KNOWLEDGE_BASE.STATUS_${displayStatus.toUpperCase()}`) || displayStatus
+  );
 };
 
 const formatDateTime = value => {
@@ -158,8 +155,8 @@ const deleteDocument = async doc => {
             >
               <span>{{ doc.word_count }} {{ t('KNOWLEDGE_BASE.WORDS') }}</span>
               <KBStatusPill
-                :status="normalizeStatus(doc.indexing_status)"
-                :label="getStatusLabel(doc.indexing_status)"
+                :status="doc.display_status || 'unknown'"
+                :label="getStatusLabel(doc.display_status)"
               />
               <span class="flex items-center gap-1">
                 {{ t('KNOWLEDGE_BASE.UPDATED_AT') }}

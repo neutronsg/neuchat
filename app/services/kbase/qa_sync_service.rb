@@ -27,7 +27,47 @@ class Kbase::QaSyncService
     last_qa_update > @kb.updated_at
   end
 
+  def processing?
+    return false if @kb.qa_document_id.blank?
+
+    response = @client.get_document(@kb.neuai_dataset_id, @kb.qa_document_id)
+    indexing_status = response['indexing_status']
+    processing_statuses = %w[waiting parsing cleaning splitting indexing]
+    processing_statuses.include?(indexing_status)
+  rescue Kbase::NeuaiClient::Error
+    false
+  end
+
+  def document_status
+    return nil if @kb.qa_document_id.blank?
+
+    response = @client.get_document(@kb.neuai_dataset_id, @kb.qa_document_id)
+    {
+      indexing_status: response['indexing_status'],
+      display_status: display_status(response['indexing_status']),
+      enabled: response['enabled'],
+      word_count: response['word_count']
+    }
+  rescue Kbase::NeuaiClient::Error
+    nil
+  end
+
   private
+
+  def display_status(indexing_status)
+    return 'unknown' if indexing_status.blank?
+
+    case indexing_status
+    when 'waiting', 'parsing', 'cleaning', 'splitting', 'indexing'
+      'processing'
+    when 'error'
+      'error'
+    when 'completed'
+      'available'
+    else
+      'unknown'
+    end
+  end
 
   def build_qa_text
     @kb.qa_pairs.ordered.map do |qa|
