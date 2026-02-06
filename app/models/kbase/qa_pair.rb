@@ -35,7 +35,7 @@ class Kbase::QaPair < ApplicationRecord
   validates :question, presence: true
   validates :answer, presence: true
 
-  scope :ordered, -> { order(position: :asc, created_at: :asc) }
+  scope :ordered, -> { order(created_at: :desc) }
 
   delegate :account, to: :knowledge_base
 
