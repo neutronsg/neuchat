@@ -1,4 +1,5 @@
 import KnowledgeBasesAPI from '../../api/knowledgeBases';
+import { sortByCreatedAtDesc } from '../../routes/dashboard/knowledgeBase/utils/editSession';
 
 const state = {
   records: [],
@@ -168,7 +169,7 @@ const mutations = {
     $state.currentKB = kb;
   },
   setDocuments($state, documents) {
-    $state.documents = documents;
+    $state.documents = sortByCreatedAtDesc(documents);
   },
   updateDocumentEnabled($state, { documentId, enabled }) {
     const doc = $state.documents.find(d => d.id === documentId);
@@ -177,15 +178,16 @@ const mutations = {
     }
   },
   setQaPairs($state, qaPairs) {
-    $state.qaPairs = qaPairs;
+    $state.qaPairs = sortByCreatedAtDesc(qaPairs);
   },
   addQaPair($state, qaPair) {
-    $state.qaPairs.push(qaPair);
+    $state.qaPairs = sortByCreatedAtDesc([qaPair, ...$state.qaPairs]);
   },
   updateQaPair($state, qaPair) {
     const index = $state.qaPairs.findIndex(q => q.id === qaPair.id);
     if (index !== -1) {
       $state.qaPairs.splice(index, 1, qaPair);
+      $state.qaPairs = sortByCreatedAtDesc($state.qaPairs);
     }
   },
   removeQaPair($state, qaPairId) {
