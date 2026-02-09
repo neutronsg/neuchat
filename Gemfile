@@ -243,3 +243,5 @@ group :development, :test do
   gem 'spring'
   gem 'spring-watcher-listen'
 end
+
+gem "rubyzip", "~> 3.2"

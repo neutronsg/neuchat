@@ -10,13 +10,15 @@ class Kbase::QaSyncService
     return if @kb.neuai_dataset_id.blank?
     return if @kb.qa_pairs.empty?
 
-    text = build_qa_text
+    qa_docx_file = build_qa_docx
 
     if @kb.qa_document_id.present?
-      update_existing_document(text)
+      update_existing_document(qa_docx_file)
     else
-      create_new_document(text)
+      create_new_document(qa_docx_file)
     end
+  ensure
+    qa_docx_file&.close!
   end
 
   def needs_sync?
@@ -71,32 +73,39 @@ class Kbase::QaSyncService
     end
   end
 
-  def build_qa_text
-    @kb.qa_pairs.ordered.map do |qa|
-      "Question: #{qa.question}\nAnswer: #{qa.answer}"
-    end.join("\n#{QA_SEPARATOR}\n")
+  def build_qa_docx
+    qa_pairs = @kb.qa_pairs.ordered.map do |qa|
+      { question: qa.question, answer: qa.answer }
+    end
+
+    Kbase::QaDocxBuilder.new(qa_pairs, separator: QA_SEPARATOR).build
   end
 
-  def create_new_document(text)
-    response = @client.create_document_by_text(
-      @kb.neuai_dataset_id,
-      name: "#{@kb.name} - Q&A",
-      text: text,
-      separator: QA_SEPARATOR
-    )
+  def create_new_document(docx_file)
+    response = File.open(docx_file.path, 'rb') do |file|
+      @client.create_document_by_file(
+        @kb.neuai_dataset_id,
+        file,
+        name: "#{@kb.name} - Q&A",
+        separator: QA_SEPARATOR
+      )
+    end
 
     document_id = response.dig('document', 'id')
     @kb.update!(qa_document_id: document_id)
   end
 
-  def update_existing_document(text)
-    @client.update_document_by_text(
-      @kb.neuai_dataset_id,
-      @kb.qa_document_id,
-      name: "#{@kb.name} - Q&A",
-      text: text,
-      separator: QA_SEPARATOR
-    )
+  def update_existing_document(docx_file)
+    File.open(docx_file.path, 'rb') do |file|
+      @client.update_document_by_file(
+        @kb.neuai_dataset_id,
+        @kb.qa_document_id,
+        file,
+        name: "#{@kb.name} - Q&A",
+        separator: QA_SEPARATOR
+      )
+    end
+
     @kb.touch # rubocop:disable Rails/SkipsModelValidations
   end
 end

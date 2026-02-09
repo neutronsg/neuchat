@@ -155,9 +155,18 @@ const actions = {
       commit('setQaDocumentId', response.data.qa_document_id);
       // Refresh status after sync starts
       await dispatch('fetchQaPairs', { knowledgeBaseId });
+      return response.data;
     } finally {
       commit('setUIFlag', { isSyncing: false });
     }
+  },
+
+  async importQaPairsFromDocx(_, { knowledgeBaseId, file }) {
+    const response = await KnowledgeBasesAPI.importQaPairsFromDocx(
+      knowledgeBaseId,
+      file
+    );
+    return response.data;
   },
 };
 

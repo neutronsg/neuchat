@@ -72,6 +72,7 @@ Rails.application.routes.draw do
             resources :qa_pairs, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/qa_pairs' do
               collection do
                 post :sync
+                post :import_docx
               end
             end
           end
