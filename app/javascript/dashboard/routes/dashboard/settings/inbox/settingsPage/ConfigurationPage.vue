@@ -104,6 +104,20 @@ export default {
       <woot-code :script="inbox.callback_webhook_url" lang="html" />
     </SettingsSection>
   </div>
+  <div v-else-if="isAWechatChannel" class="mx-8">
+    <SettingsSection
+      :title="$t('INBOX_MGMT.ADD.WECHAT_CHANNEL.API_CALLBACK.TITLE')"
+      :sub-title="$t('INBOX_MGMT.ADD.WECHAT_CHANNEL.API_CALLBACK.SUBTITLE')"
+    >
+      <woot-code :script="inbox.callback_webhook_url" lang="html" />
+    </SettingsSection>
+    <SettingsSection
+      :title="$t('INBOX_MGMT.ADD.WECHAT_CHANNEL.WEBHOOK_TOKEN.TITLE')"
+      :sub-title="$t('INBOX_MGMT.ADD.WECHAT_CHANNEL.WEBHOOK_TOKEN.SUBTITLE')"
+    >
+      <woot-code :script="inbox.wechat_token" lang="html" />
+    </SettingsSection>
+  </div>
   <div v-else-if="isAWebWidgetInbox">
     <div class="mx-8">
       <SettingsSection

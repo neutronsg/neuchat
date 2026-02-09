@@ -27,6 +27,7 @@ class Channel::Wechat < ApplicationRecord
   before_validation :ensure_valid_app_credentials, on: :create
   validates :app_id, :app_secret, :token, presence: true
   validates :app_id, uniqueness: true
+  validates :token, uniqueness: true
   before_save :setup_wechat_webhook
 
   def name

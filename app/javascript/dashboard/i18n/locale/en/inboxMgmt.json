@@ -391,6 +391,14 @@
         "SUBMIT_BUTTON": "Create WeChat Channel",
         "API": {
           "ERROR_MESSAGE": "We were not able to save the wechat channel"
+        },
+        "API_CALLBACK": {
+          "TITLE": "Callback URL",
+          "SUBTITLE": "Configure your WeChat server callback URL using the value shown here."
+        },
+        "WEBHOOK_TOKEN": {
+          "TITLE": "Webhook Verify Token",
+          "SUBTITLE": "Use this token in your WeChat server configuration. It must match exactly."
         }
       },
       "EMAIL_CHANNEL": {

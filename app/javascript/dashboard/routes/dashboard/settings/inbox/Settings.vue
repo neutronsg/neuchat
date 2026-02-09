@@ -193,6 +193,7 @@ export default {
       return (
         this.isASmsInbox ||
         this.isAWhatsAppChannel ||
+        this.isAWechatChannel ||
         this.isAFacebookInbox ||
         this.isAPIInbox
       );

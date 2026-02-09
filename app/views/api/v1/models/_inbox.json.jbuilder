@@ -117,3 +117,7 @@ if resource.whatsapp?
   json.message_templates resource.channel.try(:message_templates)
   json.provider_config resource.channel.try(:provider_config) if Current.account_user&.administrator?
 end
+
+if resource.channel_type == 'Channel::Wechat' && Current.account_user&.administrator?
+  json.wechat_token resource.channel.try(:token)
+end
