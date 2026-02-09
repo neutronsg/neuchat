@@ -3,6 +3,7 @@ class SuperAdmin::KnowledgeBasesController < SuperAdmin::ApplicationController
 
   def index
     @knowledge_bases = Kbase::KnowledgeBase.includes(:account).ordered
+    @knowledge_bases = @knowledge_bases.where(account_id: params[:account_id]) if params[:account_id].present?
   end
 
   def show; end

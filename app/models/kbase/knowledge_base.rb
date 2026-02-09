@@ -25,8 +25,8 @@ class Kbase::KnowledgeBase < ApplicationRecord
   self.table_name = 'kbase_knowledge_bases'
 
   belongs_to :account
-  has_many :documents, class_name: 'Kbase::Document', dependent: :destroy_async
-  has_many :qa_pairs, class_name: 'Kbase::QaPair', dependent: :destroy_async
+  has_many :documents, class_name: 'Kbase::Document', dependent: :delete_all
+  has_many :qa_pairs, class_name: 'Kbase::QaPair', dependent: :delete_all
 
   validates :name, presence: true, length: { maximum: 100 }
   validates :name, uniqueness: { scope: :account_id }

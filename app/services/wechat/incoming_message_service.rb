@@ -43,7 +43,7 @@ class Wechat::IncomingMessageService
   def update_contact_avatar
     # WeChat no longer provides avatar/nickname information since December 2021
     # Skip avatar update as the API no longer returns this data
-    Rails.logger.debug "Skipping WeChat avatar update - API no longer provides user profile data"
+    Rails.logger.debug 'Skipping WeChat avatar update - API no longer provides user profile data'
   end
 
   def conversation_params
@@ -57,7 +57,12 @@ class Wechat::IncomingMessageService
   end
 
   def set_conversation
-    @conversation = @contact_inbox.conversations.first
+    # if lock to single conversation is disabled, create a new conversation when the previous one is resolved
+    @conversation = if @inbox.lock_to_single_conversation
+                      @contact_inbox.conversations.last
+                    else
+                      @contact_inbox.conversations.where.not(status: :resolved).last
+                    end
     return if @conversation
 
     @conversation = ::Conversation.create!(conversation_params)
@@ -113,37 +118,30 @@ class Wechat::IncomingMessageService
     end
   end
 
-  private
-
   def download_and_attach_from_url(url)
-    begin
-      attachment_file = Down.download(url)
-      attach_file(attachment_file)
-    rescue StandardError => e
-      Rails.logger.error "WeChat media download error from URL: #{e.message}"
-    end
+    attachment_file = Down.download(url)
+    attach_file(attachment_file)
+  rescue StandardError => e
+    Rails.logger.error "WeChat media download error from URL: #{e.message}"
   end
 
   def download_and_attach_from_api(media_id)
-    begin
-      access_token = inbox.channel.get_access_token
-      return unless access_token
+    access_token = inbox.channel.get_access_token
+    return unless access_token
 
-      response = HTTParty.get("#{inbox.channel.wechat_api_url}/media/get",
-        query: {
-          access_token: access_token,
-          media_id: media_id
-        }
-      )
+    response = HTTParty.get("#{inbox.channel.wechat_api_url}/media/get",
+                            query: {
+                              access_token: access_token,
+                              media_id: media_id
+                            })
 
-      if response.success? && response.headers['content-type']&.start_with?('image/', 'audio/', 'video/')
-        create_temp_file_and_attach(response, media_id)
-      else
-        Rails.logger.error "WeChat media download failed: #{response.parsed_response}"
-      end
-    rescue StandardError => e
-      Rails.logger.error "WeChat media download error from API: #{e.message}"
+    if response.success? && response.headers['content-type']&.start_with?('image/', 'audio/', 'video/')
+      create_temp_file_and_attach(response, media_id)
+    else
+      Rails.logger.error "WeChat media download failed: #{response.parsed_response}"
     end
+  rescue StandardError => e
+    Rails.logger.error "WeChat media download error from API: #{e.message}"
   end
 
   def create_temp_file_and_attach(response, media_id)
@@ -177,12 +175,12 @@ class Wechat::IncomingMessageService
 
   def determine_file_extension_from_content_type(content_type)
     case content_type
-    when /image\/jpeg/ then '.jpg'
-    when /image\/png/ then '.png'
-    when /image\/gif/ then '.gif'
-    when /audio\/mpeg/ then '.mp3'
-    when /audio\/amr/ then '.amr'
-    when /video\/mp4/ then '.mp4'
+    when %r{image/jpeg} then '.jpg'
+    when %r{image/png} then '.png'
+    when %r{image/gif} then '.gif'
+    when %r{audio/mpeg} then '.mp3'
+    when %r{audio/amr} then '.amr'
+    when %r{video/mp4} then '.mp4'
     else
       case wechat_msg_type
       when 'image' then '.jpg'
