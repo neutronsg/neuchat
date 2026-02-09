@@ -1,4 +1,6 @@
 class Kbase::QaSyncService
+  QA_SEPARATOR = '------'.freeze
+
   def initialize(knowledge_base)
     @kb = knowledge_base
     @client = Kbase::NeuaiClient.new
@@ -72,14 +74,15 @@ class Kbase::QaSyncService
   def build_qa_text
     @kb.qa_pairs.ordered.map do |qa|
       "Question: #{qa.question}\nAnswer: #{qa.answer}"
-    end.join("\n------\n")
+    end.join("\n#{QA_SEPARATOR}\n")
   end
 
   def create_new_document(text)
     response = @client.create_document_by_text(
       @kb.neuai_dataset_id,
       name: "#{@kb.name} - Q&A",
-      text: text
+      text: text,
+      separator: QA_SEPARATOR
     )
 
     document_id = response.dig('document', 'id')
@@ -91,7 +94,8 @@ class Kbase::QaSyncService
       @kb.neuai_dataset_id,
       @kb.qa_document_id,
       name: "#{@kb.name} - Q&A",
-      text: text
+      text: text,
+      separator: QA_SEPARATOR
     )
     @kb.touch # rubocop:disable Rails/SkipsModelValidations
   end

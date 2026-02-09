@@ -96,11 +96,22 @@ class Kbase::NeuaiClient
          })
   end
 
-  def update_document_by_text(dataset_id, document_id, name:, text:)
+  def update_document_by_text(dataset_id, document_id, name:, text:, separator: "\n\n")
     # Dify API uses POST for document update, not PUT
     post("/v1/datasets/#{dataset_id}/documents/#{document_id}/update-by-text", {
            name: name,
-           text: text
+           text: text,
+           process_rule: {
+             mode: 'custom',
+             rules: {
+               pre_processing_rules: [],
+               segmentation: {
+                 separator: separator,
+                 max_tokens: 1024,
+                 chunk_overlap: 50
+               }
+             }
+           }
          })
   end
 
