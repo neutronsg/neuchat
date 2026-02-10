@@ -58,6 +58,19 @@ class KnowledgeBasesAPI extends ApiClient {
   syncQaPairs(knowledgeBaseId) {
     return axios.post(`${this.url}/${knowledgeBaseId}/qa_pairs/sync`);
   }
+
+  importQaPairsFromDocx(knowledgeBaseId, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return axios.post(
+      `${this.url}/${knowledgeBaseId}/qa_pairs/import_docx`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+  }
 }
 
 export default new KnowledgeBasesAPI();

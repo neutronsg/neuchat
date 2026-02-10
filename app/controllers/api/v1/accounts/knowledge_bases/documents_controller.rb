@@ -96,7 +96,7 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
       neuai_document_id: doc.neuai_document_id,
       indexing_status: indexing_status,
       display_status: display_status(indexing_status),
-      enabled: neuai_doc&.dig('enabled') || true,
+      enabled: neuai_doc&.dig('enabled').nil? || neuai_doc['enabled'],
       word_count: neuai_doc&.dig('word_count') || 0,
       created_at: doc.created_at,
       updated_at: doc.updated_at,

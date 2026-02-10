@@ -57,7 +57,7 @@ class Kbase::NeuaiClient
     get("/v1/datasets/#{dataset_id}/documents/#{document_id}")
   end
 
-  def create_document_by_file(dataset_id, file, name:)
+  def create_document_by_file(dataset_id, file, name:, separator: "\n\n")
     data = {
       name: name,
       indexing_technique: 'high_quality',
@@ -66,7 +66,7 @@ class Kbase::NeuaiClient
         rules: {
           pre_processing_rules: [],
           segmentation: {
-            separator: "\n\n",
+            separator: separator,
             max_tokens: 1024,
             chunk_overlap: 50
           }
@@ -75,6 +75,29 @@ class Kbase::NeuaiClient
     }
 
     post_multipart("/v1/datasets/#{dataset_id}/document/create-by-file", file: file, data: data.to_json)
+  end
+
+  def update_document_by_file(dataset_id, document_id, file, name:, separator: "\n\n")
+    data = {
+      name: name,
+      process_rule: {
+        mode: 'custom',
+        rules: {
+          pre_processing_rules: [],
+          segmentation: {
+            separator: separator,
+            max_tokens: 1024,
+            chunk_overlap: 50
+          }
+        }
+      }
+    }
+
+    post_multipart(
+      "/v1/datasets/#{dataset_id}/documents/#{document_id}/update-by-file",
+      file: file,
+      data: data.to_json
+    )
   end
 
   def create_document_by_text(dataset_id, name:, text:, separator: "\n\n")
@@ -96,11 +119,22 @@ class Kbase::NeuaiClient
          })
   end
 
-  def update_document_by_text(dataset_id, document_id, name:, text:)
+  def update_document_by_text(dataset_id, document_id, name:, text:, separator: "\n\n")
     # Dify API uses POST for document update, not PUT
     post("/v1/datasets/#{dataset_id}/documents/#{document_id}/update-by-text", {
            name: name,
-           text: text
+           text: text,
+           process_rule: {
+             mode: 'custom',
+             rules: {
+               pre_processing_rules: [],
+               segmentation: {
+                 separator: separator,
+                 max_tokens: 1024,
+                 chunk_overlap: 50
+               }
+             }
+           }
          })
   end
 

@@ -52,6 +52,16 @@ class Api::V1::Accounts::KnowledgeBases::QaPairsController < Api::V1::Accounts::
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  def import_docx
+    return render_missing_docx_file if params[:file].blank?
+    return render_invalid_docx_file unless docx_file?(params[:file])
+
+    parsed_pairs = parse_docx_pairs(params[:file])
+    render json: import_docx_response(parsed_pairs)
+  rescue Kbase::QaDocxImportService::Error => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
   private
 
   def set_knowledge_base
@@ -95,5 +105,29 @@ class Api::V1::Accounts::KnowledgeBases::QaPairsController < Api::V1::Accounts::
 
   def sync_service
     @sync_service ||= Kbase::QaSyncService.new(@knowledge_base)
+  end
+
+  def docx_file?(file)
+    file.original_filename.to_s.downcase.ends_with?('.docx')
+  end
+
+  def render_missing_docx_file
+    render json: { error: 'No file uploaded' }, status: :bad_request
+  end
+
+  def render_invalid_docx_file
+    render json: { error: 'Only .docx files are supported' }, status: :unprocessable_entity
+  end
+
+  def parse_docx_pairs(file)
+    Kbase::QaDocxImportService.new(file).parse!
+  end
+
+  def import_docx_response(parsed_pairs)
+    {
+      success: true,
+      imported_count: parsed_pairs.size,
+      qa_pairs: parsed_pairs
+    }
   end
 end

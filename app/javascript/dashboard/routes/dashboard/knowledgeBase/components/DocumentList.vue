@@ -21,7 +21,7 @@ const showAlert = useAlert;
 const fileInput = ref(null);
 const isUploading = ref(false);
 
-const KB_DOCUMENT_MAX_SIZE_MB = 15;
+const KB_DOCUMENT_MAX_SIZE_MB = 100;
 const KB_DOCUMENT_ALLOWED_EXTENSIONS = [
   'txt',
   'markdown',
