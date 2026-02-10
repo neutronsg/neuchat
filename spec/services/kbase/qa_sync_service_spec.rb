@@ -16,7 +16,7 @@ RSpec.describe Kbase::QaSyncService do
   end
 
   describe '#sync!' do
-    it 'uses docx file upload with ------ separator when creating QA document' do
+    it 'creates QA document with fixed Q&A name' do
       Kbase::QaPair.create!(
         knowledge_base: knowledge_base,
         question: 'What is this?',
@@ -26,8 +26,9 @@ RSpec.describe Kbase::QaSyncService do
       expect(neuai_client).to receive(:create_document_by_file).with(
         'dataset_123',
         satisfy { |file| file.respond_to?(:path) && File.extname(file.path) == '.docx' },
-        name: 'Support KB - Q&A',
-        separator: '------'
+        name: 'Q&A',
+        separator: '------',
+        upload_filename: 'Q&A.docx'
       ).and_return({ 'document' => { 'id' => 'qa_doc_1' } })
 
       described_class.new(knowledge_base).sync!
@@ -35,7 +36,7 @@ RSpec.describe Kbase::QaSyncService do
       expect(knowledge_base.reload.qa_document_id).to eq('qa_doc_1')
     end
 
-    it 'uses docx file upload with ------ separator when updating QA document' do
+    it 'deletes old QA document then creates a new one on update' do
       knowledge_base.update!(qa_document_id: 'qa_doc_existing')
       Kbase::QaPair.create!(
         knowledge_base: knowledge_base,
@@ -43,15 +44,46 @@ RSpec.describe Kbase::QaSyncService do
         answer: 'Go to settings.'
       )
 
-      expect(neuai_client).to receive(:update_document_by_file).with(
+      expect(neuai_client).to receive(:delete_document).with(
         'dataset_123',
-        'qa_doc_existing',
-        satisfy { |file| file.respond_to?(:path) && File.extname(file.path) == '.docx' },
-        name: 'Support KB - Q&A',
-        separator: '------'
+        'qa_doc_existing'
       )
+      expect(neuai_client).to receive(:create_document_by_file).with(
+        'dataset_123',
+        satisfy { |file| file.respond_to?(:path) && File.extname(file.path) == '.docx' },
+        name: 'Q&A',
+        separator: '------',
+        upload_filename: 'Q&A.docx'
+      ).and_return({ 'document' => { 'id' => 'qa_doc_new' } })
 
       described_class.new(knowledge_base).sync!
+
+      expect(knowledge_base.reload.qa_document_id).to eq('qa_doc_new')
+    end
+
+    it 'continues create flow when old QA document is already missing' do
+      knowledge_base.update!(qa_document_id: 'qa_doc_missing')
+      Kbase::QaPair.create!(
+        knowledge_base: knowledge_base,
+        question: 'How to reset password?',
+        answer: 'Go to settings.'
+      )
+
+      expect(neuai_client).to receive(:delete_document).with(
+        'dataset_123',
+        'qa_doc_missing'
+      ).and_raise(Kbase::NeuaiClient::ApiError.new('not found', status: 404))
+      expect(neuai_client).to receive(:create_document_by_file).with(
+        'dataset_123',
+        satisfy { |file| file.respond_to?(:path) && File.extname(file.path) == '.docx' },
+        name: 'Q&A',
+        separator: '------',
+        upload_filename: 'Q&A.docx'
+      ).and_return({ 'document' => { 'id' => 'qa_doc_new' } })
+
+      described_class.new(knowledge_base).sync!
+
+      expect(knowledge_base.reload.qa_document_id).to eq('qa_doc_new')
     end
   end
 end

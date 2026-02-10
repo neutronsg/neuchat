@@ -60,7 +60,8 @@ const QA_SEPARATOR = '------';
 const QA_IMAGE_MAX_SIZE_MB = 4;
 const docxGuideExampleClass =
   'mt-2 whitespace-pre-wrap text-xs leading-5 text-n-slate-12';
-const qaEditorClass = `${getQaEditorClass()} ${QA_RENDERED_IMAGE_LIMIT_CLASS}`.trim();
+const qaEditorClass =
+  `${getQaEditorClass()} ${QA_RENDERED_IMAGE_LIMIT_CLASS}`.trim();
 
 const localQaPairs = ref([]);
 const deletedQaPairIds = ref([]);
@@ -85,9 +86,15 @@ const canEdit = computed(() => !isProcessing.value);
 const displayedQaPairs = computed(() =>
   isEditMode.value ? sortByCreatedAtDesc(localQaPairs.value) : qaPairs.value
 );
+const qaTotalCount = computed(() => displayedQaPairs.value.length);
 const hasData = computed(() => displayedQaPairs.value.length > 0);
 const showProcessingHint = computed(() =>
   shouldShowQaProcessingHint({ canEdit: canEdit.value })
+);
+const qaHeaderDescription = computed(() =>
+  hasData.value
+    ? t('KNOWLEDGE_BASE.QA_TOTAL_COUNT', { count: qaTotalCount.value })
+    : ''
 );
 
 const isDirtyQa = qa =>
@@ -117,6 +124,30 @@ const formatDateTime = value => {
 
 const formatRichContent = content =>
   new MessageFormatter(content || '').formattedMessage;
+const getQaDisplayNumberByIndex = index => qaTotalCount.value - index;
+const getQaDisplayNumberById = qaId => {
+  const index = displayedQaPairs.value.findIndex(
+    qa => String(qa.id) === String(qaId)
+  );
+  return index === -1 ? null : getQaDisplayNumberByIndex(index);
+};
+const editingQaNumber = computed(() => {
+  if (!isEditing.value || !editingId.value) return null;
+  return getQaDisplayNumberById(editingId.value);
+});
+const qaDialogTitle = computed(() => {
+  if (!isEditing.value) return t('KNOWLEDGE_BASE.ADD_QA');
+
+  const numberLabel = editingQaNumber.value
+    ? t('KNOWLEDGE_BASE.QA_NUMBER', {
+        number: editingQaNumber.value,
+      })
+    : '';
+
+  return numberLabel
+    ? `${t('KNOWLEDGE_BASE.EDIT_QA')} ${numberLabel}`
+    : t('KNOWLEDGE_BASE.EDIT_QA');
+});
 const qaDocxGuideExample = computed(() =>
   t('KNOWLEDGE_BASE.QA_DOCX_GUIDE_EXAMPLE')
 );
@@ -187,7 +218,14 @@ const saveQaPair = () => {
     excludeId: editingId.value,
   });
   if (duplicateQa) {
-    showAlert(t('KNOWLEDGE_BASE.QA_DUPLICATE_QUESTION'));
+    const duplicateNumber = getQaDisplayNumberById(duplicateQa.id);
+    showAlert(
+      duplicateNumber
+        ? t('KNOWLEDGE_BASE.QA_DUPLICATE_QUESTION_WITH_NUMBER', {
+            number: duplicateNumber,
+          })
+        : t('KNOWLEDGE_BASE.QA_DUPLICATE_QUESTION')
+    );
     return;
   }
 
@@ -456,13 +494,23 @@ defineExpose({ discardEditSession });
 </script>
 
 <template>
-  <div :class="isEditMode ? 'rounded-2xl ring-2 ring-n-amber-9 ring-offset-2' : ''">
-    <KBSectionCard :title="t('KNOWLEDGE_BASE.QA_TITLE')">
+  <div
+    :class="isEditMode ? 'rounded-2xl ring-2 ring-n-amber-9 ring-offset-2' : ''"
+  >
+    <KBSectionCard
+      :title="t('KNOWLEDGE_BASE.QA_TITLE')"
+      :description="qaHeaderDescription"
+    >
       <template #status>
-        <KBStatusPill v-if="qaDocumentStatus?.display_status" :status="qaDocumentStatus.display_status"
-          :label="statusLabel" />
-        <span v-if="isEditMode"
-          class="inline-flex items-center rounded-full bg-n-amber-3 px-2 py-0.5 text-xs font-semibold text-n-amber-12">
+        <KBStatusPill
+          v-if="qaDocumentStatus?.display_status"
+          :status="qaDocumentStatus.display_status"
+          :label="statusLabel"
+        />
+        <span
+          v-if="isEditMode"
+          class="inline-flex items-center rounded-full bg-n-amber-3 px-2 py-0.5 text-xs font-semibold text-n-amber-12"
+        >
           {{ t('KNOWLEDGE_BASE.EDIT_MODE_ACTIVE') }}
         </span>
       </template>
@@ -471,38 +519,81 @@ defineExpose({ discardEditSession });
           <template v-if="isEditMode">
             <div class="flex items-center gap-2">
               <span
-                class="inline-flex items-center rounded-md bg-n-amber-3 px-2 py-1 text-xs font-semibold text-n-amber-12">
+                class="inline-flex items-center rounded-md bg-n-amber-3 px-2 py-1 text-xs font-semibold text-n-amber-12"
+              >
                 {{ t('KNOWLEDGE_BASE.UNSAVED_SESSION') }}
               </span>
-              <Button :label="t('KNOWLEDGE_BASE.SAVE_CHANGES')" :is-loading="uiFlags.isSyncing" color="amber"
-                @click="saveChanges" />
+              <Button
+                :label="t('KNOWLEDGE_BASE.SAVE_CHANGES')"
+                :is-loading="uiFlags.isSyncing"
+                color="amber"
+                @click="saveChanges"
+              />
             </div>
-            <Button :label="t('KNOWLEDGE_BASE.CANCEL_EDIT')" variant="outline" color="slate" @click="exitEditMode" />
-            <Button :label="isImportingDocx
-              ? t('KNOWLEDGE_BASE.IMPORTING_DOCX')
-              : t('KNOWLEDGE_BASE.IMPORT_QA_DOCX')
-              " variant="outline" color="slate" :is-loading="isImportingDocx" :disabled="!canEdit || isImportingDocx"
-              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''" @click="openDocxImportGuideDialog" />
+            <Button
+              :label="t('KNOWLEDGE_BASE.CANCEL_EDIT')"
+              variant="outline"
+              color="slate"
+              @click="exitEditMode"
+            />
+            <Button
+              :label="
+                isImportingDocx
+                  ? t('KNOWLEDGE_BASE.IMPORTING_DOCX')
+                  : t('KNOWLEDGE_BASE.IMPORT_QA_DOCX')
+              "
+              variant="outline"
+              color="slate"
+              :is-loading="isImportingDocx"
+              :disabled="!canEdit || isImportingDocx"
+              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''"
+              @click="openDocxImportGuideDialog"
+            />
           </template>
           <template v-else>
-            <Button v-if="hasData" :label="t('KNOWLEDGE_BASE.EDIT')" :disabled="!canEdit"
-              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''" @click="enterEditMode" />
-            <Button :label="t('KNOWLEDGE_BASE.ADD_QA')" :disabled="!canEdit"
-              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''" @click="openAddModal" />
-            <Button :label="isImportingDocx
-              ? t('KNOWLEDGE_BASE.IMPORTING_DOCX')
-              : t('KNOWLEDGE_BASE.IMPORT_QA_DOCX')
-              " variant="outline" color="slate" :is-loading="isImportingDocx" :disabled="!canEdit || isImportingDocx"
-              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''" @click="openDocxImportGuideDialog" />
+            <Button
+              v-if="hasData"
+              :label="t('KNOWLEDGE_BASE.EDIT')"
+              :disabled="!canEdit"
+              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''"
+              @click="enterEditMode"
+            />
+            <Button
+              :label="t('KNOWLEDGE_BASE.ADD_QA')"
+              :disabled="!canEdit"
+              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''"
+              @click="openAddModal"
+            />
+            <Button
+              :label="
+                isImportingDocx
+                  ? t('KNOWLEDGE_BASE.IMPORTING_DOCX')
+                  : t('KNOWLEDGE_BASE.IMPORT_QA_DOCX')
+              "
+              variant="outline"
+              color="slate"
+              :is-loading="isImportingDocx"
+              :disabled="!canEdit || isImportingDocx"
+              :title="!canEdit ? t('KNOWLEDGE_BASE.PROCESSING_HINT') : ''"
+              @click="openDocxImportGuideDialog"
+            />
           </template>
         </div>
-        <input ref="docxFileInput" type="file" class="hidden" accept=".docx" @change="handleDocxImport" />
+        <input
+          ref="docxFileInput"
+          type="file"
+          class="hidden"
+          accept=".docx"
+          @change="handleDocxImport"
+        />
       </template>
 
-      <p v-if="showProcessingHint" class="mt-2 rounded-md bg-n-amber-3 px-3 py-2 text-xs font-semibold text-n-amber-12">
+      <p
+        v-if="showProcessingHint"
+        class="mt-2 rounded-md bg-n-amber-3 px-3 py-2 text-xs font-semibold text-n-amber-12"
+      >
         {{ t('KNOWLEDGE_BASE.PROCESSING_HINT') }}
       </p>
-
       <!-- 编辑模式：列表上方的新增按钮 -->
       <div v-if="isEditMode" class="mb-4">
         <p class="mb-2 text-xs font-medium text-n-amber-12">
@@ -512,43 +603,99 @@ defineExpose({ discardEditSession });
       </div>
 
       <!-- 弹窗 -->
-      <Dialog ref="qaDialog" :title="isEditing ? t('KNOWLEDGE_BASE.EDIT_QA') : t('KNOWLEDGE_BASE.ADD_QA')
-        " :confirm-button-label="t('KNOWLEDGE_BASE.CONFIRM')" :cancel-button-label="t('KNOWLEDGE_BASE.CANCEL')"
-        :disable-confirm-button="!canSaveQaForm" @confirm="saveQaPair" @close="onDialogClose">
+      <Dialog
+        ref="qaDialog"
+        :title="qaDialogTitle"
+        :confirm-button-label="t('KNOWLEDGE_BASE.CONFIRM')"
+        :cancel-button-label="t('KNOWLEDGE_BASE.CANCEL')"
+        :disable-confirm-button="!canSaveQaForm"
+        @confirm="saveQaPair"
+        @close="onDialogClose"
+      >
         <div class="flex flex-col gap-4">
-          <Editor v-model="form.question" :class="qaEditorClass" :label="t('KNOWLEDGE_BASE.QUESTION')"
-            :placeholder="t('KNOWLEDGE_BASE.QUESTION_PLACEHOLDER')" :max-length="20000" :show-character-count="false"
-            :enable-canned-responses="false" :enable-variables="false" :enabled-menu-options="QA_EDITOR_MENU_OPTIONS">
+          <Editor
+            v-model="form.question"
+            :class="qaEditorClass"
+            :label="t('KNOWLEDGE_BASE.QUESTION')"
+            :placeholder="t('KNOWLEDGE_BASE.QUESTION_PLACEHOLDER')"
+            :max-length="20000"
+            :show-character-count="false"
+            :enable-canned-responses="false"
+            :enable-variables="false"
+            :enabled-menu-options="QA_EDITOR_MENU_OPTIONS"
+          >
             <template #actions>
               <div class="flex w-full justify-start">
-                <Button :icon="QA_IMAGE_BUTTON_ICON_CLASS" :size="QA_IMAGE_BUTTON_SIZE" :type="QA_IMAGE_BUTTON_TYPE" variant="ghost" color="slate"
-                  :is-loading="isUploadingQuestionImage" :disabled="isUploadingAnyImage" :aria-label="isUploadingQuestionImage
-                    ? t('KNOWLEDGE_BASE.QA_IMAGE_UPLOADING')
-                    : t('KNOWLEDGE_BASE.QA_ADD_IMAGE_QUESTION')
-                    " :title="isUploadingQuestionImage
+                <Button
+                  :icon="QA_IMAGE_BUTTON_ICON_CLASS"
+                  :size="QA_IMAGE_BUTTON_SIZE"
+                  :type="QA_IMAGE_BUTTON_TYPE"
+                  variant="ghost"
+                  color="slate"
+                  :is-loading="isUploadingQuestionImage"
+                  :disabled="isUploadingAnyImage"
+                  :aria-label="
+                    isUploadingQuestionImage
                       ? t('KNOWLEDGE_BASE.QA_IMAGE_UPLOADING')
                       : t('KNOWLEDGE_BASE.QA_ADD_IMAGE_QUESTION')
-                      " @click="openQuestionImagePicker" />
-                <input ref="questionImageInput" type="file" class="hidden"
-                  accept="image/png, image/jpeg, image/jpg, image/gif, image/webp" @change="onQuestionImageSelected" />
+                  "
+                  :title="
+                    isUploadingQuestionImage
+                      ? t('KNOWLEDGE_BASE.QA_IMAGE_UPLOADING')
+                      : t('KNOWLEDGE_BASE.QA_ADD_IMAGE_QUESTION')
+                  "
+                  @click="openQuestionImagePicker"
+                />
+                <input
+                  ref="questionImageInput"
+                  type="file"
+                  class="hidden"
+                  accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+                  @change="onQuestionImageSelected"
+                />
               </div>
             </template>
           </Editor>
-          <Editor v-model="form.answer" :class="qaEditorClass" :label="t('KNOWLEDGE_BASE.ANSWER')"
-            :placeholder="t('KNOWLEDGE_BASE.ANSWER_PLACEHOLDER')" :max-length="50000" :show-character-count="false"
-            :enable-canned-responses="false" :enable-variables="false" :enabled-menu-options="QA_EDITOR_MENU_OPTIONS">
+          <Editor
+            v-model="form.answer"
+            :class="qaEditorClass"
+            :label="t('KNOWLEDGE_BASE.ANSWER')"
+            :placeholder="t('KNOWLEDGE_BASE.ANSWER_PLACEHOLDER')"
+            :max-length="50000"
+            :show-character-count="false"
+            :enable-canned-responses="false"
+            :enable-variables="false"
+            :enabled-menu-options="QA_EDITOR_MENU_OPTIONS"
+          >
             <template #actions>
               <div class="flex w-full justify-start">
-                <Button :icon="QA_IMAGE_BUTTON_ICON_CLASS" :size="QA_IMAGE_BUTTON_SIZE" :type="QA_IMAGE_BUTTON_TYPE" variant="ghost" color="slate"
-                  :is-loading="isUploadingAnswerImage" :disabled="isUploadingAnyImage" :aria-label="isUploadingAnswerImage
-                    ? t('KNOWLEDGE_BASE.QA_IMAGE_UPLOADING')
-                    : t('KNOWLEDGE_BASE.QA_ADD_IMAGE_ANSWER')
-                    " :title="isUploadingAnswerImage
+                <Button
+                  :icon="QA_IMAGE_BUTTON_ICON_CLASS"
+                  :size="QA_IMAGE_BUTTON_SIZE"
+                  :type="QA_IMAGE_BUTTON_TYPE"
+                  variant="ghost"
+                  color="slate"
+                  :is-loading="isUploadingAnswerImage"
+                  :disabled="isUploadingAnyImage"
+                  :aria-label="
+                    isUploadingAnswerImage
                       ? t('KNOWLEDGE_BASE.QA_IMAGE_UPLOADING')
                       : t('KNOWLEDGE_BASE.QA_ADD_IMAGE_ANSWER')
-                      " @click="openAnswerImagePicker" />
-                <input ref="answerImageInput" type="file" class="hidden"
-                  accept="image/png, image/jpeg, image/jpg, image/gif, image/webp" @change="onAnswerImageSelected" />
+                  "
+                  :title="
+                    isUploadingAnswerImage
+                      ? t('KNOWLEDGE_BASE.QA_IMAGE_UPLOADING')
+                      : t('KNOWLEDGE_BASE.QA_ADD_IMAGE_ANSWER')
+                  "
+                  @click="openAnswerImagePicker"
+                />
+                <input
+                  ref="answerImageInput"
+                  type="file"
+                  class="hidden"
+                  accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+                  @change="onAnswerImageSelected"
+                />
               </div>
             </template>
           </Editor>
@@ -558,9 +705,13 @@ defineExpose({ discardEditSession });
         </div>
       </Dialog>
 
-      <Dialog ref="importDocxGuideDialog" :title="t('KNOWLEDGE_BASE.QA_DOCX_GUIDE_TITLE')"
+      <Dialog
+        ref="importDocxGuideDialog"
+        :title="t('KNOWLEDGE_BASE.QA_DOCX_GUIDE_TITLE')"
         :confirm-button-label="t('KNOWLEDGE_BASE.QA_DOCX_GUIDE_CONFIRM')"
-        :cancel-button-label="t('KNOWLEDGE_BASE.CANCEL')" @confirm="confirmDocxImportGuide">
+        :cancel-button-label="t('KNOWLEDGE_BASE.CANCEL')"
+        @confirm="confirmDocxImportGuide"
+      >
         <div class="flex flex-col gap-3 text-sm text-n-slate-11">
           <p class="text-sm text-n-slate-12">
             {{ t('KNOWLEDGE_BASE.QA_DOCX_GUIDE_INTRO') }}
@@ -586,7 +737,10 @@ defineExpose({ discardEditSession });
         </div>
       </Dialog>
 
-      <div v-if="uiFlags.isFetchingQaPairs && !hasData" class="py-6 text-center">
+      <div
+        v-if="uiFlags.isFetchingQaPairs && !hasData"
+        class="py-6 text-center"
+      >
         <span class="text-sm text-n-slate-11">{{
           t('KNOWLEDGE_BASE.LOADING')
         }}</span>
@@ -599,39 +753,78 @@ defineExpose({ discardEditSession });
       </div>
 
       <div v-else class="flex flex-col gap-3">
-        <div v-for="qa in displayedQaPairs" :key="qa.id" class="rounded-xl border px-4 py-4" :class="isEditMode && isDirtyQa(qa)
-          ? 'border-n-amber-8 bg-n-amber-2'
-          : 'border-n-weak bg-n-background'
-          ">
+        <div
+          v-for="(qa, index) in displayedQaPairs"
+          :key="qa.id"
+          class="relative overflow-hidden rounded-xl border px-4 py-4"
+          :class="
+            isEditMode && isDirtyQa(qa)
+              ? 'border-n-amber-8 bg-n-amber-2'
+              : 'border-n-weak bg-n-background'
+          "
+        >
+          <span
+            class="absolute left-0 top-0 inline-flex items-center rounded-br-md border-b border-r border-n-brand/20 bg-n-brand/10 px-2 py-0.5 text-[11px] font-medium text-n-blue-text"
+          >
+            {{
+              t('KNOWLEDGE_BASE.QA_NUMBER', {
+                number: getQaDisplayNumberByIndex(index),
+              })
+            }}
+          </span>
           <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <div class="mb-1 flex items-center gap-2">
-                <span v-if="isEditMode && isDirtyQa(qa)"
-                  class="inline-flex items-center rounded-md bg-n-amber-4 px-2 py-0.5 text-[11px] font-semibold text-n-amber-12">
+            <div class="min-w-0 flex-1 pt-3">
+              <div
+                v-if="isEditMode && isDirtyQa(qa)"
+                class="mb-1 flex items-center gap-2"
+              >
+                <span
+                  class="inline-flex items-center rounded-md bg-n-amber-4 px-2 py-0.5 text-[11px] font-semibold text-n-amber-12"
+                >
                   {{ t('KNOWLEDGE_BASE.DIRTY_ITEM') }}
                 </span>
               </div>
               <div class="text-sm font-semibold text-n-slate-12">
                 {{ t('KNOWLEDGE_BASE.QUESTION_PREFIX') }}
               </div>
-              <div v-dompurify-html="formatRichContent(qa.question)"
-                :class="['prose prose-bubble max-w-none text-sm text-n-slate-12', QA_RENDERED_IMAGE_LIMIT_CLASS]" />
+              <div
+                v-dompurify-html="formatRichContent(qa.question)"
+                class="prose prose-bubble max-w-none text-sm text-n-slate-12"
+                :class="[QA_RENDERED_IMAGE_LIMIT_CLASS]"
+              />
               <div class="mt-2 text-sm font-semibold text-n-slate-12">
                 {{ t('KNOWLEDGE_BASE.ANSWER_PREFIX') }}
               </div>
-              <div v-dompurify-html="formatRichContent(qa.answer)"
-                :class="['prose prose-bubble max-w-none text-sm text-n-slate-11', QA_RENDERED_IMAGE_LIMIT_CLASS]" />
+              <div
+                v-dompurify-html="formatRichContent(qa.answer)"
+                class="prose prose-bubble max-w-none text-sm text-n-slate-11"
+                :class="[QA_RENDERED_IMAGE_LIMIT_CLASS]"
+              />
               <div class="mt-3 flex items-center gap-1 text-xs text-n-slate-11">
                 {{ t('KNOWLEDGE_BASE.UPDATED_AT') }}
                 {{ formatDateTime(qa.updated_at) }}
-                <span v-if="qa.updated_by" class="text-n-slate-12" :title="qa.updated_by.email">
+                <span
+                  v-if="qa.updated_by"
+                  class="text-n-slate-12"
+                  :title="qa.updated_by.email"
+                >
                   {{ t('KNOWLEDGE_BASE.BY') }} {{ qa.updated_by.name }}
                 </span>
               </div>
             </div>
             <div v-if="isEditMode" class="flex items-center gap-2 shrink-0">
-              <Button :label="t('KNOWLEDGE_BASE.EDIT')" variant="ghost" color="slate" @click="openEditModal(qa)" />
-              <Button :label="t('KNOWLEDGE_BASE.DELETE')" variant="ghost" color="ruby" @click="deleteQaPair(qa)" />
+              <Button
+                :label="t('KNOWLEDGE_BASE.EDIT')"
+                variant="ghost"
+                color="slate"
+                @click="openEditModal(qa)"
+              />
+              <Button
+                :label="t('KNOWLEDGE_BASE.DELETE')"
+                variant="ghost"
+                color="ruby"
+                @click="deleteQaPair(qa)"
+              />
             </div>
           </div>
         </div>

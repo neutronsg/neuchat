@@ -1,4 +1,6 @@
-class Kbase::NeuaiClient
+require 'multipart/post'
+
+class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
   class Error < StandardError; end
   class ConfigurationError < Error; end
 
@@ -12,8 +14,7 @@ class Kbase::NeuaiClient
     end
   end
 
-  # Dataset API uses system-level ENV configuration, independent from Account-level NeuAI Hook
-  # Dify has separate API keys for Dataset API vs Chat/Workflow API
+  # Dataset API uses system-level ENV configuration with a dedicated key.
   def initialize
     @base_url = ENV.fetch('NEUAI_DATASET_URL', nil)&.chomp('/')
     @api_key = ENV.fetch('NEUAI_DATASET_API_KEY', nil)
@@ -57,7 +58,7 @@ class Kbase::NeuaiClient
     get("/v1/datasets/#{dataset_id}/documents/#{document_id}")
   end
 
-  def create_document_by_file(dataset_id, file, name:, separator: "\n\n")
+  def create_document_by_file(dataset_id, file, name:, separator: "\n\n", upload_filename: nil)
     data = {
       name: name,
       indexing_technique: 'high_quality',
@@ -74,7 +75,10 @@ class Kbase::NeuaiClient
       }
     }
 
-    post_multipart("/v1/datasets/#{dataset_id}/document/create-by-file", file: file, data: data.to_json)
+    post_multipart("/v1/datasets/#{dataset_id}/document/create-by-file",
+                   file: file,
+                   data: data.to_json,
+                   upload_filename: upload_filename)
   end
 
   def update_document_by_file(dataset_id, document_id, file, name:, separator: "\n\n")
@@ -120,7 +124,6 @@ class Kbase::NeuaiClient
   end
 
   def update_document_by_text(dataset_id, document_id, name:, text:, separator: "\n\n")
-    # Dify API uses POST for document update, not PUT
     post("/v1/datasets/#{dataset_id}/documents/#{document_id}/update-by-text", {
            name: name,
            text: text,
@@ -184,15 +187,22 @@ class Kbase::NeuaiClient
     handle_response(response)
   end
 
-  def post_multipart(path, file:, data:)
+  # rubocop:disable Metrics/MethodLength
+  def post_multipart(path, file:, data:, upload_filename: nil)
+    if upload_filename.present?
+      io = file.respond_to?(:tempfile) ? file.tempfile : file
+      content_type = if file.respond_to?(:content_type) && file.content_type.present?
+                       file.content_type
+                     else
+                       Rack::Mime.mime_type(File.extname(upload_filename), 'application/octet-stream')
+                     end
+      file = UploadIO.new(io, content_type, upload_filename)
+    end
     response = HTTParty.post(
       "#{@base_url}#{path}",
       headers: { 'Authorization' => "Bearer #{@api_key}" },
       multipart: true,
-      # HTTParty will use streaming multipart body by default for file uploads.
-      # In practice, Dify/NeuAI may fail to parse streamed multipart requests and
-      # respond with "Please upload your file.".
-      # Disabling streaming makes HTTParty generate a standard multipart body.
+      # Dify/NeuAI requires non-streaming multipart for reliable file parsing.
       stream_body: false,
       body: {
         file: file,
@@ -201,6 +211,7 @@ class Kbase::NeuaiClient
     )
     handle_response(response)
   end
+  # rubocop:enable Metrics/MethodLength
 
   def handle_response(response)
     return response.parsed_response if response.success?
