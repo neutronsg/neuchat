@@ -5,8 +5,9 @@ class Integrations::NeuaiBaseService
   # 120000 * 4 = 480,000 characters (rounding off downwards to 400,000 to be safe)
   TOKEN_LIMIT = 400_000
 
-  ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion label_suggestion fix_spelling_grammar shorten expand make_friendly make_formal
-                           simplify translate].freeze
+  DIFY_WORKFLOW_API_PATH = '/workflows/run'.freeze
+  ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion fix_spelling_grammar make_friendly make_formal simplify
+                           translate].freeze
   CACHEABLE_EVENTS = %w[summarize].freeze
 
   pattr_initialize [:hook!, :event!]
@@ -81,27 +82,105 @@ class Integrations::NeuaiBaseService
   end
 
   def make_api_call(body)
-    headers = {
+    request_body = build_dify_request_body(body)
+
+    Rails.logger.info("NeuAI API request: #{request_body.to_json}")
+    response = HTTParty.post(workflow_api_url, headers: dify_headers, body: request_body.to_json)
+    Rails.logger.info("NeuAI API response: #{response.body}")
+
+    return error_response(error_message_from(response.parsed_response), response.code) unless response.success?
+
+    response_from_dify(response)
+  end
+
+  def build_dify_request_body(body)
+    payload = body.is_a?(String) ? JSON.parse(body) : body
+
+    {
+      inputs: {
+        query: payload['query'] || payload['question'],
+        action: payload.dig('overrideConfig', 'vars', 'action')
+      }.compact,
+      response_mode: 'blocking',
+      user: dify_user
+    }
+  end
+
+  def dify_user
+    conversation_display_id = event.dig('data', 'conversation_display_id')
+    return "conversation-#{conversation_display_id}" if conversation_display_id.present?
+
+    "account-#{hook.account_id}"
+  end
+
+  def response_from_dify(response)
+    parsed_response = JSON.parse(response.body)
+    return workflow_failure_response(parsed_response) if workflow_failed?(parsed_response)
+
+    { message: message_from(parsed_response) }
+  rescue JSON::ParserError
+    { message: nil }
+  end
+
+  def workflow_failed?(parsed_response)
+    %w[failed stopped].include?(parsed_response.dig('data', 'status'))
+  end
+
+  def workflow_failure_response(parsed_response)
+    message = parsed_response.dig('data', 'error').presence || 'Dify workflow execution failed'
+    error_response(message, 422)
+  end
+
+  def workflow_api_url
+    "#{hook.settings['neuai_url'].to_s.chomp('/')}#{DIFY_WORKFLOW_API_PATH}"
+  end
+
+  def dify_headers
+    {
       'Content-Type' => 'application/json',
       'Authorization' => "Bearer #{hook.settings['api_key']}"
     }
+  end
 
-    Rails.logger.info("NeuAI API request: #{body}")
-    url = "#{hook.settings['neuai_url']}/api/v1/prediction/#{hook.settings['agent_id']}"
-    response = HTTParty.post(url, headers: headers, body: body)
-    Rails.logger.info("NeuAI API response: #{response.body}")
+  def message_from(parsed_response)
+    direct_message_from(parsed_response) || output_message_from(parsed_response)
+  end
 
-    return { error: response.parsed_response, error_code: response.code } unless response.success?
+  def direct_message_from(parsed_response)
+    find_string_value(parsed_response, %w[text message answer])
+  end
 
-    parsed_response = JSON.parse(response.body)
+  def output_message_from(parsed_response)
+    outputs = parsed_response.dig('data', 'outputs')
+    return nil unless outputs.is_a?(Hash)
 
-    # Handle FlowiseAI response format
-    if parsed_response['text'].present?
-      return { message: parsed_response['text'] }
-    elsif parsed_response['message'].present?
-      return { message: parsed_response['message'] }
+    find_string_value(outputs, %w[text answer message result output]) ||
+      outputs.values.find { |value| value.is_a?(String) && value.present? }
+  end
+
+  def find_string_value(hash, fields)
+    fields.each do |field|
+      value = hash[field]
+      return value if value.is_a?(String) && value.present?
     end
 
-    { message: nil }
+    nil
+  end
+
+  def error_message_from(parsed_response)
+    return 'Dify API request failed' unless parsed_response.is_a?(Hash)
+
+    parsed_response.dig('error', 'message') || parsed_response['message'] || parsed_response['error'] || 'Dify API request failed'
+  end
+
+  def error_response(message, code)
+    {
+      error: {
+        error: {
+          message: message
+        }
+      },
+      error_code: code
+    }
   end
 end
