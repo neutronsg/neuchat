@@ -8,7 +8,7 @@ RSpec.describe Kbase::QaDocxImportService do
         { question: 'How to reset password?', answer: 'Go to settings > security.' },
         {
           question: 'Do you support images?',
-          answer: 'Use markdown image syntax: ![help](https://example.com/help.png)'
+          answer: 'Yes, images are supported in Q&A content.'
         }
       ]
 

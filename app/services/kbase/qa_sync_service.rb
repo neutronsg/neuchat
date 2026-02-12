@@ -1,5 +1,7 @@
 class Kbase::QaSyncService
   QA_SEPARATOR = '------'.freeze
+  QA_DOCUMENT_NAME = 'Q&A'.freeze
+  QA_DOCUMENT_FILENAME = 'Q&A.docx'.freeze
 
   def initialize(knowledge_base)
     @kb = knowledge_base
@@ -12,11 +14,7 @@ class Kbase::QaSyncService
 
     qa_docx_file = build_qa_docx
 
-    if @kb.qa_document_id.present?
-      update_existing_document(qa_docx_file)
-    else
-      create_new_document(qa_docx_file)
-    end
+    recreate_document(qa_docx_file)
   ensure
     qa_docx_file&.close!
   end
@@ -81,31 +79,29 @@ class Kbase::QaSyncService
     Kbase::QaDocxBuilder.new(qa_pairs, separator: QA_SEPARATOR).build
   end
 
+  def recreate_document(docx_file)
+    delete_existing_document if @kb.qa_document_id.present?
+    create_new_document(docx_file)
+  end
+
+  def delete_existing_document
+    @client.delete_document(@kb.neuai_dataset_id, @kb.qa_document_id)
+  rescue Kbase::NeuaiClient::ApiError => e
+    raise unless e.status == 404
+  end
+
   def create_new_document(docx_file)
     response = File.open(docx_file.path, 'rb') do |file|
       @client.create_document_by_file(
         @kb.neuai_dataset_id,
         file,
-        name: "#{@kb.name} - Q&A",
-        separator: QA_SEPARATOR
+        name: QA_DOCUMENT_NAME,
+        separator: QA_SEPARATOR,
+        upload_filename: QA_DOCUMENT_FILENAME
       )
     end
 
     document_id = response.dig('document', 'id')
     @kb.update!(qa_document_id: document_id)
-  end
-
-  def update_existing_document(docx_file)
-    File.open(docx_file.path, 'rb') do |file|
-      @client.update_document_by_file(
-        @kb.neuai_dataset_id,
-        @kb.qa_document_id,
-        file,
-        name: "#{@kb.name} - Q&A",
-        separator: QA_SEPARATOR
-      )
-    end
-
-    @kb.touch # rubocop:disable Rails/SkipsModelValidations
   end
 end
