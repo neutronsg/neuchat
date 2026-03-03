@@ -366,3 +366,7 @@ en:
 
       Transcript:
       %{format_messages}
+  activerecord:
+    attributes:
+      account:
+        knowledge_base_sidebar_enabled: Knowledge Base Sidebar (only affects sidebar visibility)
