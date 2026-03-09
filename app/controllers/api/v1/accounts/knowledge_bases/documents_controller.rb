@@ -1,7 +1,9 @@
 class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts::BaseController
   before_action :check_admin_authorization
   before_action :set_knowledge_base
-  before_action :set_document, only: [:update, :destroy]
+  before_action :set_document, only: [:update, :destroy, :show_chunk_settings, :update_chunk_settings]
+
+  PROCESSING_STATUSES = %w[waiting parsing cleaning splitting indexing].freeze
 
   def index
     sync_documents_from_neuai
@@ -16,7 +18,8 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
     response = client.create_document_by_file(
       @knowledge_base.neuai_dataset_id,
       params[:file],
-      name: params[:name] || params[:file].original_filename
+      name: params[:name] || params[:file].original_filename,
+      process_rule: build_chunk_settings&.to_process_rule
     )
 
     document = @knowledge_base.documents.create!(
@@ -28,6 +31,8 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
 
     render json: document_response(document, response['document']), status: :created
   rescue Kbase::NeuaiClient::Error => e
+    render_error(e.message, :unprocessable_entity)
+  rescue Kbase::DocumentChunkSettings::Error => e
     render_error(e.message, :unprocessable_entity)
   end
 
@@ -44,6 +49,46 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
 
     render json: { success: true }
   rescue Kbase::NeuaiClient::Error => e
+    render_error(e.message, :unprocessable_entity)
+  end
+
+  def show_chunk_settings
+    client = Kbase::NeuaiClient.new
+    response = client.get_document(@knowledge_base.neuai_dataset_id, @document.neuai_document_id)
+
+    render json: {
+      chunk_settings: Kbase::DocumentChunkSettings.from_dify(
+        document_process_rule: response['document_process_rule'],
+        dataset_process_rule: response['dataset_process_rule']
+      )
+    }
+  rescue Kbase::NeuaiClient::Error => e
+    render_error(e.message, :unprocessable_entity)
+  end
+
+  def update_chunk_settings
+    client = Kbase::NeuaiClient.new
+    current_document = client.get_document(@knowledge_base.neuai_dataset_id, @document.neuai_document_id)
+    return render_error('Document is being processed, please try again later', :unprocessable_entity) if processing?(current_document)
+
+    chunk_settings = build_chunk_settings(required: true)
+    response = client.update_document_by_file(
+      @knowledge_base.neuai_dataset_id,
+      @document.neuai_document_id,
+      nil,
+      name: @document.name || current_document['name'],
+      process_rule: chunk_settings.to_process_rule
+    )
+
+    @document.update!(updated_by_id: Current.user&.id)
+
+    render json: {
+      success: true,
+      indexing_status: response.dig('document', 'indexing_status') || 'waiting'
+    }
+  rescue Kbase::NeuaiClient::Error => e
+    render_error(e.message, :unprocessable_entity)
+  rescue Kbase::DocumentChunkSettings::Error => e
     render_error(e.message, :unprocessable_entity)
   end
 
@@ -132,5 +177,26 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
 
   def render_error(message, status)
     render json: { error: message }, status: status
+  end
+
+  def build_chunk_settings(required: false)
+    return nil if !required && parsed_chunk_settings.blank?
+
+    Kbase::DocumentChunkSettings.from_payload(parsed_chunk_settings)
+  end
+
+  def parsed_chunk_settings
+    value = params[:chunk_settings]
+    return {} if value.blank?
+    return value.to_unsafe_h if value.respond_to?(:to_unsafe_h)
+    return value if value.is_a?(Hash)
+
+    JSON.parse(value)
+  rescue JSON::ParserError
+    raise Kbase::DocumentChunkSettings::Error, 'Invalid chunk settings payload'
+  end
+
+  def processing?(document_response)
+    PROCESSING_STATUSES.include?(document_response['indexing_status'])
   end
 end

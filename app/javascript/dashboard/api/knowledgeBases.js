@@ -11,10 +11,13 @@ class KnowledgeBasesAPI extends ApiClient {
     return axios.get(`${this.url}/${knowledgeBaseId}/documents`);
   }
 
-  createDocument(knowledgeBaseId, file, name) {
+  createDocument(knowledgeBaseId, file, name, chunkSettings) {
     const formData = new FormData();
     formData.append('file', file);
     if (name) formData.append('name', name);
+    if (chunkSettings) {
+      formData.append('chunk_settings', JSON.stringify(chunkSettings));
+    }
 
     return axios.post(`${this.url}/${knowledgeBaseId}/documents`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -31,6 +34,21 @@ class KnowledgeBasesAPI extends ApiClient {
   deleteDocument(knowledgeBaseId, documentId) {
     return axios.delete(
       `${this.url}/${knowledgeBaseId}/documents/${documentId}`
+    );
+  }
+
+  getDocumentChunkSettings(knowledgeBaseId, documentId) {
+    return axios.get(
+      `${this.url}/${knowledgeBaseId}/documents/${documentId}/chunk_settings`
+    );
+  }
+
+  updateDocumentChunkSettings(knowledgeBaseId, documentId, chunkSettings) {
+    return axios.patch(
+      `${this.url}/${knowledgeBaseId}/documents/${documentId}/chunk_settings`,
+      {
+        chunk_settings: chunkSettings,
+      }
     );
   }
 

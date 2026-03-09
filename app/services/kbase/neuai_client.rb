@@ -3,6 +3,15 @@ require 'multipart/post'
 class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
   class Error < StandardError; end
   class ConfigurationError < Error; end
+  NETWORK_ERRORS = [
+    EOFError,
+    Errno::ECONNREFUSED,
+    Errno::ECONNRESET,
+    Net::OpenTimeout,
+    Net::ReadTimeout,
+    OpenSSL::SSL::SSLError,
+    SocketError
+  ].freeze
 
   class ApiError < Error
     attr_reader :status, :body
@@ -58,21 +67,11 @@ class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
     get("/v1/datasets/#{dataset_id}/documents/#{document_id}")
   end
 
-  def create_document_by_file(dataset_id, file, name:, separator: "\n\n", upload_filename: nil)
+  def create_document_by_file(dataset_id, file, name:, separator: "\n\n", process_rule: nil, upload_filename: nil)
     data = {
       name: name,
       indexing_technique: 'high_quality',
-      process_rule: {
-        mode: 'custom',
-        rules: {
-          pre_processing_rules: [],
-          segmentation: {
-            separator: separator,
-            max_tokens: 1024,
-            chunk_overlap: 50
-          }
-        }
-      }
+      process_rule: process_rule || Kbase::DocumentChunkSettings.default_process_rule(separator: separator)
     }
 
     post_multipart("/v1/datasets/#{dataset_id}/document/create-by-file",
@@ -81,20 +80,10 @@ class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
                    upload_filename: upload_filename)
   end
 
-  def update_document_by_file(dataset_id, document_id, file, name:, separator: "\n\n")
+  def update_document_by_file(dataset_id, document_id, file = nil, name:, separator: "\n\n", process_rule: nil)
     data = {
       name: name,
-      process_rule: {
-        mode: 'custom',
-        rules: {
-          pre_processing_rules: [],
-          segmentation: {
-            separator: separator,
-            max_tokens: 1024,
-            chunk_overlap: 50
-          }
-        }
-      }
+      process_rule: process_rule || Kbase::DocumentChunkSettings.default_process_rule(separator: separator)
     }
 
     post_multipart(
@@ -109,17 +98,7 @@ class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
            name: name,
            text: text,
            indexing_technique: 'high_quality',
-           process_rule: {
-             mode: 'custom',
-             rules: {
-               pre_processing_rules: [],
-               segmentation: {
-                 separator: separator,
-                 max_tokens: 1024,
-                 chunk_overlap: 50
-               }
-             }
-           }
+           process_rule: Kbase::DocumentChunkSettings.default_process_rule(separator: separator)
          })
   end
 
@@ -127,17 +106,7 @@ class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
     post("/v1/datasets/#{dataset_id}/documents/#{document_id}/update-by-text", {
            name: name,
            text: text,
-           process_rule: {
-             mode: 'custom',
-             rules: {
-               pre_processing_rules: [],
-               segmentation: {
-                 separator: separator,
-                 max_tokens: 1024,
-                 chunk_overlap: 50
-               }
-             }
-           }
+           process_rule: Kbase::DocumentChunkSettings.default_process_rule(separator: separator)
          })
   end
 
@@ -161,30 +130,40 @@ class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
   end
 
   def get(path, params = {})
-    response = HTTParty.get("#{@base_url}#{path}", headers: headers, query: params)
-    handle_response(response)
+    request do
+      response = HTTParty.get("#{@base_url}#{path}", headers: headers, query: params)
+      handle_response(response)
+    end
   end
 
   def post(path, body)
-    response = HTTParty.post("#{@base_url}#{path}", headers: headers, body: body.to_json)
-    handle_response(response)
+    request do
+      response = HTTParty.post("#{@base_url}#{path}", headers: headers, body: body.to_json)
+      handle_response(response)
+    end
   end
 
   def put(path, body)
-    response = HTTParty.put("#{@base_url}#{path}", headers: headers, body: body.to_json)
-    handle_response(response)
+    request do
+      response = HTTParty.put("#{@base_url}#{path}", headers: headers, body: body.to_json)
+      handle_response(response)
+    end
   end
 
   def patch(path, body)
-    response = HTTParty.patch("#{@base_url}#{path}", headers: headers, body: body.to_json)
-    handle_response(response)
+    request do
+      response = HTTParty.patch("#{@base_url}#{path}", headers: headers, body: body.to_json)
+      handle_response(response)
+    end
   end
 
   def delete(path)
-    response = HTTParty.delete("#{@base_url}#{path}", headers: headers)
-    return nil if response.code == 204
+    request do
+      response = HTTParty.delete("#{@base_url}#{path}", headers: headers)
+      return nil if response.code == 204
 
-    handle_response(response)
+      handle_response(response)
+    end
   end
 
   # rubocop:disable Metrics/MethodLength
@@ -198,20 +177,31 @@ class Kbase::NeuaiClient # rubocop:disable Metrics/ClassLength
                      end
       file = UploadIO.new(io, content_type, upload_filename)
     end
-    response = HTTParty.post(
-      "#{@base_url}#{path}",
-      headers: { 'Authorization' => "Bearer #{@api_key}" },
-      multipart: true,
-      # Dify/NeuAI requires non-streaming multipart for reliable file parsing.
-      stream_body: false,
-      body: {
-        file: file,
-        data: data
-      }
-    )
-    handle_response(response)
+
+    body = { data: data }
+    body[:file] = file if file.present?
+
+    request do
+      response = HTTParty.post(
+        "#{@base_url}#{path}",
+        headers: { 'Authorization' => "Bearer #{@api_key}" },
+        multipart: true,
+        # Dify/NeuAI requires non-streaming multipart for reliable file parsing.
+        stream_body: false,
+        body: body
+      )
+      handle_response(response)
+    end
   end
   # rubocop:enable Metrics/MethodLength
+
+  def request
+    yield
+  rescue Kbase::NeuaiClient::Error
+    raise
+  rescue *NETWORK_ERRORS, HTTParty::Error => e
+    raise Error, e.message
+  end
 
   def handle_response(response)
     return response.parsed_response if response.success?
