@@ -1,13 +1,16 @@
 name: Log Lines Percentage Check
 
 on:
-  pull_request:
-    branches:
-      - develop
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: Base branch or ref to diff against
+        required: false
+        default: develop
 
 # If two pushes happen within a short time in the same PR, cancel the run of the oldest push
 concurrency:
-  group: pr-${{ github.workflow }}-${{ github.head_ref }}
+  group: pr-${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -17,14 +20,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base ref
+        run: git fetch origin "${{ github.event.inputs.base_ref }}"
 
       - name: Check for log lines and calculate percentage
         run: |
           # Define the log line pattern
           LOG_LINE_PATTERN="Rails\.logger"
 
-          # Get the list of changed files in the pull request
-          CHANGED_FILES=$(git diff --name-only)
+          # Get the list of changed files against the selected base ref
+          CHANGED_FILES=$(git diff --name-only "origin/${{ github.event.inputs.base_ref }}...HEAD")
 
           # Initialize a flag to track if any files have insufficient log lines
           INSUFFICIENT_LOGS=0
@@ -53,6 +61,10 @@ jobs:
               fi
             fi
           done
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changed files found against origin/${{ github.event.inputs.base_ref }}."
+          fi
 
           # If any files have insufficient log lines, fail the action
           if [ "$INSUFFICIENT_LOGS" -eq 1 ]; then

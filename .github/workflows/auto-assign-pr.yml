@@ -1,8 +1,11 @@
 name: Auto-assign PR to Author
 
 on:
-  pull_request:
-    types: [opened]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Pull request number
+        required: true
 
 jobs:
   auto-assign:
@@ -15,8 +18,13 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const pull_number = context.payload.pull_request.number;
-            const author = context.payload.pull_request.user.login;
+            const pull_number = Number(context.payload.inputs.pull_number);
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number,
+            });
+            const author = pullRequest.user.login;
             
             await github.rest.issues.addAssignees({
               owner,

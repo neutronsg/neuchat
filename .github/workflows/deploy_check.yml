@@ -4,11 +4,15 @@
 name: Deploy Check
 
 on:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Pull request number
+        required: true
 
 # If two pushes happen within a short time in the same PR, cancel the run of the oldest push
 concurrency:
-  group: pr-${{ github.workflow }}-${{ github.head_ref }}
+  group: pr-${{ github.workflow }}-${{ github.event.inputs.pull_number }}
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +23,7 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
       - name: Print Deployment URL
-        run: echo "https://chatwoot-pr-${{ github.event.pull_request.number }}.herokuapp.com"
+        run: echo "https://chatwoot-pr-${{ github.event.inputs.pull_number }}.herokuapp.com"
       - name: Check Deployment Status
         run: |
           max_attempts=10
@@ -28,10 +32,10 @@ jobs:
           echo "Waiting for review app to be deployed/redeployed, trying in  10 minutes..."
           sleep 600
           while [ $attempt -le $max_attempts ]; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://chatwoot-pr-${{ github.event.pull_request.number }}.herokuapp.com/api)
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://chatwoot-pr-${{ github.event.inputs.pull_number }}.herokuapp.com/api)
             status_code=$(echo $response | head -n   1)
             if [ $status_code -eq   200 ]; then
-              body=$(curl -s https://chatwoot-pr-${{ github.event.pull_request.number }}.herokuapp.com/api)
+              body=$(curl -s https://chatwoot-pr-${{ github.event.inputs.pull_number }}.herokuapp.com/api)
               if echo "$body" | jq -e '.version and .timestamp and .queue_services == "ok" and .data_services == "ok"' > /dev/null; then
                 echo "Deployment successful"
                 exit 0
@@ -46,5 +50,4 @@ jobs:
             fi
           done
           echo "Deployment failed after $max_attempts attempts"
-          exit  1
-          fi
+          exit 1
