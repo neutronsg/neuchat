@@ -1,4 +1,6 @@
 class Api::V1::Accounts::Integrations::JsmController < Api::V1::Accounts::BaseController
+  before_action :ensure_api_access_token!
+  before_action :check_admin_authorization?
   before_action :fetch_conversation
   before_action :fetch_hook
 
@@ -24,6 +26,12 @@ class Api::V1::Accounts::Integrations::JsmController < Api::V1::Accounts::BaseCo
   end
 
   private
+
+  def ensure_api_access_token!
+    return if request.headers[:api_access_token].present? || request.headers[:HTTP_API_ACCESS_TOKEN].present?
+
+    render_unauthorized('api_access_token is required')
+  end
 
   def fetch_conversation
     @conversation = Current.account.conversations.find_by!(display_id: permitted_params[:conversation_id])
