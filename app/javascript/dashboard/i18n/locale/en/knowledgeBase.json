@@ -18,6 +18,8 @@
     "DOCUMENT_UPLOADED": "Document uploaded successfully",
     "UPLOAD_FAILED": "Failed to upload document",
     "NO_DOCUMENTS": "No documents yet. Upload your first document.",
+    "SELECT_FILE": "Select File",
+    "NO_FILE_SELECTED": "No file selected",
     "NAME": "Name",
     "STATUS": "Status",
     "WORDS": "Words",
@@ -90,6 +92,29 @@
     "QA_DUPLICATE_QUESTION": "This question already exists. Please edit the existing one or change the question.",
     "PROCESSING_HINT": "Document is being processed, please wait...",
     "UPDATED_AT": "Updated",
-    "BY": "by"
+    "BY": "by",
+    "CHUNK_SETTINGS_TITLE": "Chunk Settings",
+    "CHUNK_SETTINGS_BUTTON": "Chunk Settings",
+    "CHUNK_SETTINGS_RESET": "Reset",
+    "CHUNK_SETTINGS_SAVED": "Chunk settings updated successfully",
+    "CHUNK_SETTINGS_LOAD_FAILED": "Failed to load chunk settings",
+    "CHUNK_SETTINGS_SAVE_FAILED": "Failed to update chunk settings",
+    "CHUNK_SETTINGS_DISABLED_PROCESSING": "Document is processing, chunk settings cannot be edited right now.",
+    "CHUNK_SETTINGS_UNSUPPORTED": "This document uses an unsupported chunking mode in NeuChat.",
+    "CHUNK_SETTINGS_FIELDS": {
+      "DELIMITER": "Delimiter",
+      "MAX_TOKENS": "Maximum Chunk Length",
+      "CHUNK_OVERLAP": "Chunk Overlap Length",
+      "REMOVE_EXTRA_SPACES": "Replace consecutive spaces, newlines and tabs.",
+      "REMOVE_URLS_EMAILS": "Delete all URLs and email addresses."
+    },
+    "CHUNK_SETTINGS_ERRORS": {
+      "FILE_REQUIRED": "Please select a file to upload.",
+      "FILE_TOO_LARGE": "File exceeds {size}MB limit.",
+      "SEPARATOR_REQUIRED": "Delimiter is required.",
+      "MAX_TOKENS_INVALID": "Maximum chunk length must be a positive integer.",
+      "CHUNK_OVERLAP_INVALID": "Chunk overlap length must be 0 or greater.",
+      "CHUNK_OVERLAP_TOO_LARGE": "Chunk overlap length cannot exceed maximum chunk length."
+    }
   }
 }

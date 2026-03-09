@@ -1,5 +1,6 @@
 import KnowledgeBasesAPI from '../../api/knowledgeBases';
 import { sortByCreatedAtDesc } from '../../routes/dashboard/knowledgeBase/utils/editSession';
+import { throwErrorMessage } from '../utils/api';
 
 const state = {
   records: [],
@@ -76,6 +77,8 @@ const actions = {
     try {
       const response = await KnowledgeBasesAPI.getDocuments(knowledgeBaseId);
       commit('setDocuments', response.data.documents);
+    } catch (error) {
+      throwErrorMessage(error);
     } finally {
       if (!silent) {
         commit('setUIFlag', { isFetchingDocuments: false });
@@ -83,26 +86,77 @@ const actions = {
     }
   },
 
-  async createDocument({ commit, dispatch }, { knowledgeBaseId, file, name }) {
+  async createDocument(
+    { commit, dispatch },
+    { knowledgeBaseId, file, name, chunkSettings }
+  ) {
     commit('setUIFlag', { isCreating: true });
     try {
-      await KnowledgeBasesAPI.createDocument(knowledgeBaseId, file, name);
+      const response = await KnowledgeBasesAPI.createDocument(
+        knowledgeBaseId,
+        file,
+        name,
+        chunkSettings
+      );
       dispatch('fetchDocuments', { knowledgeBaseId });
+      return response.data;
+    } catch (error) {
+      return throwErrorMessage(error);
     } finally {
       commit('setUIFlag', { isCreating: false });
     }
   },
 
   async toggleDocument(_, { knowledgeBaseId, documentId, enabled }) {
-    await KnowledgeBasesAPI.updateDocument(knowledgeBaseId, documentId, {
-      enabled,
-    });
-    // No need to refetch - UI uses optimistic update via updateDocumentEnabled mutation
+    try {
+      return await KnowledgeBasesAPI.updateDocument(
+        knowledgeBaseId,
+        documentId,
+        {
+          enabled,
+        }
+      );
+    } catch (error) {
+      return throwErrorMessage(error);
+    }
   },
 
   async deleteDocument({ dispatch }, { knowledgeBaseId, documentId }) {
-    await KnowledgeBasesAPI.deleteDocument(knowledgeBaseId, documentId);
-    dispatch('fetchDocuments', { knowledgeBaseId });
+    try {
+      await KnowledgeBasesAPI.deleteDocument(knowledgeBaseId, documentId);
+      return dispatch('fetchDocuments', { knowledgeBaseId });
+    } catch (error) {
+      return throwErrorMessage(error);
+    }
+  },
+
+  async fetchDocumentChunkSettings(_, { knowledgeBaseId, documentId }) {
+    try {
+      const response = await KnowledgeBasesAPI.getDocumentChunkSettings(
+        knowledgeBaseId,
+        documentId
+      );
+      return response.data;
+    } catch (error) {
+      return throwErrorMessage(error);
+    }
+  },
+
+  async updateDocumentChunkSettings(
+    { dispatch },
+    { knowledgeBaseId, documentId, chunkSettings }
+  ) {
+    try {
+      const response = await KnowledgeBasesAPI.updateDocumentChunkSettings(
+        knowledgeBaseId,
+        documentId,
+        chunkSettings
+      );
+      await dispatch('fetchDocuments', { knowledgeBaseId });
+      return response.data;
+    } catch (error) {
+      return throwErrorMessage(error);
+    }
   },
 
   async fetchQaPairs({ commit }, { knowledgeBaseId, silent = false }) {
@@ -115,6 +169,8 @@ const actions = {
       commit('setQaSyncRequired', response.data.sync_required);
       commit('setQaDocumentId', response.data.qa_document_id);
       commit('setQaDocumentStatus', response.data.qa_document_status);
+    } catch (error) {
+      throwErrorMessage(error);
     } finally {
       if (!silent) {
         commit('setUIFlag', { isFetchingQaPairs: false });
@@ -123,28 +179,40 @@ const actions = {
   },
 
   async createQaPair({ commit }, { knowledgeBaseId, data }) {
-    const response = await KnowledgeBasesAPI.createQaPair(
-      knowledgeBaseId,
-      data
-    );
-    commit('addQaPair', response.data);
-    commit('setQaSyncRequired', true);
+    try {
+      const response = await KnowledgeBasesAPI.createQaPair(
+        knowledgeBaseId,
+        data
+      );
+      commit('addQaPair', response.data);
+      commit('setQaSyncRequired', true);
+    } catch (error) {
+      throwErrorMessage(error);
+    }
   },
 
   async updateQaPair({ commit }, { knowledgeBaseId, qaPairId, data }) {
-    const response = await KnowledgeBasesAPI.updateQaPair(
-      knowledgeBaseId,
-      qaPairId,
-      data
-    );
-    commit('updateQaPair', response.data);
-    commit('setQaSyncRequired', true);
+    try {
+      const response = await KnowledgeBasesAPI.updateQaPair(
+        knowledgeBaseId,
+        qaPairId,
+        data
+      );
+      commit('updateQaPair', response.data);
+      commit('setQaSyncRequired', true);
+    } catch (error) {
+      throwErrorMessage(error);
+    }
   },
 
   async deleteQaPair({ commit }, { knowledgeBaseId, qaPairId }) {
-    await KnowledgeBasesAPI.deleteQaPair(knowledgeBaseId, qaPairId);
-    commit('removeQaPair', qaPairId);
-    commit('setQaSyncRequired', true);
+    try {
+      await KnowledgeBasesAPI.deleteQaPair(knowledgeBaseId, qaPairId);
+      commit('removeQaPair', qaPairId);
+      commit('setQaSyncRequired', true);
+    } catch (error) {
+      throwErrorMessage(error);
+    }
   },
 
   async syncQaPairs({ commit, dispatch }, knowledgeBaseId) {
@@ -156,17 +224,23 @@ const actions = {
       // Refresh status after sync starts
       await dispatch('fetchQaPairs', { knowledgeBaseId });
       return response.data;
+    } catch (error) {
+      return throwErrorMessage(error);
     } finally {
       commit('setUIFlag', { isSyncing: false });
     }
   },
 
   async importQaPairsFromDocx(_, { knowledgeBaseId, file }) {
-    const response = await KnowledgeBasesAPI.importQaPairsFromDocx(
-      knowledgeBaseId,
-      file
-    );
-    return response.data;
+    try {
+      const response = await KnowledgeBasesAPI.importQaPairsFromDocx(
+        knowledgeBaseId,
+        file
+      );
+      return response.data;
+    } catch (error) {
+      return throwErrorMessage(error);
+    }
   },
 };
 

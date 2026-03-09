@@ -6,6 +6,8 @@ import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
 import KBSectionCard from 'dashboard/components-next/KnowledgeBase/KBSectionCard.vue';
 import KBStatusPill from 'dashboard/components-next/KnowledgeBase/KBStatusPill.vue';
+import DocumentUploadDialog from './DocumentUploadDialog.vue';
+import DocumentChunkSettingsDialog from './DocumentChunkSettingsDialog.vue';
 
 const props = defineProps({
   knowledgeBaseId: {
@@ -18,8 +20,8 @@ const store = useStore();
 const { t } = useI18n();
 const showAlert = useAlert;
 
-const fileInput = ref(null);
-const isUploading = ref(false);
+const uploadDialogRef = ref(null);
+const chunkSettingsDialogRef = ref(null);
 
 const KB_DOCUMENT_MAX_SIZE_MB = 100;
 const KB_DOCUMENT_ALLOWED_EXTENSIONS = [
@@ -81,28 +83,15 @@ const formatDateTime = value => {
   }).format(date);
 };
 
-const triggerUpload = () => {
-  fileInput.value?.click();
-};
+const triggerUpload = () => uploadDialogRef.value?.open();
 
-const handleFileSelect = async event => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  isUploading.value = true;
-  try {
-    await store.dispatch('knowledgeBases/createDocument', {
-      knowledgeBaseId: props.knowledgeBaseId,
-      file,
-      name: file.name,
-    });
-    showAlert(t('KNOWLEDGE_BASE.DOCUMENT_UPLOADED'));
-  } catch (error) {
-    showAlert(error.message || t('KNOWLEDGE_BASE.UPLOAD_FAILED'));
-  } finally {
-    isUploading.value = false;
-    event.target.value = '';
+const openChunkSettings = doc => {
+  if (doc.display_status === 'processing') {
+    showAlert(t('KNOWLEDGE_BASE.CHUNK_SETTINGS_DISABLED_PROCESSING'));
+    return;
   }
+
+  chunkSettingsDialogRef.value?.open(doc);
 };
 
 const toggleDocument = async doc => {
@@ -153,19 +142,12 @@ const deleteDocument = async doc => {
       <div class="shrink-0">
         <Button
           :label="
-            isUploading
+            uiFlags.isCreating
               ? t('KNOWLEDGE_BASE.UPLOADING')
               : t('KNOWLEDGE_BASE.UPLOAD_DOCUMENT')
           "
-          :is-loading="isUploading"
+          :is-loading="uiFlags.isCreating"
           @click="triggerUpload"
-        />
-        <input
-          ref="fileInput"
-          type="file"
-          class="hidden"
-          :accept="acceptedFileTypes"
-          @change="handleFileSelect"
         />
       </div>
     </template>
@@ -217,6 +199,13 @@ const deleteDocument = async doc => {
             </div>
           </div>
           <div class="flex items-center gap-8 shrink-0">
+            <Button
+              :label="t('KNOWLEDGE_BASE.CHUNK_SETTINGS_BUTTON')"
+              variant="link"
+              color="slate"
+              :disabled="doc.display_status === 'processing'"
+              @click="openChunkSettings(doc)"
+            />
             <button
               class="relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-n-brand focus:ring-offset-2"
               :class="doc.enabled ? 'bg-n-brand' : 'bg-n-slate-5'"
@@ -240,4 +229,16 @@ const deleteDocument = async doc => {
       </div>
     </div>
   </KBSectionCard>
+
+  <DocumentUploadDialog
+    ref="uploadDialogRef"
+    :knowledge-base-id="knowledgeBaseId"
+    :accepted-file-types="acceptedFileTypes"
+    :max-file-size-mb="KB_DOCUMENT_MAX_SIZE_MB"
+  />
+
+  <DocumentChunkSettingsDialog
+    ref="chunkSettingsDialogRef"
+    :knowledge-base-id="knowledgeBaseId"
+  />
 </template>

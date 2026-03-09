@@ -68,7 +68,12 @@ Rails.application.routes.draw do
           end
           resource :saml_settings, only: [:show, :create, :update, :destroy]
           resources :knowledge_bases, only: [:index, :show] do
-            resources :documents, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/documents'
+            resources :documents, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/documents' do
+              member do
+                get :chunk_settings, action: :show_chunk_settings
+                patch :chunk_settings, action: :update_chunk_settings
+              end
+            end
             resources :qa_pairs, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/qa_pairs' do
               collection do
                 post :sync
