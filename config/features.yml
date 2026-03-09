@@ -7,7 +7,7 @@
 # chatwoot_internal: whether the feature is internal to Chatwoot and should not be shown in the UI for other self hosted installations
 # deprecated: purpose of feature flag is done, no need to show it in the UI anymore
 - name: inbound_emails
-  display_name: Inbound Emails
+  display_name: Inbound Emailss
   enabled: true
 - name: channel_email
   display_name: Email Channel

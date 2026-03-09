@@ -294,6 +294,11 @@ Rails.application.routes.draw do
                 delete :destroy
               end
             end
+            resource :jsm, controller: 'jsm', only: [] do
+              collection do
+                post :link_ticket
+              end
+            end
           end
           resources :working_hours, only: [:update]
 

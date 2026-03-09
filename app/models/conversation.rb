@@ -199,6 +199,7 @@ class Conversation < ApplicationRecord
 
   def execute_after_update_commit_callbacks
     handle_resolved_status_change
+    enqueue_jsm_close_ticket
     notify_status_change
     create_activity
     notify_conversation_updation
@@ -211,6 +212,14 @@ class Conversation < ApplicationRecord
     # rubocop:disable Rails/SkipsModelValidations
     update_column(:waiting_since, nil)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def enqueue_jsm_close_ticket
+    return unless saved_change_to_status? && resolved?
+    return unless additional_attributes.to_h.dig('jsm', 'ticket_id').present? || additional_attributes.to_h.dig('jsm', 'ticket_key').present?
+    return unless account.hooks.enabled.exists?(app_id: 'jsm')
+
+    Integrations::Jsm::CloseTicketJob.perform_later(id)
   end
 
   def ensure_snooze_until_reset

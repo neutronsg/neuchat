@@ -341,12 +341,9 @@ jsm:
           'domain': { 'type': 'string' },
           'email': { 'type': 'string' },
           'api_token': { 'type': 'string' },
-          'project_key': { 'type': 'string' },
-          'issue_type': { 'type': 'string' },
-          'default_priority': { 'type': 'string' },
-          'sync_comments': { 'type': 'boolean' }
+          'close_transition_id': { 'type': 'string' }
         },
-      'required': ['domain', 'email', 'api_token', 'project_key'],
+      'required': ['domain', 'email', 'api_token', 'close_transition_id'],
       'additionalProperties': false,
     }
   settings_form_schema:
@@ -373,44 +370,11 @@ jsm:
         'help': 'Your Jira API token (create from Atlassian Account Settings)',
       },
       {
-        'label': 'Project Key',
+        'label': 'Close Transition ID',
         'type': 'text',
-        'name': 'project_key',
+        'name': 'close_transition_id',
         'validation': 'required',
-        'help': 'JSM project key (e.g., HELP, SUP, IT)',
-      },
-      {
-        'label': 'Default Issue Type',
-        'type': 'select',
-        'name': 'issue_type',
-        'default': 'Task',
-        'options': [
-          { 'label': 'Task', 'value': 'Task' },
-          { 'label': 'Bug', 'value': 'Bug' },
-          { 'label': 'Story', 'value': 'Story' },
-          { 'label': 'Service Request', 'value': 'Service Request' },
-        ],
-        'help': 'Default issue type for created tickets',
-      },
-      {
-        'label': 'Default Priority',
-        'type': 'select',
-        'name': 'default_priority',
-        'default': 'Medium',
-        'options': [
-          { 'label': 'Highest', 'value': 'Highest' },
-          { 'label': 'High', 'value': 'High' },
-          { 'label': 'Medium', 'value': 'Medium' },
-          { 'label': 'Low', 'value': 'Low' },
-          { 'label': 'Lowest', 'value': 'Lowest' },
-        ],
-        'help': 'Default priority for created tickets',
-      },
-      {
-        'label': 'Sync Comments',
-        'type': 'checkbox',
-        'name': 'sync_comments',
-        'help': 'Sync conversation messages as JSM comments',
+        'help': 'Jira transition ID used to close a linked ticket when the conversation is resolved',
       },
     ]
-  visible_properties: ['domain', 'project_key', 'issue_type', 'default_priority', 'sync_comments']
+  visible_properties: ['domain', 'email', 'close_transition_id']
