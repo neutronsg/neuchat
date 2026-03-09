@@ -20,7 +20,7 @@ class Api::V1::Accounts::Integrations::JsmController < Api::V1::Accounts::BaseCo
     @conversation.save!
 
     render json: {
-      conversation_id: @conversation.display_id,
+      conversation_id: @conversation.id,
       jsm: @conversation.additional_attributes['jsm']
     }, status: :ok
   end
@@ -34,7 +34,9 @@ class Api::V1::Accounts::Integrations::JsmController < Api::V1::Accounts::BaseCo
   end
 
   def fetch_conversation
-    @conversation = Current.account.conversations.find_by!(display_id: permitted_params[:conversation_id])
+    conversation_id = permitted_params[:conversation_id]
+    @conversation = Current.account.conversations.find_by(id: conversation_id) ||
+                    Current.account.conversations.find_by!(display_id: conversation_id)
   end
 
   def fetch_hook

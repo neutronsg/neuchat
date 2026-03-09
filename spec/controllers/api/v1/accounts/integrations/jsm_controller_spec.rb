@@ -13,7 +13,7 @@ RSpec.describe 'JSM Integration API', type: :request do
   describe 'POST /api/v1/accounts/:account_id/integrations/jsm/link_ticket' do
     let(:params) do
       {
-        conversation_id: conversation.display_id,
+        conversation_id: conversation.id,
         ticket_id: '10001',
         ticket_key: 'SUP-123',
         ticket_url: 'https://example.atlassian.net/browse/SUP-123'
@@ -27,6 +27,22 @@ RSpec.describe 'JSM Integration API', type: :request do
            as: :json
 
       expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['conversation_id']).to eq(conversation.id)
+      expect(conversation.reload.additional_attributes['jsm']).to eq(
+        'ticket_id' => '10001',
+        'ticket_key' => 'SUP-123',
+        'ticket_url' => 'https://example.atlassian.net/browse/SUP-123'
+      )
+    end
+
+    it 'falls back to display_id when primary id is not provided' do
+      post "/api/v1/accounts/#{account.id}/integrations/jsm/link_ticket",
+           params: params.merge(conversation_id: conversation.display_id),
+           headers: { api_access_token: admin.access_token.token },
+           as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['conversation_id']).to eq(conversation.id)
       expect(conversation.reload.additional_attributes['jsm']).to eq(
         'ticket_id' => '10001',
         'ticket_key' => 'SUP-123',
