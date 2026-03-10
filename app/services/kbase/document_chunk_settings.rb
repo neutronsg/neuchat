@@ -108,7 +108,7 @@ class Kbase::DocumentChunkSettings
   end
 
   def normalized_pre_processing_rule_hash
-    SUPPORTED_RULE_IDS.index_with { |rule_id| ActiveModel::Type::Boolean.new.cast(pre_processing_rules[rule_id]) }
+    SUPPORTED_RULE_IDS.index_with { |rule_id| self.class.cast_rule_enabled(pre_processing_rules[rule_id]) }
   end
 
   def pre_processing_rule_list
@@ -128,7 +128,7 @@ class Kbase::DocumentChunkSettings
       data = rule.to_h.with_indifferent_access
       next unless SUPPORTED_RULE_IDS.include?(data[:id].to_s)
 
-      hash[data[:id].to_s] = ActiveModel::Type::Boolean.new.cast(data[:enabled])
+      hash[data[:id].to_s] = cast_rule_enabled(data[:enabled])
     end
   end
 
@@ -139,10 +139,14 @@ class Kbase::DocumentChunkSettings
     raise Error, 'pre_processing_rules contains unsupported keys' if unsupported_rule_ids.any?
 
     SUPPORTED_RULE_IDS.index_with do |rule_id|
-      ActiveModel::Type::Boolean.new.cast(data[rule_id])
+      cast_rule_enabled(data[rule_id])
     end
   rescue NoMethodError
     raise Error, 'pre_processing_rules must be an object'
+  end
+
+  def self.cast_rule_enabled(value)
+    ActiveModel::Type::Boolean.new.cast(value) || false
   end
 
   def self.decode_separator(separator)
