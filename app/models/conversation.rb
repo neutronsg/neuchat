@@ -79,12 +79,14 @@ class Conversation < ApplicationRecord
   scope :resolvable_not_waiting, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?
 
-    open.where('last_activity_at < ? AND waiting_since IS NULL', Time.now.utc - auto_resolve_after.minutes)
+    where(status: [:open, :pending]).where('last_activity_at < ? AND waiting_since IS NULL', Time.now.utc - auto_resolve_after.minutes)
   }
   scope :resolvable_all, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?
 
-    open.where('last_activity_at < ?', Time.now.utc - auto_resolve_after.minutes)
+    where('last_activity_at < ?', Time.now.utc - auto_resolve_after.minutes)
+      .where('status = :open OR (status = :pending AND waiting_since IS NULL)',
+             open: statuses[:open], pending: statuses[:pending])
   }
 
   scope :last_user_message_at, lambda {
