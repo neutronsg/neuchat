@@ -1,4 +1,4 @@
-class Integrations::Jsm::CloseTicketJob < ApplicationJob
+class Integrations::Jsm::CreateTicketJob < ApplicationJob
   queue_as :default
   retry_on Integrations::Jsm::Client::ApiError, wait: 1.minute, attempts: 3
 
@@ -6,10 +6,10 @@ class Integrations::Jsm::CloseTicketJob < ApplicationJob
     conversation = Conversation.find_by(id: conversation_id)
     return if conversation.blank?
 
-    Integrations::Jsm::CloseTicketService.new(conversation: conversation).perform
+    Integrations::Jsm::CreateTicketService.new(conversation: conversation).perform
   rescue StandardError => e
     ChatwootExceptionTracker.new(e, account: conversation&.account).capture_exception
-    Rails.logger.error("JSM close ticket failed for conversation #{conversation_id}: #{e.message}")
+    Rails.logger.error("JSM create ticket failed for conversation #{conversation_id}: #{e.message}")
     raise e
   end
 end

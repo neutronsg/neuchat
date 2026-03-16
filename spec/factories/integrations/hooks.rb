@@ -42,10 +42,9 @@ FactoryBot.define do
       app_id { 'jsm' }
       settings do
         {
-          'domain' => 'example.atlassian.net',
-          'email' => 'agent@example.com',
-          'api_token' => SecureRandom.hex,
-          'close_transition_id' => '31'
+          'jira_cloud_id' => 'f9c91771-bf6d-4af8-92ee-449818ce72cd',
+          'jira_project_key' => 'SUP',
+          'neuai_workflow_api_key' => SecureRandom.hex
         }
       end
     end

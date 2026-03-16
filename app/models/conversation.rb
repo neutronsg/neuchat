@@ -116,6 +116,7 @@ class Conversation < ApplicationRecord
 
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation
+  after_create_commit :enqueue_jsm_create_ticket
   after_create_commit :load_attributes_created_by_db_triggers
 
   delegate :auto_resolve_after, to: :account
@@ -220,6 +221,13 @@ class Conversation < ApplicationRecord
     return unless account.hooks.enabled.exists?(app_id: 'jsm')
 
     Integrations::Jsm::CloseTicketJob.perform_later(id)
+  end
+
+  def enqueue_jsm_create_ticket
+    return unless account.hooks.enabled.exists?(app_id: 'jsm')
+    return if additional_attributes.to_h.dig('jsm', 'ticket_id').present? || additional_attributes.to_h.dig('jsm', 'ticket_key').present?
+
+    Integrations::Jsm::CreateTicketJob.perform_later(id)
   end
 
   def ensure_snooze_until_reset

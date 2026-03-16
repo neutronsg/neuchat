@@ -71,6 +71,20 @@ RSpec.describe Conversation do
         .with(described_class::CONVERSATION_CREATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: false,
                                                                     changed_attributes: nil, performed_by: nil)
     end
+
+    it 'enqueues JSM create ticket job when JSM is configured' do
+      create(:integrations_hook, :jsm, account: account)
+
+      expect do
+        create(
+          :conversation,
+          account: account,
+          contact: create(:contact, account: account),
+          inbox: inbox,
+          assignee: nil
+        )
+      end.to have_enqueued_job(Integrations::Jsm::CreateTicketJob)
+    end
   end
 
   describe '.validate jsonb attributes' do

@@ -338,43 +338,35 @@ jsm:
       'type': 'object',
       'properties':
         {
-          'domain': { 'type': 'string' },
-          'email': { 'type': 'string' },
-          'api_token': { 'type': 'string' },
-          'close_transition_id': { 'type': 'string' }
+          'jira_cloud_id': { 'type': 'string' },
+          'jira_project_key': { 'type': 'string' },
+          'neuai_workflow_api_key': { 'type': 'string' }
         },
-      'required': ['domain', 'email', 'api_token', 'close_transition_id'],
+      'required': ['jira_cloud_id', 'jira_project_key', 'neuai_workflow_api_key'],
       'additionalProperties': false,
     }
   settings_form_schema:
     [
       {
-        'label': 'JSM Domain',
+        'label': 'Jira Cloud ID',
         'type': 'text',
-        'name': 'domain',
+        'name': 'jira_cloud_id',
         'validation': 'required',
-        'help': 'Your Jira domain (e.g., yourcompany.atlassian.net)',
+        'help': 'Your Jira cloud ID used by the NeuAI workflow.',
       },
       {
-        'label': 'Email',
-        'type': 'email',
-        'name': 'email',
-        'validation': 'required|email',
-        'help': 'Email address for JSM authentication',
+        'label': 'Jira Project Key',
+        'type': 'text',
+        'name': 'jira_project_key',
+        'validation': 'required',
+        'help': 'Project key used when the NeuAI workflow creates Jira issues.',
       },
       {
-        'label': 'API Token',
+        'label': 'NeuAI Workflow API Key',
         'type': 'password',
-        'name': 'api_token',
+        'name': 'neuai_workflow_api_key',
         'validation': 'required',
-        'help': 'Your Jira API token (create from Atlassian Account Settings)',
-      },
-      {
-        'label': 'Close Transition ID',
-        'type': 'text',
-        'name': 'close_transition_id',
-        'validation': 'required',
-        'help': 'Jira transition ID used to close a linked ticket when the conversation is resolved',
+        'help': 'API key used to call the NeuAI workflow that manages Jira issues.',
       },
     ]
-  visible_properties: ['domain', 'email', 'close_transition_id']
+  visible_properties: ['jira_cloud_id', 'jira_project_key']
