@@ -4,6 +4,7 @@
 #
 #  id                :bigint           not null, primary key
 #  name              :string
+#  remote_filename   :string
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  created_by_id     :bigint

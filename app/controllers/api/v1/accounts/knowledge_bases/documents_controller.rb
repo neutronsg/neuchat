@@ -14,25 +14,20 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
   def create
     return render_error('No file uploaded', :bad_request) if params[:file].blank?
 
-    client = Kbase::NeuaiClient.new
-    response = client.create_document_by_file(
-      @knowledge_base.neuai_dataset_id,
-      params[:file],
-      name: params[:name] || params[:file].original_filename,
-      process_rule: build_chunk_settings&.to_process_rule
+    display_name = document_display_name
+    remote_filename = Kbase::DocumentRemoteFilename.build(
+      knowledge_base_id: @knowledge_base.id,
+      original_filename: uploaded_file_name
     )
-
-    document = @knowledge_base.documents.create!(
+    response = create_neuai_document(display_name: display_name, remote_filename: remote_filename)
+    document = upsert_document!(
       neuai_document_id: response.dig('document', 'id'),
-      name: params[:name] || params[:file].original_filename,
-      created_by_id: Current.user&.id,
-      updated_by_id: Current.user&.id
+      display_name: display_name,
+      remote_filename: remote_filename
     )
 
     render json: document_response(document, response['document']), status: :created
-  rescue Kbase::NeuaiClient::Error => e
-    render_error(e.message, :unprocessable_entity)
-  rescue Kbase::DocumentChunkSettings::Error => e
+  rescue Kbase::NeuaiClient::Error, Kbase::DocumentChunkSettings::Error => e
     render_error(e.message, :unprocessable_entity)
   end
 
@@ -86,9 +81,7 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
       success: true,
       indexing_status: response.dig('document', 'indexing_status') || 'waiting'
     }
-  rescue Kbase::NeuaiClient::Error => e
-    render_error(e.message, :unprocessable_entity)
-  rescue Kbase::DocumentChunkSettings::Error => e
+  rescue Kbase::NeuaiClient::Error, Kbase::DocumentChunkSettings::Error => e
     render_error(e.message, :unprocessable_entity)
   end
 
@@ -198,5 +191,35 @@ class Api::V1::Accounts::KnowledgeBases::DocumentsController < Api::V1::Accounts
 
   def processing?(document_response)
     PROCESSING_STATUSES.include?(document_response['indexing_status'])
+  end
+
+  def document_display_name
+    params[:name].presence || uploaded_file_name
+  end
+
+  def uploaded_file_name
+    File.basename(params[:file].original_filename.to_s)
+  end
+
+  def create_neuai_document(display_name:, remote_filename:)
+    Kbase::NeuaiClient.new.create_document_by_file(
+      @knowledge_base.neuai_dataset_id,
+      params[:file],
+      name: display_name,
+      process_rule: build_chunk_settings&.to_process_rule,
+      upload_filename: remote_filename
+    )
+  end
+
+  def upsert_document!(neuai_document_id:, display_name:, remote_filename:)
+    document = @knowledge_base.documents.find_or_initialize_by(neuai_document_id: neuai_document_id)
+    document.assign_attributes(
+      name: display_name,
+      remote_filename: remote_filename,
+      updated_by_id: Current.user&.id
+    )
+    document.created_by_id ||= Current.user&.id
+    document.save!
+    document
   end
 end

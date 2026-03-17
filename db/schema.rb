@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_04_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_17_010101) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -808,6 +808,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_04_000000) do
     t.datetime "updated_at", null: false
     t.bigint "created_by_id"
     t.bigint "updated_by_id"
+    t.string "remote_filename"
     t.index ["created_by_id"], name: "index_kbase_documents_on_created_by_id"
     t.index ["knowledge_base_id", "neuai_document_id"], name: "index_kbase_documents_on_kb_and_neuai_doc", unique: true
     t.index ["knowledge_base_id"], name: "index_kbase_documents_on_knowledge_base_id"
