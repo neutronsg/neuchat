@@ -15,6 +15,7 @@ RSpec.describe 'Api::V1::Accounts::KnowledgeBases::Documents', type: :request do
       knowledge_base: knowledge_base,
       neuai_document_id: 'doc_123',
       name: 'FAQ',
+      remote_filename: "neuchat-kb-#{knowledge_base.id}--faq.txt",
       created_by: admin,
       updated_by: admin
     )
@@ -93,7 +94,8 @@ RSpec.describe 'Api::V1::Accounts::KnowledgeBases::Documents', type: :request do
         'dataset_123',
         an_instance_of(ActionDispatch::Http::UploadedFile),
         name: 'Guide',
-        process_rule: expected_process_rule
+        process_rule: expected_process_rule,
+        upload_filename: "neuchat-kb-#{knowledge_base.id}--guide.txt"
       ).and_return(
         {
           'document' => {
@@ -122,7 +124,42 @@ RSpec.describe 'Api::V1::Accounts::KnowledgeBases::Documents', type: :request do
            headers: admin.create_new_auth_token
 
       expect(response).to have_http_status(:created)
-      expect(knowledge_base.documents.find_by(neuai_document_id: 'doc_new')).to be_present
+      created_document = knowledge_base.documents.find_by(neuai_document_id: 'doc_new')
+      expect(created_document).to be_present
+      expect(created_document.remote_filename).to eq("neuchat-kb-#{knowledge_base.id}--guide.txt")
+    end
+
+    it 'reuses the local record when Dify returns an existing document id' do
+      allow(neuai_client).to receive(:create_document_by_file).with(
+        'dataset_123',
+        an_instance_of(ActionDispatch::Http::UploadedFile),
+        name: 'Guide',
+        process_rule: nil,
+        upload_filename: "neuchat-kb-#{knowledge_base.id}--guide.txt"
+      ).and_return(
+        {
+          'document' => {
+            'id' => 'doc_123',
+            'indexing_status' => 'waiting',
+            'enabled' => true,
+            'word_count' => 18
+          }
+        }
+      )
+
+      expect do
+        post "/api/v1/accounts/#{account.id}/knowledge_bases/#{knowledge_base.id}/documents",
+             params: {
+               file: uploaded_file,
+               name: 'Guide'
+             },
+             headers: admin.create_new_auth_token
+      end.not_to(change { knowledge_base.documents.count })
+
+      expect(response).to have_http_status(:created)
+      document.reload
+      expect(document.name).to eq('Guide')
+      expect(document.remote_filename).to eq("neuchat-kb-#{knowledge_base.id}--guide.txt")
     end
   end
 
