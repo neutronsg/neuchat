@@ -79,12 +79,14 @@ class Conversation < ApplicationRecord
   scope :resolvable_not_waiting, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?
 
-    open.where('last_activity_at < ? AND waiting_since IS NULL', Time.now.utc - auto_resolve_after.minutes)
+    where(status: [:open, :pending]).where('last_activity_at < ? AND waiting_since IS NULL', Time.now.utc - auto_resolve_after.minutes)
   }
   scope :resolvable_all, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?
 
-    open.where('last_activity_at < ?', Time.now.utc - auto_resolve_after.minutes)
+    where('last_activity_at < ?', Time.now.utc - auto_resolve_after.minutes)
+      .where('status = :open OR (status = :pending AND waiting_since IS NULL)',
+             open: statuses[:open], pending: statuses[:pending])
   }
 
   scope :last_user_message_at, lambda {
@@ -116,6 +118,7 @@ class Conversation < ApplicationRecord
 
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation
+  after_create_commit :enqueue_jsm_create_ticket
   after_create_commit :load_attributes_created_by_db_triggers
 
   delegate :auto_resolve_after, to: :account
@@ -199,6 +202,7 @@ class Conversation < ApplicationRecord
 
   def execute_after_update_commit_callbacks
     handle_resolved_status_change
+    enqueue_jsm_close_ticket
     notify_status_change
     create_activity
     notify_conversation_updation
@@ -211,6 +215,21 @@ class Conversation < ApplicationRecord
     # rubocop:disable Rails/SkipsModelValidations
     update_column(:waiting_since, nil)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def enqueue_jsm_close_ticket
+    return unless saved_change_to_status? && resolved?
+    return unless additional_attributes.to_h.dig('jsm', 'ticket_id').present? || additional_attributes.to_h.dig('jsm', 'ticket_key').present?
+    return unless account.hooks.enabled.exists?(app_id: 'jsm')
+
+    Integrations::Jsm::CloseTicketJob.perform_later(id)
+  end
+
+  def enqueue_jsm_create_ticket
+    return unless account.hooks.enabled.exists?(app_id: 'jsm')
+    return if additional_attributes.to_h.dig('jsm', 'ticket_id').present? || additional_attributes.to_h.dig('jsm', 'ticket_key').present?
+
+    Integrations::Jsm::CreateTicketJob.perform_later(id)
   end
 
   def ensure_snooze_until_reset

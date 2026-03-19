@@ -38,6 +38,17 @@ FactoryBot.define do
       reference_id { 'test-store.myshopify.com' }
     end
 
+    trait :jsm do
+      app_id { 'jsm' }
+      settings do
+        {
+          'jira_cloud_id' => 'f9c91771-bf6d-4af8-92ee-449818ce72cd',
+          'jira_project_key' => 'SUP',
+          'neuai_workflow_api_key' => SecureRandom.hex
+        }
+      end
+    end
+
     trait :leadsquared do
       app_id { 'leadsquared' }
       settings do

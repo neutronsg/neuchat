@@ -71,6 +71,20 @@ RSpec.describe Conversation do
         .with(described_class::CONVERSATION_CREATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: false,
                                                                     changed_attributes: nil, performed_by: nil)
     end
+
+    it 'enqueues JSM create ticket job when JSM is configured' do
+      create(:integrations_hook, :jsm, account: account)
+
+      expect do
+        create(
+          :conversation,
+          account: account,
+          contact: create(:contact, account: account),
+          inbox: inbox,
+          assignee: nil
+        )
+      end.to have_enqueued_job(Integrations::Jsm::CreateTicketJob)
+    end
   end
 
   describe '.validate jsonb attributes' do
@@ -229,6 +243,22 @@ RSpec.describe Conversation do
         .to have_enqueued_job(Conversations::ActivityMessageJob)
         .with(conversation2, { account_id: conversation2.account_id, inbox_id: conversation2.inbox_id, message_type: :activity,
                                content: system_resolved_message })
+    end
+
+    it 'enqueues JSM close ticket job when a linked conversation is resolved' do
+      create(:integrations_hook, :jsm, account: account)
+      conversation.update_column(:additional_attributes, { 'jsm' => { 'ticket_key' => 'SUP-123' } })
+
+      expect { conversation.update(status: :resolved) }
+        .to have_enqueued_job(Integrations::Jsm::CloseTicketJob)
+        .with(conversation.id)
+    end
+
+    it 'does not enqueue JSM close ticket job when no JSM ticket is linked' do
+      create(:integrations_hook, :jsm, account: account)
+
+      expect { conversation.update(status: :resolved) }
+        .not_to have_enqueued_job(Integrations::Jsm::CloseTicketJob)
     end
   end
 

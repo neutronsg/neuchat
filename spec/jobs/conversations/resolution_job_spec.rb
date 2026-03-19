@@ -26,6 +26,15 @@ RSpec.describe Conversations::ResolutionJob do
       expect(conversation.reload.status).to eq('resolved')
     end
 
+    it 'resolves pending non-waiting conversations if time of inactivity is more than auto resolve duration' do
+      account.update(auto_resolve_after: 14_400, auto_resolve_ignore_waiting: true) # 10 days in minutes
+      pending_conversation = create(:conversation, account: account, status: :pending, last_activity_at: 13.days.ago, waiting_since: nil)
+
+      described_class.perform_now(account: account)
+
+      expect(pending_conversation.reload.status).to eq('resolved')
+    end
+
     it 'does not resolve waiting conversations even if time of inactivity is more than auto resolve duration' do
       account.update(auto_resolve_after: 14_400, auto_resolve_ignore_waiting: true) # 10 days in minutes
       conversation.update(last_activity_at: 13.days.ago, waiting_since: 13.days.ago)
@@ -45,6 +54,24 @@ RSpec.describe Conversations::ResolutionJob do
 
       expect(waiting_conversation.reload.status).to eq('resolved')
       expect(non_waiting_conversation.reload.status).to eq('resolved')
+    end
+
+    it 'resolves pending conversations if time of inactivity is more than auto resolve duration' do
+      account.update(auto_resolve_after: 14_400, auto_resolve_ignore_waiting: false) # 10 days in minutes
+      pending_conversation = create(:conversation, account: account, status: :pending, last_activity_at: 13.days.ago, waiting_since: nil)
+
+      described_class.perform_now(account: account)
+
+      expect(pending_conversation.reload.status).to eq('resolved')
+    end
+
+    it 'does not resolve pending conversations waiting on an agent or bot reply' do
+      account.update(auto_resolve_after: 14_400, auto_resolve_ignore_waiting: false) # 10 days in minutes
+      pending_conversation = create(:conversation, account: account, status: :pending, last_activity_at: 13.days.ago, waiting_since: 13.days.ago)
+
+      described_class.perform_now(account: account)
+
+      expect(pending_conversation.reload.status).to eq('pending')
     end
   end
 
