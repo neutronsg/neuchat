@@ -64,10 +64,15 @@ class Integrations::Hook < ApplicationRecord
     update(status: 'disabled')
   end
 
-  def process_event(_event)
-    # OpenAI integration migrated to Captain::EditorService
-    # Other integrations (slack, dialogflow, etc.) handled via HookJob
-    { error: 'No processor found' }
+  def process_event(event)
+    case app_id
+    when 'neuai'
+      Integrations::Neuai::ProcessorService.new(hook: self, event: event).perform
+    else
+      # OpenAI integration migrated to Captain::EditorService
+      # Other integrations (slack, dialogflow, etc.) handled via HookJob
+      { error: 'No processor found' }
+    end
   end
 
   def feature_allowed?

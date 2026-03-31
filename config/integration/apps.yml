@@ -284,3 +284,89 @@ leadsquared:
       'conversation_activity_score',
       'transcript_activity_score',
     ]
+neuai:
+  id: neuai
+  logo: neuai.png
+  i18n_key: neuai
+  action: /neuai
+  hook_type: account
+  allow_multiple_hooks: false
+  settings_json_schema:
+    {
+      'type': 'object',
+      'properties':
+        {
+          'agent_id': { 'type': 'string' },
+          'neuai_url': { 'type': 'string' },
+          'api_key': { 'type': 'string' },
+          'label_suggestion': { 'type': 'boolean' },
+        },
+      'required': ['neuai_url', 'agent_id', 'api_key'],
+      'additionalProperties': false,
+    }
+  settings_form_schema:
+    [
+      {
+        'label': 'NeuAI URL',
+        'type': 'text',
+        'name': 'neuai_url',
+        'validation': 'required',
+      },
+      {
+        'label': 'Agent ID',
+        'type': 'text',
+        'name': 'agent_id',
+        'validation': 'required',
+      },
+      {
+        'label': 'API Key',
+        'type': 'text',
+        'name': 'api_key',
+        'validation': 'required',
+      },
+    ]
+  visible_properties: ['neuai_url', 'api_key', 'agent_id']
+jsm:
+  id: jsm
+  logo: jsm.png
+  i18n_key: jsm
+  action: /jsm
+  hook_type: account
+  allow_multiple_hooks: false
+  settings_json_schema:
+    {
+      'type': 'object',
+      'properties':
+        {
+          'jira_cloud_id': { 'type': 'string' },
+          'jira_project_key': { 'type': 'string' },
+          'neuai_workflow_api_key': { 'type': 'string' }
+        },
+      'required': ['jira_cloud_id', 'jira_project_key', 'neuai_workflow_api_key'],
+      'additionalProperties': false,
+    }
+  settings_form_schema:
+    [
+      {
+        'label': 'Jira Cloud ID',
+        'type': 'text',
+        'name': 'jira_cloud_id',
+        'validation': 'required',
+        'help': 'Cloud ID used by the workflow when creating Jira issues.',
+      },
+      {
+        'label': 'Jira Project Key',
+        'type': 'text',
+        'name': 'jira_project_key',
+        'validation': 'required',
+        'help': 'Project key used when the workflow creates Jira issues.',
+      },
+      {
+        'label': 'Workflow API Key',
+        'type': 'password',
+        'name': 'neuai_workflow_api_key',
+        'validation': 'required',
+        'help': 'API key used to call the workflow that manages Jira issues.',
+      },
+    ]
+  visible_properties: ['jira_cloud_id', 'jira_project_key']
