@@ -9,6 +9,7 @@ export const INBOX_TYPES = {
   TELEGRAM: 'Channel::Telegram',
   LINE: 'Channel::Line',
   SMS: 'Channel::Sms',
+  WECHAT: 'Channel::Wechat',
   INSTAGRAM: 'Channel::Instagram',
   TIKTOK: 'Channel::Tiktok',
   VOICE: 'Channel::Voice',
@@ -28,6 +29,7 @@ const INBOX_ICON_MAP_FILL = {
   [INBOX_TYPES.EMAIL]: 'i-ri-mail-fill',
   [INBOX_TYPES.TELEGRAM]: 'i-ri-telegram-fill',
   [INBOX_TYPES.LINE]: 'i-ri-line-fill',
+  [INBOX_TYPES.WECHAT]: 'i-ri-wechat-fill',
   [INBOX_TYPES.INSTAGRAM]: 'i-ri-instagram-fill',
   [INBOX_TYPES.TIKTOK]: 'i-ri-tiktok-fill',
   [INBOX_TYPES.VOICE]: 'i-ri-phone-fill',
@@ -44,6 +46,7 @@ const INBOX_ICON_MAP_LINE = {
   [INBOX_TYPES.EMAIL]: 'i-woot-mail',
   [INBOX_TYPES.TELEGRAM]: 'i-woot-telegram',
   [INBOX_TYPES.LINE]: 'i-woot-line',
+  [INBOX_TYPES.WECHAT]: 'i-ri-wechat-line',
   [INBOX_TYPES.INSTAGRAM]: 'i-woot-instagram',
   [INBOX_TYPES.VOICE]: 'i-woot-voice',
   [INBOX_TYPES.TIKTOK]: 'i-woot-tiktok',
@@ -97,6 +100,9 @@ export const getReadableInboxByType = (type, phoneNumber) => {
     case INBOX_TYPES.LINE:
       return 'line';
 
+    case INBOX_TYPES.WECHAT:
+      return 'wechat';
+
     case INBOX_TYPES.VOICE:
       return 'voice';
 
@@ -135,6 +141,9 @@ export const getInboxClassByType = (type, phoneNumber) => {
 
     case INBOX_TYPES.LINE:
       return 'brand-line';
+
+    case INBOX_TYPES.WECHAT:
+      return 'chat';
 
     case INBOX_TYPES.INSTAGRAM:
       return 'brand-instagram';

@@ -59,6 +59,9 @@ export default {
     isALineChannel() {
       return this.channelType === INBOX_TYPES.LINE;
     },
+    isAWechatChannel() {
+      return this.channelType === INBOX_TYPES.WECHAT;
+    },
     isAVoiceChannel() {
       return this.channelType === INBOX_TYPES.VOICE;
     },

@@ -83,6 +83,20 @@ Rails.application.routes.draw do
             end
           end
           resource :saml_settings, only: [:show, :create, :update, :destroy]
+          resources :knowledge_bases, only: [:index, :show] do
+            resources :documents, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/documents' do
+              member do
+                get :chunk_settings, action: :show_chunk_settings
+                patch :chunk_settings, action: :update_chunk_settings
+              end
+            end
+            resources :qa_pairs, only: [:index, :create, :update, :destroy], controller: 'knowledge_bases/qa_pairs' do
+              collection do
+                post :sync
+                post :import_docx
+              end
+            end
+          end
           resources :agent_bots, only: [:index, :create, :show, :update, :destroy] do
             delete :avatar, on: :member
             post :reset_access_token, on: :member
@@ -339,6 +353,11 @@ Rails.application.routes.draw do
                 delete :destroy
               end
             end
+            resource :jsm, controller: 'jsm', only: [] do
+              collection do
+                post :link_ticket
+              end
+            end
           end
           resources :working_hours, only: [:update]
 
@@ -564,6 +583,8 @@ Rails.application.routes.draw do
   post 'webhooks/twitter', to: 'api/v1/webhooks#twitter_events'
   post 'webhooks/line/:line_channel_id', to: 'webhooks/line#process_payload'
   post 'webhooks/telegram/:bot_token', to: 'webhooks/telegram#process_payload'
+  get 'webhooks/wechat/:token', to: 'webhooks/wechat#verify'
+  post 'webhooks/wechat/:token', to: 'webhooks/wechat#process_payload'
   post 'webhooks/sms/:phone_number', to: 'webhooks/sms#process_payload'
   get 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#verify'
   post 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#process_payload'
@@ -631,6 +652,11 @@ Rails.application.routes.draw do
 
       resources :access_tokens, only: [:index, :show]
       resources :installation_configs, only: [:index, :new, :create, :show, :edit, :update]
+      resources :knowledge_bases, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
+        collection do
+          post :check_status
+        end
+      end
       resources :agent_bots, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
         delete :avatar, on: :member, action: :destroy_avatar
       end

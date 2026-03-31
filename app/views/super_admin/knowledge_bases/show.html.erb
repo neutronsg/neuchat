@@ -1,0 +1,95 @@
+<header class="main-content__header">
+  <h1 class="main-content__page-title">Knowledge Base: <%= @knowledge_base.name %></h1>
+  <div>
+    <%= link_to 'Edit', edit_super_admin_knowledge_basis_path(@knowledge_base), class: 'button' %>
+    <%= link_to 'Back', super_admin_knowledge_bases_path, class: 'button' %>
+  </div>
+</header>
+
+<section class="main-content__body">
+  <dl class="attributes-table">
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Account</dt>
+      <dd class="attributes-table__value"><%= link_to @knowledge_base.account.name, super_admin_account_path(@knowledge_base.account) %></dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Name</dt>
+      <dd class="attributes-table__value"><%= @knowledge_base.name %></dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Description</dt>
+      <dd class="attributes-table__value"><%= @knowledge_base.description || '-' %></dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">NeuAI Dataset ID</dt>
+      <dd class="attributes-table__value cell-data--id"><%= @knowledge_base.neuai_dataset_id || 'Not linked' %></dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Link Status</dt>
+      <dd class="attributes-table__value neuai-status" data-kb-id="<%= @knowledge_base.id %>" data-dataset-id="<%= @knowledge_base.neuai_dataset_id %>">
+        <% if @knowledge_base.neuai_dataset_id.blank? %>
+          <span class="badge">Not linked</span>
+        <% else %>
+          <span class="badge badge--pending">Checking...</span>
+        <% end %>
+      </dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Q&A Document ID</dt>
+      <dd class="attributes-table__value"><%= @knowledge_base.qa_document_id || 'Not created' %></dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Documents Count</dt>
+      <dd class="attributes-table__value"><%= @knowledge_base.documents.count %></dd>
+    </div>
+
+    <div class="attributes-table__row">
+      <dt class="attributes-table__label">Q&A Pairs Count</dt>
+      <dd class="attributes-table__value"><%= @knowledge_base.qa_pairs.count %></dd>
+    </div>
+  </dl>
+</section>
+
+<% if @knowledge_base.neuai_dataset_id.present? %>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const statusCell = document.querySelector('.neuai-status');
+  if (!statusCell || !statusCell.dataset.datasetId) return;
+
+  fetch('<%= check_status_super_admin_knowledge_bases_path %>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: 'ids=<%= @knowledge_base.id %>'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      statusCell.innerHTML = '<span class="badge badge--warning">Unknown</span>';
+      return;
+    }
+
+    const status = data.statuses['<%= @knowledge_base.id %>'];
+    if (status === 'connected') {
+      statusCell.innerHTML = '<span class="badge badge--success">Connected</span>';
+    } else if (status === 'missing') {
+      statusCell.innerHTML = '<span class="badge badge--danger">Missing in NeuAI</span>';
+    } else {
+      statusCell.innerHTML = '<span class="badge">Not linked</span>';
+    }
+  })
+  .catch(error => {
+    console.error('Failed to check NeuAI status:', error);
+    statusCell.innerHTML = '<span class="badge badge--warning">Error</span>';
+  });
+});
+</script>
+<% end %>

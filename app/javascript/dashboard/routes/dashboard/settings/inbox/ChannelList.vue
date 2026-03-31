@@ -42,6 +42,12 @@ const channelList = computed(() => {
       icon: 'i-woot-whatsapp',
     },
     {
+      key: 'wechat',
+      title: t('INBOX_MGMT.ADD.AUTH.CHANNEL.WECHAT.TITLE'),
+      description: t('INBOX_MGMT.ADD.AUTH.CHANNEL.WECHAT.DESCRIPTION'),
+      icon: 'i-ri-wechat-fill',
+    },
+    {
       key: 'sms',
       title: t('INBOX_MGMT.ADD.AUTH.CHANNEL.SMS.TITLE'),
       description: t('INBOX_MGMT.ADD.AUTH.CHANNEL.SMS.DESCRIPTION'),

@@ -16,7 +16,7 @@
     "CREATE_FLOW": {
       "CHANNEL": {
         "TITLE": "Choose Channel",
-        "BODY": "Choose the provider you want to integrate with Chatwoot."
+        "BODY": "Choose the provider you want to integrate with NeuChat."
       },
       "INBOX": {
         "TITLE": "Create Inbox",
@@ -42,7 +42,7 @@
         "PLACEHOLDER": "Enter your website name (eg: Acme Inc)"
       },
       "FB": {
-        "HELP": "PS: By signing in, we only get access to your Page's messages. Your private messages can never be accessed by Chatwoot.",
+        "HELP": "PS: By signing in, we only get access to your Page's messages. Your private messages can never be accessed by NeuChat.",
         "CHOOSE_PAGE": "Choose Page",
         "CHOOSE_PLACEHOLDER": "Select a page from the list",
         "INBOX_NAME": "Inbox Name",
@@ -227,6 +227,50 @@
             "TITLE": "Callback URL",
             "SUBTITLE": "You have to configure the message callback URL in Bandwidth with the URL mentioned here."
           }
+        }
+      },
+      "WECHAT_CHANNEL": {
+        "TITLE": "WeChat Channel",
+        "DESC": "Integrate with WeChat Mini Program and start supporting your customers.",
+        "CHANNEL_NAME": {
+          "LABEL": "Channel Name",
+          "PLACEHOLDER": "Please enter a channel name",
+          "ERROR": "This field is required"
+        },
+        "APP_NAME": {
+          "LABEL": "Mini Program Name",
+          "PLACEHOLDER": "Enter your Mini Program name"
+        },
+        "APP_ID": {
+          "LABEL": "Mini Program ID",
+          "PLACEHOLDER": "Enter your Mini Program ID",
+          "ERROR": "This field is required"
+        },
+        "APP_SECRET": {
+          "LABEL": "Mini Program Secret",
+          "PLACEHOLDER": "Enter your Mini Program Secret",
+          "ERROR": "This field is required"
+        },
+        "ENCODING_AES_KEY": {
+          "LABEL": "Encoding AES Key",
+          "PLACEHOLDER": "Enter your Encoding AES Key"
+        },
+        "TOKEN": {
+          "LABEL": "Verify Token",
+          "PLACEHOLDER": "Enter your Verify Token",
+          "ERROR": "This field is required"
+        },
+        "SUBMIT_BUTTON": "Create WeChat Channel",
+        "API": {
+          "ERROR_MESSAGE": "We were not able to save the WeChat channel"
+        },
+        "API_CALLBACK": {
+          "TITLE": "Callback URL",
+          "SUBTITLE": "Configure your WeChat server callback URL using the value shown here."
+        },
+        "WEBHOOK_TOKEN": {
+          "TITLE": "Webhook Verify Token",
+          "SUBTITLE": "Use this token in your WeChat server configuration. It must match exactly."
         }
       },
       "WHATSAPP": {
@@ -441,7 +485,7 @@
       },
       "AUTH": {
         "TITLE": "Choose a channel",
-        "DESC": "Chatwoot supports live-chat widgets, Facebook Messenger, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
+        "DESC": "NeuChat supports live-chat widgets, Facebook Messenger, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
         "TITLE_NEXT": "Complete the setup",
         "TITLE_FINISH": "Voilà!",
         "CHANNEL": {
@@ -464,6 +508,10 @@
           "SMS": {
             "TITLE": "SMS",
             "DESCRIPTION": "Integrate SMS channel with Twilio or bandwidth"
+          },
+          "WECHAT": {
+            "TITLE": "WeChat",
+            "DESCRIPTION": "Support your customers on WeChat Mini Program"
           },
           "API": {
             "TITLE": "API",
@@ -499,11 +547,11 @@
       },
       "DETAILS": {
         "TITLE": "Inbox Details",
-        "DESC": "From the dropdown below, select the Facebook Page you want to connect to Chatwoot. You can also give a custom name to your inbox for better identification."
+        "DESC": "From the dropdown below, select the Facebook Page you want to connect to NeuChat. You can also give a custom name to your inbox for better identification."
       },
       "FINISH": {
         "TITLE": "Nailed It!",
-        "DESC": "You have successfully finished integrating your Facebook Page with Chatwoot. Next time a customer messages your Page, the conversation will automatically appear on your inbox.<br>We are also providing you with a widget script that you can easily add to your website. Once this is live on your website, customers can message you right from your website without the help of any external tool and the conversation will appear right here, on Chatwoot.<br>Cool, huh? Well, we sure try to be :)"
+        "DESC": "You have successfully finished integrating your Facebook Page with NeuChat. Next time a customer messages your Page, the conversation will automatically appear on your inbox.<br>We are also providing you with a widget script that you can easily add to your website. Once this is live on your website, customers can message you right from your website without the help of any external tool and the conversation will appear right here, on NeuChat.<br>Cool, huh? Well, we sure try to be :)"
       },
       "EMAIL_PROVIDER": {
         "TITLE": "Select your email provider",
@@ -1115,7 +1163,7 @@
         "USER_MESSAGE": "Hi",
         "AGENT_MESSAGE": "Hello"
       },
-      "BRANDING_TEXT": "Powered by Chatwoot",
+      "BRANDING_TEXT": "Powered by NeuChat",
       "SCRIPT_SETTINGS": "\n      window.chatwootSettings = {options};"
     },
     "EMAIL_PROVIDERS": {
@@ -1145,7 +1193,8 @@
       "API": "API Channel",
       "INSTAGRAM": "Instagram",
       "TIKTOK": "TikTok",
-      "VOICE": "Voice"
+      "VOICE": "Voice",
+      "WECHAT": "WeChat Mini Program"
     }
   }
 }

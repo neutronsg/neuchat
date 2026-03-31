@@ -130,6 +130,8 @@ if resource.whatsapp?
   json.reauthorization_required resource.channel.try(:reauthorization_required?)
 end
 
+json.wechat_token resource.channel.try(:token) if resource.channel_type == 'Channel::Wechat' && Current.account_user&.administrator?
+
 ## Voice Channel Attributes
 if resource.channel_type == 'Channel::Voice'
   json.voice_call_webhook_url resource.channel.try(:voice_call_webhook_url)

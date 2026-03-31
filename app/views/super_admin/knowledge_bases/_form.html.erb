@@ -1,0 +1,113 @@
+<%
+  form_url = @knowledge_base.new_record? ?
+    super_admin_knowledge_bases_path :
+    super_admin_knowledge_basis_path(@knowledge_base)
+%>
+<%= form_with model: @knowledge_base, url: form_url, local: true, class: 'form' do |f| %>
+  <% if @knowledge_base.errors.any? %>
+    <div id="error_explanation" class="flash-error">
+      <h2><%= pluralize(@knowledge_base.errors.count, "error") %> prohibited this knowledge base from being saved:</h2>
+      <ul>
+        <% @knowledge_base.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field-unit field-unit--required">
+    <div class="field-unit__label">
+      <%= f.label :account_id, 'Account' %>
+    </div>
+    <div class="field-unit__field">
+      <%= f.collection_select :account_id, @accounts, :id, :name,
+                              { prompt: 'Select an account' },
+                              { required: true, class: 'border border-slate-200 rounded-md p-2 w-full' } %>
+    </div>
+  </div>
+
+  <div class="field-unit field-unit--required">
+    <div class="field-unit__label">
+      <%= f.label :name %>
+    </div>
+    <div class="field-unit__field">
+      <%= f.text_field :name, required: true %>
+    </div>
+  </div>
+
+  <div class="field-unit">
+    <div class="field-unit__label">
+      <%= f.label :description %>
+    </div>
+    <div class="field-unit__field">
+      <%= f.text_area :description, rows: 3 %>
+    </div>
+  </div>
+
+  <fieldset class="field-unit--nested">
+    <legend>NeuAI Integration</legend>
+
+    <% if @knowledge_base.new_record? %>
+      <div class="field-unit">
+        <div class="field-unit__label">
+          <label>Dataset Mode</label>
+        </div>
+        <div class="field-unit__field">
+          <div class="flex flex-col gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <%= radio_button_tag :mode, 'create', true, id: 'mode_create' %>
+              Create new Dataset in NeuAI
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <%= radio_button_tag :mode, 'bind', false, id: 'mode_bind' %>
+              Bind to existing Dataset
+            </label>
+          </div>
+          <%= hidden_field_tag :create_in_neuai, '1', id: 'create_in_neuai_field' %>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="field-unit" id="dataset_id_field">
+      <div class="field-unit__label">
+        <%= f.label :neuai_dataset_id, 'NeuAI Dataset ID' %>
+      </div>
+      <div class="field-unit__field">
+        <%= f.text_field :neuai_dataset_id, placeholder: 'Enter existing NeuAI Dataset ID' %>
+        <p class="field-unit__hint mt-1 text-sm text-slate-500">Leave empty when creating a new dataset. Enter an ID only when binding to an existing dataset.</p>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="form-actions mt-6 flex gap-3">
+    <%= f.submit class: 'button button--primary' %>
+    <%= link_to 'Cancel', super_admin_knowledge_bases_path, class: 'button' %>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modeCreate = document.getElementById('mode_create');
+  const modeBind = document.getElementById('mode_bind');
+  const createField = document.getElementById('create_in_neuai_field');
+  const datasetField = document.getElementById('dataset_id_field');
+
+  if (modeCreate && modeBind) {
+    function updateVisibility() {
+      if (modeCreate.checked) {
+        createField.value = '1';
+        datasetField.style.display = 'none';
+      } else {
+        createField.value = '0';
+        datasetField.style.display = '';
+      }
+    }
+
+    modeCreate.addEventListener('change', updateVisibility);
+    modeBind.addEventListener('change', updateVisibility);
+
+    // Initial state
+    updateVisibility();
+  }
+});
+</script>

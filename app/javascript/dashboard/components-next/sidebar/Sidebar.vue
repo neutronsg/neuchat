@@ -387,6 +387,13 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'Knowledge Base',
+      label: t('SIDEBAR.KNOWLEDGE_BASE'),
+      icon: 'i-lucide-book-open-text',
+      to: accountScopedRoute('knowledge_bases_index'),
+      activeOn: ['knowledge_bases_index', 'knowledge_base_show'],
+    },
+    {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
       icon: 'i-lucide-contact',
