@@ -9,11 +9,12 @@ class Messages::MessageBuilder
     @user = user
     @message_type = params[:message_type] || 'outgoing'
     @attachments = params[:attachments]
-    @automation_rule = content_attributes&.dig(:automation_rule_id)
+    @content_attributes = content_attributes
+    @automation_rule = @content_attributes&.dig(:automation_rule_id)
     return unless params.instance_of?(ActionController::Parameters)
 
-    @in_reply_to = content_attributes&.dig(:in_reply_to)
-    @items = content_attributes&.dig(:items)
+    @in_reply_to = @content_attributes&.dig(:in_reply_to)
+    @items = @content_attributes&.dig(:items)
   end
 
   def perform
@@ -35,7 +36,7 @@ class Messages::MessageBuilder
     content_attributes = params.fetch(:content_attributes, {})
 
     return parse_json(content_attributes) if content_attributes.is_a?(String)
-    return content_attributes if content_attributes.is_a?(Hash)
+    return content_attributes.deep_symbolize_keys if content_attributes.is_a?(Hash)
 
     {}
   end
@@ -116,12 +117,11 @@ class Messages::MessageBuilder
     message_type == 'outgoing' ? (message_sender || @user) : @conversation.contact
   end
 
-  def external_created_at
-    @params[:external_created_at].present? ? { external_created_at: @params[:external_created_at] } : {}
-  end
-
-  def automation_rule_id
-    @automation_rule.present? ? { content_attributes: { automation_rule_id: @automation_rule } } : {}
+  def message_content_attributes
+    attributes = @content_attributes.deep_dup
+    attributes[:automation_rule_id] = @automation_rule if @automation_rule.present?
+    attributes[:external_created_at] = @params[:external_created_at] if @params[:external_created_at].present?
+    attributes
   end
 
   def campaign_id
@@ -147,10 +147,11 @@ class Messages::MessageBuilder
       private: @private,
       sender: sender,
       content_type: @params[:content_type],
+      content_attributes: message_content_attributes,
       items: @items,
       in_reply_to: @in_reply_to,
       echo_id: @params[:echo_id],
       source_id: @params[:source_id]
-    }.merge(external_created_at).merge(automation_rule_id).merge(campaign_id).merge(template_params)
+    }.merge(campaign_id).merge(template_params)
   end
 end

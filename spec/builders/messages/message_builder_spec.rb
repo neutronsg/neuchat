@@ -51,6 +51,31 @@ describe Messages::MessageBuilder do
       end
     end
 
+    context 'when content_attributes contains a nested channel payload' do
+      let(:params) do
+        ActionController::Parameters.new({
+                                           content: 'test',
+                                           content_attributes: {
+                                             wechat_payload: {
+                                               msgtype: 'miniprogrampage',
+                                               miniprogrampage: {
+                                                 title: '您的订单已准备好',
+                                                 appid: 'wx123'
+                                               }
+                                             }
+                                           }
+                                         })
+      end
+
+      it 'preserves the nested content attributes' do
+        message = described_class.new(user, conversation, params).perform
+        payload = message.content_attributes.with_indifferent_access[:wechat_payload]
+
+        expect(payload[:msgtype]).to eq('miniprogrampage')
+        expect(payload[:miniprogrampage][:appid]).to eq('wx123')
+      end
+    end
+
     context 'when content_attributes is absent' do
       let(:params) do
         ActionController::Parameters.new({ content: 'test' })

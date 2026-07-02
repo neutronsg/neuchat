@@ -39,10 +39,12 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def send_message_on_wechat(message)
+    return send_miniprogram_page_message(message) if miniprogram_page_message?(message)
+
     message_id = nil
 
     # Send text content if present
-    message_id = send_message(message) if message.outgoing_content.present?
+    message_id = send_text_message(message) if message.outgoing_content.present?
 
     # Send attachments if present
     if message.attachments.present?
@@ -132,7 +134,30 @@ class Channel::Wechat < ApplicationRecord
     Rails.logger.info "WeChat webhook should be configured at: #{ENV.fetch('FRONTEND_URL', nil)}/webhooks/wechat/#{token}"
   end
 
-  def send_message(message)
+  def send_text_message(message)
+    send_custom_message(
+      message,
+      {
+        msgtype: 'text',
+        text: {
+          content: message.outgoing_content
+        }
+      }
+    )
+  end
+
+  def send_miniprogram_page_message(message)
+    payload = wechat_payload(message)
+    send_custom_message(
+      message,
+      {
+        msgtype: 'miniprogrampage',
+        miniprogrampage: payload[:miniprogrampage]
+      }
+    )
+  end
+
+  def send_custom_message(message, payload)
     attempt = 0
 
     loop do
@@ -143,7 +168,7 @@ class Channel::Wechat < ApplicationRecord
       response = message_request(
         access_token,
         openid(message),
-        message.outgoing_content
+        payload
       )
 
       if wechat_response_successful?(response)
@@ -168,16 +193,24 @@ class Channel::Wechat < ApplicationRecord
     errcode.blank? || errcode.to_i.zero?
   end
 
-  def message_request(access_token, to_user, content)
+  def miniprogram_page_message?(message)
+    payload = wechat_payload(message)
+    payload[:msgtype].to_s == 'miniprogrampage' && payload[:miniprogrampage].is_a?(Hash)
+  end
+
+  def wechat_payload(message)
+    payload = message.content_attributes&.dig('wechat_payload') || message.content_attributes&.dig(:wechat_payload)
+    return {} unless payload.is_a?(Hash)
+
+    payload.with_indifferent_access
+  end
+
+  def message_request(access_token, to_user, payload)
+    body = payload.deep_stringify_keys.merge('touser' => to_user)
+
     HTTParty.post("#{wechat_api_url}/message/custom/send",
                   query: { access_token: access_token },
                   headers: { 'Content-Type' => 'application/json; charset=utf-8' },
-                  body: {
-                    touser: to_user,
-                    msgtype: 'text',
-                    text: {
-                      content: content
-                    }
-                  }.to_json)
+                  body: body.to_json)
   end
 end
