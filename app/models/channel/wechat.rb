@@ -88,10 +88,12 @@ class Channel::Wechat < ApplicationRecord
   end
 
   def process_error(message, response)
-    return unless response.parsed_response['errcode'] && response.parsed_response['errcode'] != 0
+    parsed_response = response.parsed_response || {}
+    errcode = parsed_response['errcode']
+    return if errcode.blank? || errcode.to_i.zero?
 
     # WeChat error codes: https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
-    message.external_error = "#{response.parsed_response['errcode']}: #{response.parsed_response['errmsg']}"
+    message.external_error = "#{errcode}: #{parsed_response['errmsg']}"
     message.status = :failed
     message.save!
   end
@@ -144,18 +146,26 @@ class Channel::Wechat < ApplicationRecord
         message.outgoing_content
       )
 
-      if response.success?
-        return response.parsed_response['msgid']
+      if wechat_response_successful?(response)
+        return response.parsed_response['msgid'] || response.parsed_response['errmsg'] || 'ok'
       elsif attempt < MAX_RETRY_ATTEMPTS
         # Delete access token and retry
         Rails.cache.delete("wechat_access_token_#{app_id}")
-        Rails.logger.info "WeChat message send failed, retrying (attempt #{attempt + 1}/#{MAX_RETRY_ATTEMPTS})"
+        Rails.logger.info "WeChat message send failed, retrying (attempt #{attempt + 1}/#{MAX_RETRY_ATTEMPTS}): #{response.parsed_response}"
       else
         # Max retries reached, process error and return
+        Rails.logger.error "WeChat message send failed: #{response.parsed_response}"
         process_error(message, response)
         return nil
       end
     end
+  end
+
+  def wechat_response_successful?(response)
+    return false unless response.success?
+
+    errcode = response.parsed_response&.dig('errcode')
+    errcode.blank? || errcode.to_i.zero?
   end
 
   def message_request(access_token, to_user, content)
