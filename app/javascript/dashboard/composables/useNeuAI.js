@@ -183,6 +183,28 @@ export function useNeuAI() {
     }
   };
 
+  /**
+   * Generates a CRM note from a contact's conversations and existing notes.
+   * @param {string|number} contactId - The contact to generate a note for.
+   * @returns {Promise<string>} The generated note, or an empty string on error.
+   */
+  const generateContactNote = async contactId => {
+    try {
+      const { data } = await NeuAIAPI.processEvent({
+        hookId: hookId.value,
+        type: 'generate_contact_note',
+        contactId,
+      });
+      return data.message;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error?.error?.message ||
+        t('INTEGRATION_SETTINGS.NEUAI.GENERATE_ERROR');
+      useAlert(errorMessage);
+      return '';
+    }
+  };
+
   onMounted(() => {
     fetchIntegrationsIfRequired();
   });
@@ -200,5 +222,6 @@ export function useNeuAI() {
     recordAnalytics,
     fetchLabelSuggestions,
     processEvent,
+    generateContactNote,
   };
 }

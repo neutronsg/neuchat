@@ -8,6 +8,7 @@ import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import NeuAIGenerateContactNoteButton from 'dashboard/components/widgets/NeuAIGenerateContactNoteButton.vue';
 import ContactNoteItem from './components/ContactNoteItem.vue';
 
 const { t } = useI18n();
@@ -73,6 +74,9 @@ useKeyboardEvents(keyboardEvents);
             :is-loading="isCreatingNote"
             :disabled="!state.message || isCreatingNote"
             @click="onAdd(state.message)"
+          />
+          <NeuAIGenerateContactNoteButton
+            :contact-id="route.params.contactId"
           />
         </div>
       </template>

@@ -1,5 +1,6 @@
 json.id resource.id
 json.content resource.content
+json.note_type resource.note_type
 json.account_id json.account_id
 json.contact_id json.contact_id
 if resource.user.present?

@@ -44,12 +44,20 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
     make_api_call(translate_body)
   end
 
+  def generate_contact_note_message
+    context = Integrations::Neuai::ContactNoteContextBuilder.new(
+      account: hook.account,
+      contact_id: event['data']['contact_id']
+    ).build
+    make_api_call(simple_message_body('generate_contact_note', content: context))
+  end
+
   private
 
-  def simple_message_body(action)
+  def simple_message_body(action, content: event['data']['content'])
     # FlowiseAI API format - agent已经包含prompt，只传递消息内容
     {
-      question: event['data']['content'],
+      question: content,
       streaming: false,
       overrideConfig: {
         vars: {
@@ -159,6 +167,7 @@ class Integrations::Neuai::ProcessorService < Integrations::NeuaiBaseService
       }
     }.to_json
   end
+
 end
 
 Integrations::Neuai::ProcessorService.prepend_mod_with('Integrations::NeuaiProcessorService')

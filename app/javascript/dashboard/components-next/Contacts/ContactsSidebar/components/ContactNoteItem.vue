@@ -1,11 +1,12 @@
 <script setup>
-import { useTemplateRef, onMounted, ref } from 'vue';
+import { computed, useTemplateRef, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { dynamicTime } from 'shared/helpers/timeHelper';
 import { useToggle } from '@vueuse/core';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 
 const props = defineProps({
   note: {
@@ -32,6 +33,19 @@ const needsCollapse = ref(false);
 const [isExpanded, toggleExpanded] = useToggle();
 const { t } = useI18n();
 const { formatMessage } = useMessageFormatter();
+const isNeuAINote = computed(() => props.note.noteType === 'neuai');
+const authorName = computed(() =>
+  isNeuAINote.value
+    ? t('CONTACTS_LAYOUT.SIDEBAR.NOTES.NEUAI')
+    : props.writtenBy
+);
+const avatarSrc = computed(() => {
+  if (isNeuAINote.value) return '/dashboard/images/integrations/neuai.png';
+
+  return props.note?.user?.name
+    ? props.note.user.thumbnail
+    : '/assets/images/chatwoot_bot.png';
+});
 
 const handleDelete = () => {
   emit('delete', props.note.id);
@@ -52,18 +66,14 @@ onMounted(() => {
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1.5 min-w-0">
         <Avatar
-          :name="note?.user?.name || 'Bot'"
-          :src="
-            note?.user?.name
-              ? note?.user?.thumbnail
-              : '/assets/images/chatwoot_bot.png'
-          "
+          :name="authorName"
+          :src="avatarSrc"
           :size="16"
           rounded-full
         />
         <div class="min-w-0 truncate">
           <span class="inline-flex items-center gap-1 text-sm text-n-slate-11">
-            <span class="font-medium text-n-slate-12">{{ writtenBy }}</span>
+            <span class="font-medium text-n-slate-12">{{ authorName }}</span>
             {{ t('CONTACTS_LAYOUT.SIDEBAR.NOTES.WROTE') }}
             <span class="font-medium text-n-slate-12">
               {{ dynamicTime(note.createdAt) }}
@@ -81,12 +91,21 @@ onMounted(() => {
         @click="handleDelete"
       />
     </div>
+    <div
+      v-if="isNeuAINote"
+      class="inline-flex items-center self-start gap-1 px-2 py-1 text-xs font-medium rounded-md bg-n-brand/10 text-n-blue-text"
+    >
+      <Icon icon="i-ph-magic-wand" class="size-3.5" />
+      {{ t('CONTACTS_LAYOUT.SIDEBAR.NOTES.GENERATED_BY_AI') }}
+    </div>
     <p
       ref="noteContentRef"
       v-dompurify-html="formatMessage(note.content || '')"
       class="mb-0 prose-sm prose-p:text-sm prose-p:leading-relaxed prose-p:mb-1 prose-p:mt-0 prose-ul:mb-1 prose-ul:mt-0 text-n-slate-12"
       :class="{
         'line-clamp-4': collapsible && !isExpanded && needsCollapse,
+        'rounded-lg border border-n-brand/20 bg-n-brand/5 px-3 py-2':
+          isNeuAINote,
       }"
     />
     <p v-if="collapsible && needsCollapse">

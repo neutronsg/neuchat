@@ -7,7 +7,7 @@ class Integrations::NeuaiBaseService
 
   DIFY_WORKFLOW_API_PATH = '/workflows/run'.freeze
   ALLOWED_EVENT_NAMES = %w[rephrase summarize reply_suggestion fix_spelling_grammar make_friendly make_formal simplify
-                           translate].freeze
+                           translate generate_contact_note].freeze
   CACHEABLE_EVENTS = %w[summarize].freeze
 
   pattr_initialize [:hook!, :event!]

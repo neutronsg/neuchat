@@ -45,10 +45,18 @@ class NeuAIAPI extends ApiClient {
    * @param {string} [options.content] - The content of the event.
    * @param {string} [options.tone] - The tone of the event.
    * @param {string} [options.conversationId] - The ID of the conversation to process the event for.
+   * @param {string|number} [options.contactId] - The ID of the contact to process the event for.
    * @param {string} options.hookId - The ID of the hook to use for processing the event.
    * @returns {Promise} A promise that resolves with the result of the event processing.
    */
-  processEvent({ type = 'rephrase', content, tone, conversationId, hookId }) {
+  processEvent({
+    type = 'rephrase',
+    content,
+    tone,
+    conversationId,
+    contactId,
+    hookId,
+  }) {
     /**
      * @type {ConversationMessageData}
      */
@@ -69,6 +77,12 @@ class NeuAIAPI extends ApiClient {
         tone,
         content,
         conversation_display_id: conversationId,
+      };
+    }
+
+    if (type === 'generate_contact_note') {
+      data = {
+        contact_id: contactId,
       };
     }
 

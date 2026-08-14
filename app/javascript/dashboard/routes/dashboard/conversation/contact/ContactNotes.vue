@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import ContactNoteItem from 'next/Contacts/ContactsSidebar/components/ContactNoteItem.vue';
 import Spinner from 'next/spinner/Spinner.vue';
+import NeuAIGenerateContactNoteButton from 'dashboard/components/widgets/NeuAIGenerateContactNoteButton.vue';
 
 const { contactId } = defineProps({
   contactId: { type: String, required: true },
@@ -32,20 +33,25 @@ watch(
 </script>
 
 <template>
-  <div v-if="isFetchingNotes" class="p-8 grid place-content-center">
-    <Spinner />
-  </div>
-  <div v-else-if="!notes.length" class="p-8 grid place-content-center">
-    <p class="text-center">{{ t('CONTACTS_LAYOUT.SIDEBAR.NOTES.NO_NOTES') }}</p>
-  </div>
-  <div v-else class="max-h-[300px] overflow-scroll">
-    <ContactNoteItem
-      v-for="note in notes"
-      :key="note.id"
-      class="p-4 last-of-type:border-b-0"
-      :note="note"
-      collapsible
-      :written-by="getWrittenBy(note)"
-    />
+  <div>
+    <NeuAIGenerateContactNoteButton :contact-id="contactId" full-width />
+    <div v-if="isFetchingNotes" class="p-8 grid place-content-center">
+      <Spinner />
+    </div>
+    <div v-else-if="!notes.length" class="p-8 grid place-content-center">
+      <p class="text-center">
+        {{ t('CONTACTS_LAYOUT.SIDEBAR.NOTES.NO_NOTES') }}
+      </p>
+    </div>
+    <div v-else class="max-h-[300px] overflow-scroll">
+      <ContactNoteItem
+        v-for="note in notes"
+        :key="note.id"
+        class="p-4 last-of-type:border-b-0"
+        :note="note"
+        collapsible
+        :written-by="getWrittenBy(note)"
+      />
+    </div>
   </div>
 </template>
