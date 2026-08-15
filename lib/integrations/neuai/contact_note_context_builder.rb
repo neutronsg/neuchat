@@ -27,7 +27,7 @@ class Integrations::Neuai::ContactNoteContextBuilder
     character_count = 0
     notes = []
 
-    contact.notes.latest.includes(:user).each do |note|
+    contact.notes.agent.order(created_at: :desc).includes(:user).each do |note|
       formatted_note = format_note(note)
       break if character_count + formatted_note.length > CONTACT_NOTES_LIMIT
 
