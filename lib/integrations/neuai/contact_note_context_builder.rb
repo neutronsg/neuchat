@@ -57,7 +57,7 @@ class Integrations::Neuai::ContactNoteContextBuilder
     Message.where(conversation_id: contact.conversations.select(:id))
            .where(message_type: [:incoming, :outgoing], private: false)
            .where.not(content: [nil, ''])
-           .includes(:conversation, :sender)
+           .includes(:sender, conversation: :inbox)
            .reorder(id: :desc)
   end
 
@@ -80,7 +80,7 @@ class Integrations::Neuai::ContactNoteContextBuilder
     sender_name = message.sender&.name.presence || sender_role
     conversation_id = message.conversation.display_id
     metadata = [
-      "Sent: #{format_timestamp(message.created_at)}",
+      "Sent: #{format_timestamp(message.created_at, message.conversation.inbox.timezone)}",
       "Conversation: ##{conversation_id}",
       "Message ID: #{message.id}",
       "Direction: #{direction}",
@@ -90,11 +90,8 @@ class Integrations::Neuai::ContactNoteContextBuilder
     "[#{metadata}] #{message.content}"
   end
 
-  def format_timestamp(timestamp)
-    "#{timestamp.in_time_zone(time_zone).iso8601} (#{time_zone.name})"
-  end
-
-  def time_zone
-    @time_zone ||= ActiveSupport::TimeZone[@account.timezone.presence || 'UTC'] || ActiveSupport::TimeZone['UTC']
+  def format_timestamp(timestamp, zone_name = 'UTC')
+    zone = ActiveSupport::TimeZone[zone_name] || ActiveSupport::TimeZone['UTC']
+    "#{timestamp.in_time_zone(zone).iso8601} (#{zone.name})"
   end
 end

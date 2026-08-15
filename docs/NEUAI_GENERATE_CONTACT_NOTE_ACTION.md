@@ -10,7 +10,7 @@ Conversation history:
 {{conversation_history}}
 ```
 
-Each existing note includes its created and updated timestamps, note type, and author. Each public incoming/outgoing message includes its sent timestamp, account timezone, conversation ID, message ID, direction, sender role, and sender name.
+Each existing note includes its UTC created and updated timestamps, note type, and author. Each public incoming/outgoing message includes its sent timestamp in the conversation inbox timezone, conversation ID, message ID, direction, sender role, and sender name.
 
 The flow should instruct the model to produce one concise CRM note, avoid repeating facts already present in the notes, and use only information in the supplied context. If there is no new supported information, return an empty string so NeuChat does not create a note.
 
