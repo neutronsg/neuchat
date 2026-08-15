@@ -13,12 +13,8 @@ class Integrations::Neuai::ContactNoteContextBuilder
     messages = messages_within_limit(contact, notes_character_count)
 
     <<~CONTEXT
-      Generate one concise CRM note about this contact from the context below.
-      Do not repeat information already captured in the existing notes.
-      Only include facts supported by the context. Return the note text only.
-
       Existing contact notes:
-      #{notes.presence&.join("\n") || 'No existing notes'}
+      #{notes.presence&.join("\n") || 'No existing contact notes'}
 
       Conversation history:
       #{messages.presence || 'No conversation history'}
@@ -31,8 +27,8 @@ class Integrations::Neuai::ContactNoteContextBuilder
     character_count = 0
     notes = []
 
-    contact.notes.latest.each do |note|
-      formatted_note = "[#{note.neuai? ? 'Existing AI note' : 'Agent note'}] #{note.content}"
+    contact.notes.latest.includes(:user).each do |note|
+      formatted_note = format_note(note)
       break if character_count + formatted_note.length > CONTACT_NOTES_LIMIT
 
       notes << formatted_note
@@ -47,10 +43,11 @@ class Integrations::Neuai::ContactNoteContextBuilder
     messages = []
 
     contact_messages(contact).each do |message|
-      break if character_count + message.content.length > TOKEN_LIMIT
+      formatted_message = format_message(message)
+      break if character_count + formatted_message.length > TOKEN_LIMIT
 
-      messages.prepend(format_message(message))
-      character_count += message.content.length
+      messages.prepend(formatted_message)
+      character_count += formatted_message.length
     end
 
     messages.join("\n")
@@ -60,11 +57,44 @@ class Integrations::Neuai::ContactNoteContextBuilder
     Message.where(conversation_id: contact.conversations.select(:id))
            .where(message_type: [:incoming, :outgoing], private: false)
            .where.not(content: [nil, ''])
+           .includes(:conversation, :sender)
            .reorder(id: :desc)
   end
 
+  def format_note(note)
+    note_type = note.neuai? ? 'AI-generated note' : 'Agent note'
+    author = note.neuai? ? 'NeuAI' : (note.user&.name.presence || 'Agent')
+    metadata = [
+      "Created: #{format_timestamp(note.created_at)}",
+      "Updated: #{format_timestamp(note.updated_at)}",
+      "Type: #{note_type}",
+      "Author: #{author}"
+    ].join(' | ')
+
+    "[#{metadata}] #{note.content}"
+  end
+
   def format_message(message)
-    sender = message.incoming? ? 'Customer' : 'Agent'
-    "#{sender}: #{message.content}"
+    direction = message.incoming? ? 'Incoming' : 'Outgoing'
+    sender_role = message.incoming? ? 'Customer' : 'Agent'
+    sender_name = message.sender&.name.presence || sender_role
+    conversation_id = message.conversation.display_id
+    metadata = [
+      "Sent: #{format_timestamp(message.created_at)}",
+      "Conversation: ##{conversation_id}",
+      "Message ID: #{message.id}",
+      "Direction: #{direction}",
+      "Sender: #{sender_role} (#{sender_name})"
+    ].join(' | ')
+
+    "[#{metadata}] #{message.content}"
+  end
+
+  def format_timestamp(timestamp)
+    "#{timestamp.in_time_zone(time_zone).iso8601} (#{time_zone.name})"
+  end
+
+  def time_zone
+    @time_zone ||= ActiveSupport::TimeZone[@account.timezone.presence || 'UTC'] || ActiveSupport::TimeZone['UTC']
   end
 end
