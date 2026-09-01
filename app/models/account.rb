@@ -37,7 +37,8 @@ class Account < ApplicationRecord
         'auto_resolve_message': { 'type': %w[string null] },
         'auto_resolve_ignore_waiting': { 'type': %w[boolean null] },
         'audio_transcriptions': { 'type': %w[boolean null] },
-        'auto_resolve_label': { 'type': %w[string null] }
+        'auto_resolve_label': { 'type': %w[string null] },
+        'knowledge_base_sidebar_enabled': { 'type': %w[boolean null] }
       },
     'required': [],
     'additionalProperties': true
@@ -55,6 +56,7 @@ class Account < ApplicationRecord
 
   store_accessor :settings, :auto_resolve_after, :auto_resolve_message, :auto_resolve_ignore_waiting
   store_accessor :settings, :audio_transcriptions, :auto_resolve_label
+  store_accessor :settings, :knowledge_base_sidebar_enabled
 
   has_many :account_users, dependent: :destroy_async
   has_many :agent_bot_inboxes, dependent: :destroy_async
@@ -158,6 +160,18 @@ class Account < ApplicationRecord
     # we need to extract the language code from the locale
     account_locale = locale&.split('_')&.first
     ISO_639.find(account_locale)&.english_name&.downcase || 'english'
+  end
+
+  def knowledge_base_sidebar_enabled
+    value = settings&.fetch('knowledge_base_sidebar_enabled', nil)
+    return true if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def knowledge_base_sidebar_enabled=(value)
+    self.settings ||= {}
+    settings['knowledge_base_sidebar_enabled'] = ActiveModel::Type::Boolean.new.cast(value)
   end
 
   private

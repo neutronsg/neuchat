@@ -23,7 +23,7 @@ const emit = defineEmits([
   'showCreateAccountModal',
 ]);
 
-const { accountScopedRoute } = useAccount();
+const { accountScopedRoute, currentAccount } = useAccount();
 const store = useStore();
 const searchShortcut = useKbd([`$mod`, 'k']);
 const { t } = useI18n();
@@ -104,6 +104,17 @@ const newReportRoutes = () => [
 ];
 
 const reportRoutes = computed(() => newReportRoutes());
+const isKnowledgeBaseSidebarEnabled = computed(() => {
+  const value = currentAccount.value?.settings?.knowledge_base_sidebar_enabled;
+
+  if (value === undefined || value === null || value === '') return true;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    return !['false', '0', 'off', 'no'].includes(value.toLowerCase());
+  }
+
+  return Boolean(value);
+});
 
 const menuItems = computed(() => {
   return [
@@ -220,13 +231,17 @@ const menuItems = computed(() => {
         },
       ],
     },
-    {
-      name: 'Knowledge Base',
-      icon: 'i-lucide-brain',
-      label: t('SIDEBAR.KNOWLEDGE_BASE'),
-      to: accountScopedRoute('knowledge_bases_index'),
-      activeOn: ['knowledge_bases_index', 'knowledge_base_show'],
-    },
+    ...(isKnowledgeBaseSidebarEnabled.value
+      ? [
+          {
+            name: 'Knowledge Base',
+            icon: 'i-lucide-brain',
+            label: t('SIDEBAR.KNOWLEDGE_BASE'),
+            to: accountScopedRoute('knowledge_bases_index'),
+            activeOn: ['knowledge_bases_index', 'knowledge_base_show'],
+          },
+        ]
+      : []),
     {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
