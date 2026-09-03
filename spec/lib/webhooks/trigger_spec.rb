@@ -26,6 +26,22 @@ describe Webhooks::Trigger do
       trigger.execute(url, payload, webhook_type)
     end
 
+    it 'uses the configured timeout for agent bot webhooks' do
+      payload = { hello: :hello }
+
+      stub_const('ENV', ENV.to_h.merge('AGENT_BOT_WEBHOOK_TIMEOUT' => '35'))
+      expect(RestClient::Request).to receive(:execute)
+        .with(
+          method: :post,
+          url: url,
+          payload: payload.to_json,
+          headers: { content_type: :json, accept: :json },
+          timeout: 35
+        ).once
+
+      trigger.execute(url, payload, :agent_bot_webhook)
+    end
+
     it 'updates message status if webhook fails for message-created event' do
       payload = { event: 'message_created', conversation: { id: conversation.id }, id: message.id }
 

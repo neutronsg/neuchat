@@ -1,5 +1,8 @@
 class Webhooks::Trigger
   SUPPORTED_ERROR_HANDLE_EVENTS = %w[message_created message_updated].freeze
+  DEFAULT_TIMEOUT = 5
+  DEFAULT_AGENT_BOT_TIMEOUT = 35
+  MAX_AGENT_BOT_TIMEOUT = 120
 
   def initialize(url, payload, webhook_type)
     @url = url
@@ -26,8 +29,17 @@ class Webhooks::Trigger
       url: @url,
       payload: @payload.to_json,
       headers: { content_type: :json, accept: :json },
-      timeout: 5
+      timeout: request_timeout
     )
+  end
+
+  def request_timeout
+    return DEFAULT_TIMEOUT unless @webhook_type == :agent_bot_webhook
+
+    configured_timeout = Integer(ENV.fetch('AGENT_BOT_WEBHOOK_TIMEOUT', DEFAULT_AGENT_BOT_TIMEOUT), exception: false)
+    return DEFAULT_AGENT_BOT_TIMEOUT unless configured_timeout&.positive?
+
+    [configured_timeout, MAX_AGENT_BOT_TIMEOUT].min
   end
 
   def handle_error(error)
