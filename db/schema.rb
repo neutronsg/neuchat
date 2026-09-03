@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_17_010101) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -921,7 +921,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_17_010101) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "note_type", default: 0, null: false
     t.index ["account_id"], name: "index_notes_on_account_id"
+    t.index ["contact_id", "note_type", "created_at"], name: "index_notes_on_contact_id_and_note_type_and_created_at"
     t.index ["contact_id"], name: "index_notes_on_contact_id"
     t.index ["user_id"], name: "index_notes_on_user_id"
   end
