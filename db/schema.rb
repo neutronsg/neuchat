@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_07_090000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -106,6 +106,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "account_id"
+  end
+
+  create_table "agent_bot_webhook_deliveries", force: :cascade do |t|
+    t.string "delivery_key", null: false
+    t.string "url", null: false
+    t.string "webhook_type", default: "agent_bot_webhook", null: false
+    t.jsonb "payload", default: {}, null: false
+    t.string "status", default: "pending", null: false
+    t.integer "attempts", default: 0, null: false
+    t.datetime "next_attempt_at", null: false
+    t.datetime "locked_at"
+    t.datetime "delivered_at"
+    t.text "last_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["delivery_key"], name: "index_agent_bot_webhook_deliveries_on_delivery_key", unique: true
+    t.index ["locked_at"], name: "index_agent_bot_webhook_deliveries_on_locked_at"
+    t.index ["status", "next_attempt_at"], name: "index_agent_bot_webhook_deliveries_on_ready"
   end
 
   create_table "agent_bots", force: :cascade do |t|
