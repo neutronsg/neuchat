@@ -16,7 +16,11 @@ RSpec.describe AgentBots::WebhookJob do
   end
 
   it 'executes perform' do
-    expect(Webhooks::Trigger).to receive(:execute).with(url, payload, webhook_type)
+    delivery = instance_double(AgentBotWebhookDelivery, id: 123)
+    expect(AgentBots::WebhookDeliveryService).to receive(:enqueue)
+      .with(url: url, payload: payload, webhook_type: webhook_type)
+      .and_return(delivery)
+    expect(AgentBots::WebhookDeliveryService).to receive(:deliver).with(123)
     perform_enqueued_jobs { job }
   end
 end

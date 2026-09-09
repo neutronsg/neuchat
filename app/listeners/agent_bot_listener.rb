@@ -1,54 +1,28 @@
 class AgentBotListener < BaseListener
-  def conversation_resolved(event)
-    conversation = extract_conversation_and_account(event)[0]
-    inbox = conversation.inbox
-    return unless connected_agent_bot_exist?(inbox)
+  # The AgentBot contract starts from an actual customer message. Conversation
+  # lifecycle events are internal Chatwoot events and must not start a model
+  # turn or be retried as customer webhooks.
+  def conversation_resolved(_event); end
 
-    event_name = __method__.to_s
-    payload = conversation.webhook_data.merge(event: event_name)
-    process_webhook_bot_event(inbox.agent_bot, payload)
-  end
-
-  def conversation_opened(event)
-    conversation = extract_conversation_and_account(event)[0]
-    inbox = conversation.inbox
-    return unless connected_agent_bot_exist?(inbox)
-
-    event_name = __method__.to_s
-    payload = conversation.webhook_data.merge(event: event_name)
-    process_webhook_bot_event(inbox.agent_bot, payload)
-  end
+  def conversation_opened(_event); end
 
   def message_created(event)
     message = extract_message_and_account(event)[0]
     inbox = message.inbox
+    return unless AgentBots::MessageFilter.sendable?(message)
     return unless connected_agent_bot_exist?(inbox)
-    return unless message.webhook_sendable?
 
     method_name = __method__.to_s
     process_message_event(method_name, inbox.agent_bot, message, event)
   end
 
-  def message_updated(event)
-    message = extract_message_and_account(event)[0]
-    inbox = message.inbox
-    return unless connected_agent_bot_exist?(inbox)
-    return unless message.webhook_sendable?
+  # A message update is a transcript mutation, not a new customer turn. The
+  # created event is the only event that enters the AgentBot conversation loop.
+  def message_updated(_event); end
 
-    method_name = __method__.to_s
-    process_message_event(method_name, inbox.agent_bot, message, event)
-  end
-
-  def webwidget_triggered(event)
-    contact_inbox = event.data[:contact_inbox]
-    inbox = contact_inbox.inbox
-    return unless connected_agent_bot_exist?(inbox)
-
-    event_name = __method__.to_s
-    payload = contact_inbox.webhook_data.merge(event: event_name)
-    payload[:event_info] = event.data[:event_info]
-    process_webhook_bot_event(inbox.agent_bot, payload)
-  end
+  # Widget lifecycle/system events are not customer messages and must not be
+  # forwarded to an AgentBot endpoint.
+  def webwidget_triggered(_event); end
 
   private
 
@@ -68,6 +42,10 @@ class AgentBotListener < BaseListener
   def process_webhook_bot_event(agent_bot, payload)
     return if agent_bot.outgoing_url.blank?
 
-    AgentBots::WebhookJob.perform_later(agent_bot.outgoing_url, payload, :agent_bot_webhook)
+    AgentBots::WebhookDeliveryService.enqueue(
+      url: agent_bot.outgoing_url,
+      payload: payload,
+      webhook_type: :agent_bot_webhook
+    )
   end
 end

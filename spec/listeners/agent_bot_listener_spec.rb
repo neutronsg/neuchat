@@ -1,4 +1,5 @@
 require 'rails_helper'
+
 describe AgentBotListener do
   let(:listener) { described_class.instance }
   let!(:account) { create(:account) }
@@ -11,13 +12,13 @@ describe AgentBotListener do
     let(:event_name) { 'message.created' }
     let!(:event) { Events::Base.new(event_name, Time.zone.now, message: message) }
     let!(:message) do
-      create(:message, message_type: 'outgoing',
+      create(:message, message_type: 'incoming',
                        account: account, inbox: inbox, conversation: conversation)
     end
 
     context 'when agent bot is not configured' do
       it 'does not send message to agent bot' do
-        expect(AgentBots::WebhookJob).to receive(:perform_later).exactly(0).times
+        expect(AgentBots::WebhookDeliveryService).not_to receive(:enqueue)
         listener.message_created(event)
       end
     end
@@ -25,26 +26,26 @@ describe AgentBotListener do
     context 'when agent bot is configured' do
       it 'sends message to agent bot' do
         create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
-        expect(AgentBots::WebhookJob).to receive(:perform_later).with(agent_bot.outgoing_url,
-                                                                      message.webhook_data.merge(event: 'message_created'),
-                                                                      :agent_bot_webhook).once
+        expect(AgentBots::WebhookDeliveryService).to receive(:enqueue).with(
+          url: agent_bot.outgoing_url,
+          payload: message.webhook_data.merge(event: 'message_created'),
+          webhook_type: :agent_bot_webhook
+        ).once
         listener.message_created(event)
       end
 
       it 'does not send message to agent bot if url is empty' do
         agent_bot = create(:agent_bot, outgoing_url: '')
         create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
-        expect(AgentBots::WebhookJob).not_to receive(:perform_later)
+        expect(AgentBots::WebhookDeliveryService).not_to receive(:enqueue)
         listener.message_created(event)
       end
     end
   end
 
   describe '#webwidget_triggered' do
-    let(:event_name) { 'webwidget.triggered' }
-
     context 'when agent bot is configured' do
-      it 'send message to agent bot URL' do
+      it 'does not send a widget lifecycle event to the agent bot' do
         create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
 
         event = double
@@ -55,15 +56,21 @@ describe AgentBotListener do
               event_info: { country: 'US' }
             }
           )
-        expect(AgentBots::WebhookJob).to receive(:perform_later)
-          .with(
-            agent_bot.outgoing_url,
-            conversation.contact_inbox.webhook_data.merge(event: 'webwidget_triggered', event_info: { country: 'US' }),
-            :agent_bot_webhook
-          ).once
+        expect(AgentBots::WebhookDeliveryService).not_to receive(:enqueue)
 
         listener.webwidget_triggered(event)
       end
+    end
+  end
+
+  describe 'internal lifecycle events' do
+    it 'does not forward conversation or message lifecycle events' do
+      create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
+      expect(AgentBots::WebhookDeliveryService).not_to receive(:enqueue)
+
+      listener.conversation_opened(nil)
+      listener.conversation_resolved(nil)
+      listener.message_updated(nil)
     end
   end
 end
