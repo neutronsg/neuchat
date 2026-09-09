@@ -34,7 +34,8 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = 'X-Sendfile' # for Apache
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for NGINX
 
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
+  # Treat proxy traffic as SSL and optionally force all access over SSL.
+  config.assume_ssl = ActiveModel::Type::Boolean.new.cast(ENV.fetch('ASSUME_SSL', false))
   config.force_ssl = ActiveModel::Type::Boolean.new.cast(ENV.fetch('FORCE_SSL', false))
 
   # customize using the environment variables

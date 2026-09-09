@@ -42,7 +42,8 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options)
   config.active_storage.service = ENV.fetch('ACTIVE_STORAGE_SERVICE', 'local').to_sym
 
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
+  # Treat proxy traffic as SSL and optionally force all access over SSL.
+  config.assume_ssl = ActiveModel::Type::Boolean.new.cast(ENV.fetch('ASSUME_SSL', false))
   config.force_ssl = ActiveModel::Type::Boolean.new.cast(ENV.fetch('FORCE_SSL', false))
 
   # Use the lowest log level to ensure availability of diagnostic information
