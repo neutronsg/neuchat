@@ -12,7 +12,7 @@ class AgentBots::WebhookDeliveryService
   class << self
     def enqueue(url:, payload:, webhook_type: :agent_bot_webhook)
       delivery = find_or_create_delivery(url, payload, webhook_type)
-      WebhookDeliveryJob.perform_later(delivery.id) unless terminal?(delivery)
+      AgentBots::WebhookDeliveryJob.perform_later(delivery.id) unless terminal?(delivery)
       delivery
     end
 
@@ -153,7 +153,7 @@ class AgentBots::WebhookDeliveryService
     end
 
     def enqueue_retry(delivery, next_attempt_at)
-      WebhookDeliveryJob.set(wait_until: next_attempt_at).perform_later(delivery.id)
+      AgentBots::WebhookDeliveryJob.set(wait_until: next_attempt_at).perform_later(delivery.id)
     rescue StandardError => e
       Rails.logger.error(
         "AgentBot webhook retry enqueue failed delivery_id=#{delivery.id} " \
