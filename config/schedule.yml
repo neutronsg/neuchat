@@ -19,6 +19,12 @@ trigger_imap_email_inboxes_job:
   class: 'Inboxes::FetchImapEmailInboxesJob'
   queue: scheduled_jobs
 
+# executed every minute to recover pending and stale AgentBot webhook deliveries
+agent_bot_webhook_delivery_reconciler_job:
+  cron: '*/1 * * * *'
+  class: 'AgentBots::WebhookDeliveryReconcilerJob'
+  queue: scheduled_jobs
+
 # executed daily at 2230 UTC
 # which is our lowest traffic time
 remove_stale_contact_inboxes_job.rb:

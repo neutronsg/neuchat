@@ -162,6 +162,8 @@ en:
       captain:
         resolved: 'Conversation was marked resolved by %{user_name} due to inactivity'
         open: 'Conversation was marked open by %{user_name}'
+      agent_bot:
+        error_moved_to_open: 'Conversation was moved to the open queue because the AgentBot could not be reached.'
       status:
         resolved: 'Conversation was marked resolved by %{user_name}'
         contact_resolved: 'Conversation was resolved by %{contact_name}'
