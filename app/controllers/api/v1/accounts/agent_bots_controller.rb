@@ -42,7 +42,12 @@ class Api::V1::Accounts::AgentBotsController < Api::V1::Accounts::BaseController
   end
 
   def permitted_params
-    params.permit(:name, :description, :outgoing_url, :avatar, :avatar_url, :bot_type, bot_config: {})
+    permitted = params.permit(:name, :description, :outgoing_url, :avatar, :avatar_url, :bot_type,
+                              :idle_auto_resolve_enabled, :idle_auto_resolve_after, bot_config: {})
+    if %w[true false].include?(permitted[:idle_auto_resolve_enabled])
+      permitted[:idle_auto_resolve_enabled] = permitted[:idle_auto_resolve_enabled] == 'true'
+    end
+    permitted
   end
 
   def process_avatar_from_url

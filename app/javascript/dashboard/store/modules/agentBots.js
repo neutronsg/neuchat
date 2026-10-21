@@ -59,6 +59,16 @@ export const actions = {
       formData.append('description', botData.description);
       formData.append('bot_type', botData.bot_type || 'webhook');
       formData.append('outgoing_url', botData.outgoing_url);
+      if (botData.idle_auto_resolve_enabled !== undefined) {
+        formData.append(
+          'idle_auto_resolve_enabled',
+          botData.idle_auto_resolve_enabled
+        );
+        formData.append(
+          'idle_auto_resolve_after',
+          botData.idle_auto_resolve_after
+        );
+      }
 
       // Add avatar file if available
       if (botData.avatar) {
@@ -85,6 +95,16 @@ export const actions = {
       formData.append('description', data.description);
       formData.append('bot_type', data.bot_type || 'webhook');
       formData.append('outgoing_url', data.outgoing_url);
+      if (data.idle_auto_resolve_enabled !== undefined) {
+        formData.append(
+          'idle_auto_resolve_enabled',
+          data.idle_auto_resolve_enabled
+        );
+        formData.append(
+          'idle_auto_resolve_after',
+          data.idle_auto_resolve_after
+        );
+      }
 
       if (data.avatar) {
         formData.append('avatar', data.avatar);

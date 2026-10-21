@@ -127,9 +127,30 @@ class Message < ApplicationRecord
   has_one :csat_survey_response, dependent: :destroy_async
   has_many :notifications, as: :primary_actor, dependent: :destroy_async
 
+  # Serialize message insertion and idle resolution on the same durable conversation row.
+  before_create :lock_bot_idle_conversation
+  after_create :update_bot_idle_state
+  after_create_commit :record_bot_idle_capability
   after_create_commit :execute_after_create_commit_callbacks
 
   after_update_commit :dispatch_update_event
+
+  def lock_bot_idle_conversation
+    return unless (incoming? || outgoing? || template?) && !private?
+
+    # Use persisted state: a just-created conversation can have a dirty trigger-generated display_id.
+    conversation.reload.lock!
+  end
+
+  def update_bot_idle_state
+    Conversations::BotIdleState.new(conversation).on_message(self)
+  end
+
+  def record_bot_idle_capability
+    return unless Conversations::BotIdleState.protocol_reply?(self)
+
+    AgentBot.where(id: sender_id, idle_protocol_seen_at: nil).update_all(idle_protocol_seen_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+  end
 
   def channel_token
     @token ||= inbox.channel.try(:page_access_token)

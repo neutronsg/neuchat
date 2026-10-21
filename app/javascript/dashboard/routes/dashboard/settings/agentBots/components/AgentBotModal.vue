@@ -8,6 +8,7 @@ import { useVuelidate } from '@vuelidate/core';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import { useToggle } from '@vueuse/core';
 
+import Switch from 'dashboard/components-next/switch/Switch.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
@@ -43,6 +44,8 @@ const formState = reactive({
   botUrl: '',
   botAvatar: null,
   botAvatarUrl: '',
+  idleEnabled: false,
+  idleMinutes: 30,
 });
 
 const [showAccessToken, toggleAccessToken] = useToggle();
@@ -68,6 +71,14 @@ const v$ = useVuelidate(
     },
   },
   formState
+);
+
+const idleDurationInvalid = computed(
+  () =>
+    formState.idleEnabled &&
+    (!Number.isInteger(Number(formState.idleMinutes)) ||
+      Number(formState.idleMinutes) < 10 ||
+      Number(formState.idleMinutes) > 1439)
 );
 
 const isLoading = computed(() =>
@@ -121,6 +132,8 @@ const resetForm = () => {
     botUrl: '',
     botAvatar: null,
     botAvatarUrl: '',
+    idleEnabled: false,
+    idleMinutes: 30,
   });
   v$.value.$reset();
 };
@@ -151,7 +164,7 @@ const handleAvatarDelete = async () => {
 
 const handleSubmit = async () => {
   v$.value.$touch();
-  if (v$.value.$invalid) return;
+  if (v$.value.$invalid || idleDurationInvalid.value) return;
   if (showAccessToken.value) return;
 
   const botData = {
@@ -160,6 +173,8 @@ const handleSubmit = async () => {
     outgoing_url: formState.botUrl,
     bot_type: 'webhook',
     avatar: formState.botAvatar,
+    idle_auto_resolve_enabled: formState.idleEnabled,
+    idle_auto_resolve_after: Number(formState.idleMinutes),
   };
 
   const isCreate = props.type === MODAL_TYPES.CREATE;
@@ -217,6 +232,8 @@ const initializeForm = () => {
     formState.botDescription = description || '';
     formState.botUrl = botUrl || botConfig?.webhook_url || '';
     formState.botAvatarUrl = thumbnail || '';
+    formState.idleEnabled = botConfig?.idle_auto_resolve_enabled === true;
+    formState.idleMinutes = Number(botConfig?.idle_auto_resolve_after || 30);
 
     if (botAccessToken && props.type === MODAL_TYPES.EDIT) {
       accessToken.value = botAccessToken;
@@ -264,6 +281,7 @@ defineExpose({ dialogRef });
   <Dialog
     ref="dialogRef"
     type="edit"
+    overflow-y-auto
     :title="dialogTitle"
     :description="dialogDescription"
     :show-cancel-button="false"
@@ -316,6 +334,33 @@ defineExpose({ dialogRef });
           :message-type="botUrlError ? 'error' : 'info'"
           @blur="v$.botUrl.$touch()"
         />
+        <div class="flex items-center justify-between gap-2">
+          <label for="bot-idle-enabled">{{
+            $t('AGENT_BOTS.IDLE.ENABLED')
+          }}</label>
+          <Switch id="bot-idle-enabled" v-model="formState.idleEnabled" />
+        </div>
+        <p class="text-sm text-n-slate-11">
+          {{ $t('AGENT_BOTS.IDLE.DESCRIPTION') }}
+        </p>
+        <Input
+          v-if="formState.idleEnabled"
+          id="bot-idle-minutes"
+          v-model="formState.idleMinutes"
+          type="number"
+          min="10"
+          max="1439"
+          :label="$t('AGENT_BOTS.IDLE.MINUTES')"
+          :message="idleDurationInvalid ? $t('AGENT_BOTS.IDLE.INVALID') : ''"
+          :message-type="idleDurationInvalid ? 'error' : 'info'"
+        />
+        <p v-if="formState.idleEnabled" class="text-sm text-n-slate-11">
+          {{
+            selectedBot.idle_protocol_seen_at
+              ? $t('AGENT_BOTS.IDLE.CONFIRMED')
+              : $t('AGENT_BOTS.IDLE.UNCONFIRMED')
+          }}
+        </p>
       </div>
 
       <div v-if="showAccessTokenInput" class="flex flex-col gap-1">
@@ -353,7 +398,7 @@ defineExpose({ dialogRef });
           data-testid="label-submit"
           :label="confirmButtonLabel"
           :is-loading="isLoading"
-          :disabled="v$.$invalid"
+          :disabled="v$.$invalid || idleDurationInvalid"
         />
       </div>
     </form>

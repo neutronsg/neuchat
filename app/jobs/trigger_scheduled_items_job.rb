@@ -16,6 +16,7 @@ class TriggerScheduledItemsJob < ApplicationJob
 
     # Job to auto-resolve conversations
     Account::ConversationsResolutionSchedulerJob.perform_later
+    Conversations::BotIdleResolutionJob.perform_later
 
     # Job to sync whatsapp templates
     Channels::Whatsapp::TemplatesSyncSchedulerJob.perform_later

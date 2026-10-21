@@ -112,6 +112,7 @@ class Conversation < ApplicationRecord
   has_many :attachments, through: :messages
   has_many :reporting_events, dependent: :destroy_async
 
+  before_save :clear_bot_idle_when_unavailable
   before_save :ensure_snooze_until_reset
   before_create :determine_conversation_status
   before_create :ensure_waiting_since
@@ -122,6 +123,17 @@ class Conversation < ApplicationRecord
   after_create_commit :load_attributes_created_by_db_triggers
 
   delegate :auto_resolve_after, to: :account
+
+  def clear_bot_idle_when_unavailable
+    return if pending? && custom_attributes['ai_paused'] != true
+
+    # The caller may hold an older instance from before the latest bot reply.
+    # Force these columns into the status/pause update even when locally nil.
+    Conversations::BotIdleState::EMPTY_STATE.each_key do |attribute|
+      attribute_will_change!(attribute)
+      self[attribute] = nil
+    end
+  end
 
   def can_reply?
     Conversations::MessageWindowService.new(self).can_reply?

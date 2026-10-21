@@ -119,6 +119,9 @@ class Messages::MessageBuilder
 
   def message_content_attributes
     attributes = @content_attributes.deep_dup
+    # This attestation comes from authentication, never from caller-supplied metadata.
+    attributes.delete(:bot_idle_authorized)
+    attributes[:bot_idle_authorized] = true if @user.is_a?(AgentBot) && sender == @user
     attributes[:automation_rule_id] = @automation_rule if @automation_rule.present?
     attributes[:external_created_at] = @params[:external_created_at] if @params[:external_created_at].present?
     attributes

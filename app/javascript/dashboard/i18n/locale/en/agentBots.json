@@ -98,6 +98,14 @@
     },
     "TYPES": {
       "WEBHOOK": "Webhook bot"
+    },
+    "IDLE": {
+      "ENABLED": "Auto-close idle bot conversations",
+      "DESCRIPTION": "Close after no user reply. New messages or human takeover cancel the timer.",
+      "MINUTES": "Idle time (minutes)",
+      "INVALID": "Enter a whole number from 10 to 1439.",
+      "CONFIRMED": "Bot support detected.",
+      "UNCONFIRMED": "Awaiting bot support confirmation."
     }
   }
 }

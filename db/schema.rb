@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_21_090000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -117,6 +117,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.bigint "account_id"
     t.integer "bot_type", default: 0
     t.jsonb "bot_config", default: {}
+    t.datetime "idle_protocol_seen_at"
     t.index ["account_id"], name: "index_agent_bots_on_account_id"
   end
 
@@ -601,11 +602,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_14_000000) do
     t.bigint "sla_policy_id"
     t.datetime "waiting_since"
     t.text "cached_label_list"
+    t.datetime "bot_idle_deadline_at"
+    t.bigint "bot_idle_reply_id"
+    t.bigint "bot_idle_agent_bot_id"
     t.index ["account_id", "display_id"], name: "index_conversations_on_account_id_and_display_id", unique: true
     t.index ["account_id", "id"], name: "index_conversations_on_id_and_account_id"
     t.index ["account_id", "inbox_id", "status", "assignee_id"], name: "conv_acid_inbid_stat_asgnid_idx"
     t.index ["account_id"], name: "index_conversations_on_account_id"
     t.index ["assignee_id", "account_id"], name: "index_conversations_on_assignee_id_and_account_id"
+    t.index ["bot_idle_agent_bot_id"], name: "index_conversations_on_bot_idle_agent_bot_id", where: "(bot_idle_agent_bot_id IS NOT NULL)"
+    t.index ["bot_idle_deadline_at"], name: "index_conversations_on_bot_idle_deadline_at", where: "(bot_idle_deadline_at IS NOT NULL)"
     t.index ["campaign_id"], name: "index_conversations_on_campaign_id"
     t.index ["contact_id"], name: "index_conversations_on_contact_id"
     t.index ["contact_inbox_id"], name: "index_conversations_on_contact_inbox_id"
