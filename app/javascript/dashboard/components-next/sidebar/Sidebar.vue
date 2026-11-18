@@ -1,4 +1,11 @@
 <script setup>
+import { useOcaReports } from 'dashboard/composables/useOcaReports';
+const emit = defineEmits([
+  'closeKeyShortcutModal',
+  'openKeyShortcutModal',
+  'showCreateAccountModal',
+]);
+const ocaReports = useOcaReports();
 import { h, computed, onMounted } from 'vue';
 import { provideSidebarContext } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
@@ -16,12 +23,6 @@ import ChannelLeaf from './ChannelLeaf.vue';
 import SidebarAccountSwitcher from './SidebarAccountSwitcher.vue';
 import Logo from 'next/icon/Logo.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
-
-const emit = defineEmits([
-  'closeKeyShortcutModal',
-  'openKeyShortcutModal',
-  'showCreateAccountModal',
-]);
 
 const { accountScopedRoute } = useAccount();
 const store = useStore();
@@ -103,7 +104,13 @@ const newReportRoutes = () => [
   },
 ];
 
-const reportRoutes = computed(() => newReportRoutes());
+const reportRoutes = computed(() =>
+  newReportRoutes().filter(
+    route =>
+      !ocaReports.value ||
+      !['Reports Agent', 'Reports Team'].includes(route.name)
+  )
+);
 
 const menuItems = computed(() => {
   return [

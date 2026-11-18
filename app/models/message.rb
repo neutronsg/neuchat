@@ -133,7 +133,18 @@ class Message < ApplicationRecord
   after_create_commit :record_bot_idle_capability
   after_create_commit :execute_after_create_commit_callbacks
 
+  after_update :invalidate_failed_bot_outcome
   after_update_commit :dispatch_update_event
+
+  def invalidate_failed_bot_outcome
+    return unless saved_change_to_status? && failed?
+
+    # Serialize with reply/closure updates and retain dependencies across command notices.
+    conversation.reload.with_lock do
+      state = conversation.bot_conversation_outcome
+      state.update!(all_solved: false, last_reply_assessed: false) if state && (state.last_message_id == id || state.enquiry_message_ids.value?(id))
+    end
+  end
 
   def lock_bot_idle_conversation
     return unless (incoming? || outgoing? || template?) && !private?
@@ -144,6 +155,7 @@ class Message < ApplicationRecord
 
   def update_bot_idle_state
     Conversations::BotIdleState.new(conversation).on_message(self)
+    Conversations::BotOutcomeState.new(conversation).on_message(self)
   end
 
   def record_bot_idle_capability

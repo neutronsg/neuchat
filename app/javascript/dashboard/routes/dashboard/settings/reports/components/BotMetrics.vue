@@ -10,6 +10,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['ocaEnabled']);
+const ocaEnabled = ref(false);
 const conversationCount = ref('0');
 const messageCount = ref('0');
 const resolutionRate = ref('0');
@@ -24,6 +26,8 @@ const fetchMetrics = () => {
     return;
   }
   ReportsAPI.getBotMetrics(props.filters).then(response => {
+    ocaEnabled.value = response.data.oca_reports_enabled === true;
+    emit('ocaEnabled', ocaEnabled.value);
     conversationCount.value = response.data.conversation_count.toLocaleString();
     messageCount.value = response.data.message_count.toLocaleString();
     resolutionRate.value = response.data.resolution_rate.toString();
@@ -53,12 +57,14 @@ onMounted(fetchMetrics);
       class="flex-1"
     />
     <ReportMetricCard
+      v-if="!ocaEnabled"
       :label="$t('BOT_REPORTS.METRIC.RESOLUTION_RATE.LABEL')"
       :info-text="$t('BOT_REPORTS.METRIC.RESOLUTION_RATE.TOOLTIP')"
       :value="formatToPercent(resolutionRate)"
       class="flex-1"
     />
     <ReportMetricCard
+      v-if="!ocaEnabled"
       :label="$t('BOT_REPORTS.METRIC.HANDOFF_RATE.LABEL')"
       :info-text="$t('BOT_REPORTS.METRIC.HANDOFF_RATE.TOOLTIP')"
       :value="formatToPercent(handoffRate)"

@@ -1,4 +1,6 @@
 <script setup>
+import { useOcaReports } from 'dashboard/composables/useOcaReports';
+const ocaReports = useOcaReports();
 import { computed, onMounted, ref } from 'vue';
 import { OVERVIEW_METRICS } from '../constants';
 import { useToggle } from '@vueuse/core';
@@ -122,7 +124,10 @@ onMounted(() => {
         </div>
       </MetricCard>
     </div>
-    <div class="flex-1 w-full max-w-full md:w-[35%] md:max-w-[35%]">
+    <div
+      v-if="!ocaReports"
+      class="flex-1 w-full max-w-full md:w-[35%] md:max-w-[35%]"
+    >
       <MetricCard :header="$t('OVERVIEW_REPORTS.AGENT_STATUS.HEADER')">
         <div
           v-for="(metric, name, index) in agentStatusMetrics"

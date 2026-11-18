@@ -1,5 +1,8 @@
 <script>
+import { useOcaReports } from 'dashboard/composables/useOcaReports';
 import { useAlert, useTrack } from 'dashboard/composables';
+import OcaReportDateFilter from './components/OcaReportDateFilter.vue';
+import OcaBotReports from './components/OcaBotReports.vue';
 import BotMetrics from './components/BotMetrics.vue';
 import ReportFilterSelector from './components/FilterSelector.vue';
 import { GROUP_BY_FILTER } from './constants';
@@ -11,9 +14,14 @@ export default {
   name: 'BotReports',
   components: {
     BotMetrics,
+    OcaBotReports,
+    OcaReportDateFilter,
     ReportHeader,
     ReportFilterSelector,
     ReportContainer,
+  },
+  setup() {
+    return { ocaEnabled: useOcaReports() };
   },
   data() {
     return {
@@ -74,7 +82,7 @@ export default {
       this.to = to;
       this.groupBy = groupBy;
       this.businessHours = businessHours;
-      this.fetchAllData();
+      if (!this.ocaEnabled) this.fetchAllData();
 
       useTrack(REPORTS_EVENTS.FILTER_REPORT, {
         filterValue: { from, to, groupBy, businessHours },
@@ -88,15 +96,19 @@ export default {
 <template>
   <ReportHeader :header-title="$t('BOT_REPORTS.HEADER')" />
   <div class="flex flex-col gap-4">
+    <OcaReportDateFilter v-if="ocaEnabled" @filter-change="onFilterChange" />
     <ReportFilterSelector
+      v-else
       :show-agents-filter="false"
-      show-group-by-filter
+      :show-group-by-filter="!ocaEnabled"
       :show-business-hours-switch="false"
       @filter-change="onFilterChange"
     />
 
-    <BotMetrics :filters="requestPayload" />
+    <BotMetrics v-if="!ocaEnabled" :filters="requestPayload" />
+    <OcaBotReports v-if="ocaEnabled" :filters="requestPayload" />
     <ReportContainer
+      v-if="!ocaEnabled"
       account-summary-key="getBotSummary"
       summary-fetching-key="getBotSummaryFetchingStatus"
       :group-by="groupBy"

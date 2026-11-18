@@ -23,6 +23,7 @@
 #
 
 class Account < ApplicationRecord
+  has_many :bot_conversation_outcomes, dependent: :delete_all
   # used for single column multi flags
   include FlagShihTzu
   include Reportable

@@ -1,5 +1,4 @@
 class Api::V1::Widget::MessagesController < Api::V1::Widget::BaseController
-  before_action :set_conversation, only: [:create]
   before_action :set_message, only: [:update]
 
   def index
@@ -7,9 +6,16 @@ class Api::V1::Widget::MessagesController < Api::V1::Widget::BaseController
   end
 
   def create
-    @message = conversation.messages.new(message_params)
-    build_attachment
-    @message.save!
+    # A verified contact can have multiple widget identities; lock their common contact.
+    # Keep conversation selection and message insertion in the same transaction.
+    @contact.with_lock do
+      @conversation = nil
+      @conversations = nil
+      set_conversation
+      @message = conversation.messages.new(message_params)
+      build_attachment
+      @message.save!
+    end
   end
 
   def update
@@ -43,7 +49,14 @@ class Api::V1::Widget::MessagesController < Api::V1::Widget::BaseController
   end
 
   def set_conversation
-    @conversation = create_conversation if conversation.nil?
+    # Closure uses this row lock too; refresh before deciding whether to start a new chat.
+    conversation&.reload(lock: true)
+    @conversation = create_conversation if conversation.nil? || closed_oca_conversation?
+  end
+
+  def closed_oca_conversation?
+    ENV['OCA_BOT_REPORTS_ENABLED'] == 'true' && inbox.account_id.to_s == ENV['OCA_BOT_ACCOUNT_ID'] &&
+      inbox.active_bot? && conversation.resolved?
   end
 
   def message_finder_params

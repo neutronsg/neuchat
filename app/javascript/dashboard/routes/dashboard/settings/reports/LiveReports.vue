@@ -1,4 +1,6 @@
 <script setup>
+import { useOcaReports } from 'dashboard/composables/useOcaReports';
+const ocaReports = useOcaReports();
 import ReportHeader from './components/ReportHeader.vue';
 import HeatmapContainer from './components/HeatmapContainer.vue';
 import AgentLiveReportContainer from './components/AgentLiveReportContainer.vue';
@@ -11,7 +13,7 @@ import StatsLiveReportsContainer from './components/StatsLiveReportsContainer.vu
   <div class="flex flex-col gap-4 pb-6">
     <StatsLiveReportsContainer />
     <HeatmapContainer />
-    <AgentLiveReportContainer />
-    <TeamLiveReportContainer />
+    <AgentLiveReportContainer v-if="!ocaReports" />
+    <TeamLiveReportContainer v-if="!ocaReports" />
   </div>
 </template>

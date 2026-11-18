@@ -392,6 +392,9 @@ Rails.application.routes.draw do
               get :conversations
               get :conversation_traffic
               get :bot_metrics
+              get :bot_outcomes
+              get :bot_usage
+              get :bot_outcomes_csv
             end
           end
           resources :live_reports, only: [] do

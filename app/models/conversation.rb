@@ -111,11 +111,18 @@ class Conversation < ApplicationRecord
   has_many :notifications, as: :primary_actor, dependent: :destroy_async
   has_many :attachments, through: :messages
   has_many :reporting_events, dependent: :destroy_async
-
+  has_one :bot_conversation_outcome, dependent: :destroy
   before_save :clear_bot_idle_when_unavailable
   before_save :ensure_snooze_until_reset
   before_create :determine_conversation_status
   before_create :ensure_waiting_since
+  after_save :settle_bot_outcome
+
+  def settle_bot_outcome
+    return unless saved_change_to_status?
+
+    bot_conversation_outcome&.update!(closed_at: resolved? ? Time.current : nil)
+  end
 
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation

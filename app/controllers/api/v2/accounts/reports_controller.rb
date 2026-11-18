@@ -53,11 +53,45 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def bot_metrics
+    BotUsageReportClient.period(from: params[:since], to: params[:until]) if oca_report?
     bot_metrics = V2::Reports::BotMetricsBuilder.new(Current.account, params).metrics
-    render json: bot_metrics
+    render json: bot_metrics.merge(oca_reports_enabled: oca_report?)
+  rescue ArgumentError, TypeError
+    render json: { error: 'invalid_range' }, status: :unprocessable_entity
+  end
+
+  def bot_outcomes
+    return head :not_found unless oca_report?
+
+    render json: V2::Reports::BotOutcomesBuilder.new(Current.account, params).build
+  rescue ArgumentError, TypeError
+    render json: { error: 'invalid_range' }, status: :unprocessable_entity
+  end
+
+  def bot_outcomes_csv
+    return head :not_found unless oca_report?
+
+    send_data V2::Reports::BotOutcomesBuilder.new(Current.account, params).csv, filename: 'bot_conversations.csv', type: 'text/csv'
+  rescue ArgumentError, TypeError
+    render json: { error: 'invalid_range' }, status: :unprocessable_entity
+  end
+
+  def bot_usage
+    return head :not_found unless oca_report?
+
+    BotUsageReportClient.period(params)
+    render json: BotUsageReportClient.fetch(Current.account.id, params)
+  rescue ArgumentError, TypeError
+    render json: { error: 'invalid_range' }, status: :unprocessable_entity
+  rescue StandardError
+    render json: { error: 'usage_unavailable' }, status: :service_unavailable
   end
 
   private
+
+  def oca_report?
+    ENV['OCA_BOT_REPORTS_ENABLED'] == 'true' && Current.account.id.to_s == ENV['OCA_BOT_ACCOUNT_ID']
+  end
 
   def generate_csv(filename, template)
     response.headers['Content-Type'] = 'text/csv'

@@ -85,6 +85,18 @@ class ReportsAPI extends ApiClient {
     });
   }
 
+  getBotOutcomes(params) {
+    return axios.get(`${this.url}/bot_outcomes`, { params });
+  }
+
+  getBotUsage(params) {
+    return axios.get(`${this.url}/bot_usage`, { params });
+  }
+
+  getBotOutcomesCSV(params) {
+    return axios.get(`${this.url}/bot_outcomes_csv`, { params });
+  }
+
   getBotMetrics({ from, to } = {}) {
     return axios.get(`${this.url}/bot_metrics`, {
       params: { since: from, until: to },

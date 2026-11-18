@@ -3,15 +3,18 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { DATE_RANGE_OPTIONS } from '../../constants';
 
+const props = defineProps({ maxDays: { type: Number, default: Infinity } });
 const emit = defineEmits(['onRangeChange']);
 
 const { t } = useI18n();
 
 const options = computed(() =>
-  Object.values(DATE_RANGE_OPTIONS).map(option => ({
-    ...option,
-    name: t(option.translationKey),
-  }))
+  Object.values(DATE_RANGE_OPTIONS)
+    .filter(option => option.offset === null || option.offset < props.maxDays)
+    .map(option => ({
+      ...option,
+      name: t(option.translationKey),
+    }))
 );
 
 const selectedId = ref(Object.values(DATE_RANGE_OPTIONS)[0].id);

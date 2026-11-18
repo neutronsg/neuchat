@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_21_090000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_19_030000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -219,6 +219,26 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_21_090000) do
     t.datetime "updated_at", null: false
     t.boolean "active", default: true, null: false
     t.index ["account_id"], name: "index_automation_rules_on_account_id"
+  end
+
+  create_table "bot_conversation_outcomes", force: :cascade do |t|
+    t.bigint "conversation_id", null: false
+    t.bigint "account_id", null: false
+    t.bigint "last_message_id", default: 0, null: false
+    t.bigint "evaluated_input_id", default: 0, null: false
+    t.jsonb "categories", default: [], null: false
+    t.jsonb "enquiries", default: [], null: false
+    t.jsonb "escalations", default: [], null: false
+    t.datetime "escalated_at"
+    t.datetime "closed_at"
+    t.boolean "all_solved", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "last_reply_assessed", default: false, null: false
+    t.jsonb "enquiry_message_ids", default: {}, null: false
+    t.index ["account_id", "created_at"], name: "index_bot_conversation_outcomes_on_account_id_and_created_at"
+    t.index ["account_id"], name: "index_bot_conversation_outcomes_on_account_id"
+    t.index ["conversation_id"], name: "index_bot_conversation_outcomes_on_conversation_id", unique: true
   end
 
   create_table "campaigns", force: :cascade do |t|
@@ -1198,6 +1218,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_21_090000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "bot_conversation_outcomes", "accounts"
+  add_foreign_key "bot_conversation_outcomes", "conversations"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "kbase_documents", "kbase_knowledge_bases", column: "knowledge_base_id"
   add_foreign_key "kbase_documents", "users", column: "created_by_id"
