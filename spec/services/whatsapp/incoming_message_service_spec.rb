@@ -345,7 +345,7 @@ describe Whatsapp::IncomingMessageService do
     end
 
     describe 'when message processing is in progress' do
-      it 'ignores the current message creation request' do
+      it 'does not discard a message because of a stale legacy Redis processing marker' do
         params = { 'contacts' => [{ 'profile' => { 'name' => 'Kedar' }, 'wa_id' => '919746334593' }],
                    'messages' => [{ 'from' => '919446284490',
                                     'id' => 'wamid.SDFADSf23sfasdafasdfa',
@@ -367,8 +367,8 @@ describe Whatsapp::IncomingMessageService do
         expect(Redis::Alfred.get(key)).to be_truthy
 
         described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
-        expect(whatsapp_channel.inbox.messages.count).to eq(0)
-        expect(Message.find_by(source_id: 'wamid.SDFADSf23sfasdafasdfa')).not_to be_present
+        expect(whatsapp_channel.inbox.messages.count).to eq(2)
+        expect(Message.find_by(source_id: 'wamid.SDFADSf23sfasdafasdfa')).to be_present
 
         expect(Redis::Alfred.get(key)).to be_truthy
         Redis::Alfred.delete(key)

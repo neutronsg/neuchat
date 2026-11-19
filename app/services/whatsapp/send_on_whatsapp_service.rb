@@ -1,4 +1,11 @@
 class Whatsapp::SendOnWhatsappService < Base::SendOnChannelService
+  def perform
+    Whatsapp::ProcessingLock.synchronize("outgoing:#{message.id}") do
+      message.reload
+      super
+    end
+  end
+
   private
 
   def channel_class

@@ -1,4 +1,5 @@
 require Rails.root.join('lib/redis/config')
+require Rails.root.join('lib/sidekiq_worker_health')
 
 schedule_file = 'config/schedule.yml'
 
@@ -7,6 +8,7 @@ Sidekiq.configure_client do |config|
 end
 
 Sidekiq.configure_server do |config|
+  SidekiqWorkerHealth.install(config)
   config.redis = Redis::Config.app
 
   # skip the default start stop logging

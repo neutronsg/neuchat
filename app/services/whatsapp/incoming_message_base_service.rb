@@ -23,18 +23,38 @@ class Whatsapp::IncomingMessageBaseService
     # if the webhook event is a reaction or an ephermal message or an unsupported message.
     return if unprocessable_message_type?(message_type)
 
-    # Multiple webhook event can be received against the same message due to misconfigurations in the Meta
-    # business manager account. While we have not found the core reason yet, the following line ensure that
-    # there are no duplicate messages created.
-    return if find_message_by_source_id(@processed_params[:messages].first[:id]) || message_under_process?
+    message_id = @processed_params[:messages].first[:id]
+    Whatsapp::ProcessingLock.synchronize("incoming:#{inbox.id}:#{message_id}") do
+      next if message_id.present? && inbox.messages.exists?(source_id: message_id)
 
-    cache_message_source_id_in_redis
-    set_contact
-    return unless @contact
+      process_sender_message
+    end
+  end
 
-    set_conversation
-    create_messages
-    clear_message_source_id_from_redis
+  def process_sender_message
+    sender = @processed_params[:contacts]&.first&.[](:wa_id)
+    Whatsapp::ProcessingLock.synchronize("sender:#{inbox.id}:#{sender}") do
+      set_contact
+      next unless @contact
+
+      persist_incoming_message
+    end
+  end
+
+  def persist_incoming_message
+    # Lock order: channel-message, channel-sender, conversation. Closing only
+    # takes the conversation lock; recheck status after acquiring that lock.
+    ActiveRecord::Base.transaction do
+      set_conversation
+      if @conversation.new_record?
+        # Blocked contacts deliberately create resolved chats; do not replace them.
+        @conversation.save!
+      else
+        @conversation.lock!
+        @conversation = Conversation.create!(conversation_params) if @conversation.resolved? && !inbox.lock_to_single_conversation
+      end
+      create_messages
+    end
   end
 
   def process_statuses
@@ -65,7 +85,7 @@ class Whatsapp::IncomingMessageBaseService
 
   def create_contact_messages(message)
     message['contacts'].each do |contact|
-      create_message(contact)
+      create_message(contact.merge(id: message[:id]))
       attach_contact(contact)
       @message.save!
     end
@@ -104,7 +124,7 @@ class Whatsapp::IncomingMessageBaseService
                     end
     return if @conversation
 
-    @conversation = ::Conversation.create!(conversation_params)
+    @conversation = ::Conversation.new(conversation_params)
   end
 
   def attach_files
