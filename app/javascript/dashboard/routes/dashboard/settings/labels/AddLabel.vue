@@ -27,6 +27,8 @@ export default {
       description: '',
       title: '',
       showOnSidebar: true,
+      aiCategory: false,
+      aiCategoryName: '',
     };
   },
   validations,
@@ -54,6 +56,8 @@ export default {
           description: this.description,
           title: this.title.toLowerCase(),
           show_on_sidebar: this.showOnSidebar,
+          ai_category: this.aiCategory,
+          ai_category_name: this.aiCategoryName || null,
         });
         useAlert(this.$t('LABEL_MGMT.ADD.API.SUCCESS_MESSAGE'));
         this.onClose();
@@ -97,6 +101,25 @@ export default {
         @blur="v$.description.$touch"
       />
 
+      <div class="w-full mb-3">
+        <label class="flex items-center gap-2">
+          <input
+            v-model="aiCategory"
+            type="checkbox"
+            data-testid="label-ai-category"
+          />
+          {{ $t('LABEL_MGMT.FORM.AI_CATEGORY') }}
+        </label>
+        <woot-input
+          v-if="aiCategory || aiCategoryName"
+          v-model="aiCategoryName"
+          :label="$t('LABEL_MGMT.FORM.AI_CATEGORY_NAME')"
+          data-testid="label-ai-category-name"
+        />
+        <p class="text-xs text-n-slate-11">
+          {{ $t('LABEL_MGMT.FORM.AI_CATEGORY_HELP') }}
+        </p>
+      </div>
       <div class="w-full">
         <label>
           {{ $t('LABEL_MGMT.FORM.COLOR.LABEL') }}

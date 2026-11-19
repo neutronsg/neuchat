@@ -25,6 +25,8 @@ export default {
       title: '',
       description: '',
       showOnSidebar: true,
+      aiCategory: false,
+      aiCategoryName: '',
       color: '',
     };
   },
@@ -52,6 +54,8 @@ export default {
     },
     setFormValues() {
       this.title = this.selectedResponse.title;
+      this.aiCategory = this.selectedResponse.ai_category;
+      this.aiCategoryName = this.selectedResponse.ai_category_name || '';
       this.description = this.selectedResponse.description;
       this.showOnSidebar = this.selectedResponse.show_on_sidebar;
       this.color = this.selectedResponse.color;
@@ -64,6 +68,8 @@ export default {
           description: this.description,
           title: this.title.toLowerCase(),
           show_on_sidebar: this.showOnSidebar,
+          ai_category: this.aiCategory,
+          ai_category_name: this.aiCategoryName || null,
         })
         .then(() => {
           useAlert(this.$t('LABEL_MGMT.EDIT.API.SUCCESS_MESSAGE'));
@@ -101,6 +107,26 @@ export default {
         @blur="v$.description.$touch"
       />
 
+      <div class="w-full mb-3">
+        <label class="flex items-center gap-2">
+          <input
+            v-model="aiCategory"
+            type="checkbox"
+            data-testid="label-ai-category"
+          />
+          {{ $t('LABEL_MGMT.FORM.AI_CATEGORY') }}
+        </label>
+        <woot-input
+          v-if="aiCategory || aiCategoryName"
+          v-model="aiCategoryName"
+          :disabled="!!selectedResponse.ai_category_name"
+          :label="$t('LABEL_MGMT.FORM.AI_CATEGORY_NAME')"
+          data-testid="label-ai-category-name"
+        />
+        <p class="text-xs text-n-slate-11">
+          {{ $t('LABEL_MGMT.FORM.AI_CATEGORY_HELP') }}
+        </p>
+      </div>
       <div class="w-full">
         <label>
           {{ $t('LABEL_MGMT.FORM.COLOR.LABEL') }}

@@ -10,16 +10,18 @@ class Api::V1::Accounts::LabelsController < Api::V1::Accounts::BaseController
   def show; end
 
   def create
-    @label = Current.account.labels.create!(permitted_params)
+    Current.account.with_lock { @label = Current.account.labels.create!(permitted_params) }
   end
 
   def update
-    @label.update!(permitted_params)
+    Current.account.with_lock { @label.reload.update!(permitted_params) }
   end
 
   def destroy
-    @label.destroy!
+    Current.account.with_lock { @label.reload.destroy! }
     head :ok
+  rescue ActiveRecord::RecordNotDestroyed => e
+    render json: { error: e.record.errors.full_messages.join(', ') }, status: :unprocessable_entity
   end
 
   private
@@ -29,6 +31,6 @@ class Api::V1::Accounts::LabelsController < Api::V1::Accounts::BaseController
   end
 
   def permitted_params
-    params.require(:label).permit(:title, :description, :color, :show_on_sidebar)
+    params.require(:label).permit(:title, :description, :color, :show_on_sidebar, :ai_category, :ai_category_name)
   end
 end

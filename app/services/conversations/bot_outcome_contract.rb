@@ -4,9 +4,9 @@ class Conversations::BotOutcomeContract
   STAGES = %w[none offered declined accepted].freeze
   REASONS = %w[user_requested_support no_answer_found requires_other_person].freeze
   DESTINATIONS = %w[company_admin hr oca_support].freeze
-  def self.validate!(data)
+  def self.validate!(data, account: nil)
     object!(data, %w[categories enquiries escalation])
-    categories!(data['categories'])
+    categories!(data['categories'], account)
     enquiries!(data['enquiries'])
     escalation!(data['escalation'])
   end
@@ -15,9 +15,12 @@ class Conversations::BotOutcomeContract
     raise ArgumentError, 'Invalid outcome object' unless value.is_a?(Hash) && value.keys.sort == keys.sort
   end
 
-  def self.categories!(values)
-    valid = values.is_a?(Array) && values.size <= 20 && values.uniq.size == values.size
-    raise ArgumentError, 'Invalid categories' unless valid && (values - Conversations::BotOutcomeState::CATEGORIES).empty?
+  def self.categories!(values, account = nil)
+    valid = values.is_a?(Array) && values.size <= 100 && values.uniq.size == values.size
+    # Disabled categories remain valid for in-flight replies and historical state.
+    allowed = account ? account.labels.where.not(ai_category_name: nil).pluck(:ai_category_name) : []
+    allowed |= Conversations::BotOutcomeState::CATEGORIES
+    raise ArgumentError, 'Invalid categories' unless valid && (values - allowed).empty?
   end
 
   def self.enquiries!(values)

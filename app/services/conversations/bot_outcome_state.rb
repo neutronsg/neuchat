@@ -3,7 +3,7 @@ class Conversations::BotOutcomeState
   CATEGORIES = ['Sign-up/login', 'Learning related', 'CMS portal', 'LMS portal', 'Other apps', 'Data migration', 'App download',
                 'Suggestions', 'MAX points related', 'Notifications related', 'Rewards', 'CR points related', 'Learning Terminal related',
                 'Awards Terminal related', 'Allocation management', 'Reports', 'Community Terminal related', 'Leaderboard', 'Home page',
-                'Android version'].freeze
+                'Android version', 'Dashboards', 'Airport 101', 'QR code scanner', 'Others'].freeze
   REASONS = %w[user_requested_support no_answer_found requires_other_person].freeze
   DESTINATIONS = %w[company_admin hr oca_support].freeze
 
@@ -67,7 +67,7 @@ class Conversations::BotOutcomeState
     state.all_solved = false
     return if outcome.blank?
 
-    Conversations::BotOutcomeContract.validate!(outcome)
+    Conversations::BotOutcomeContract.validate!(outcome, account: @conversation.account)
     bind_delivery_evidence(state, outcome.fetch('enquiries'), message.id)
     merge_enquiries(state, outcome.fetch('enquiries').map { |enquiry| enquiry.slice('id', 'status') })
     state.categories = (state.categories + outcome.fetch('categories')).uniq

@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
+import OcaCostEstimate from './OcaCostEstimate.vue';
 import OcaCategoryBreakdown from './OcaCategoryBreakdown.vue';
 import OcaEscalationDetails from './OcaEscalationDetails.vue';
 import { useRoute } from 'vue-router';
@@ -206,22 +207,6 @@ const usageStats = computed(() => [
   { key: 'CACHE_READ', value: number(usage.value?.total?.cacheReadTokens) },
   { key: 'CACHE_WRITE', value: number(usage.value?.total?.cacheWriteTokens) },
   { key: 'CACHE', value: rate(usage.value?.total?.cacheHitRate) },
-  {
-    key: 'COST',
-    value: `${usage.value?.currency ?? 'USD'} ${number(usage.value?.total?.estimatedCostUsd)}`,
-  },
-  ...(usage.value?.storage === 'long_term_metering'
-    ? [
-        {
-          key: 'GUARDRAIL_COST',
-          value: `${usage.value?.currency ?? 'USD'} ${number(usage.value?.total?.estimatedGuardrailCostUsd)}`,
-        },
-        {
-          key: 'COMBINED_COST',
-          value: `${usage.value?.currency ?? 'USD'} ${number(usage.value?.total?.estimatedCombinedCostUsd)}`,
-        },
-      ]
-    : []),
 ]);
 </script>
 
@@ -419,48 +404,19 @@ const usageStats = computed(() => [
                 </dd>
               </div>
             </dl>
-            <details class="mt-5 text-xs leading-5 text-n-slate-11">
-              <summary
-                class="w-fit cursor-pointer rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-brand"
-              >
-                {{ $t('OCA_REPORT.USAGE_ABOUT') }}
-              </summary>
-              <p class="mb-0 mt-2">
-                {{
-                  $t(
-                    usage.storage === 'long_term_metering'
-                      ? 'OCA_REPORT.LONG_TERM_COST_NOTE'
-                      : 'OCA_REPORT.COST_NOTE'
-                  )
-                }}
-              </p>
-              <p
-                v-if="usage.storage === 'long_term_metering'"
-                class="mb-0 mt-1"
-              >
-                {{ $t('OCA_REPORT.GUARDRAIL_COVERAGE') }}
-                {{ number(usage.total?.unpricedGuardrailCalls) }}
-              </p>
-              <p v-if="usage.priceSyncStale" class="mb-0 mt-1">
-                {{ $t('OCA_REPORT.PRICE_STALE') }}
-              </p>
-              <p v-if="usage.priceLastSyncedAt" class="mb-0 mt-1">
-                {{ $t('OCA_REPORT.PRICE_SYNC') }}
-                {{
-                  new Date(usage.priceLastSyncedAt).toLocaleString('en-SG', {
-                    timeZone: 'Asia/Singapore',
-                  })
-                }}
-              </p>
-              <p class="mb-0 mt-1">
-                {{ $t('OCA_REPORT.COVERAGE') }}
-                {{ number(usage.total?.usageMissingCalls) }} /
-                {{ number(usage.total?.unpricedCalls) }}
-              </p>
-            </details>
+            <p class="mt-4 text-xs text-n-slate-11">
+              {{ $t('OCA_REPORT.MISSING_USAGE') }}
+              {{ number(usage.total?.usageMissingCalls) }}
+            </p>
           </template>
         </section>
       </div>
+      <OcaCostEstimate
+        :usage="usage"
+        :loading="usageLoading"
+        :error="usageError"
+        @retry="fetchUsage"
+      />
       <OcaEscalationDetails
         :report="report"
         :loading="loading"

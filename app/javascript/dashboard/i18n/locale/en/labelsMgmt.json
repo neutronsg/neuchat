@@ -37,7 +37,10 @@
       "EDIT": "Edit",
       "CREATE": "Create",
       "DELETE": "Delete",
-      "CANCEL": "Cancel"
+      "CANCEL": "Cancel",
+      "AI_CATEGORY": "Use for AI enquiry classification",
+      "AI_CATEGORY_NAME": "AI category name (permanent)",
+      "AI_CATEGORY_HELP": "Describe this category above. Changes apply to new requests; disable categories to retain historical reports. Others is the fallback."
     },
     "SUGGESTIONS": {
       "TOOLTIP": {

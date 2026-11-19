@@ -1,5 +1,6 @@
 import { shallowMount, flushPromises } from '@vue/test-utils';
 import ReportsAPI from 'dashboard/api/reports';
+import OcaCostEstimate from '../OcaCostEstimate.vue';
 import OcaBotReports from '../OcaBotReports.vue';
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { accountId: '1' } }),
@@ -60,17 +61,23 @@ describe('OCA Bot reports', () => {
           estimatedCombinedCostUsd: 1.2,
           unpricedCalls: 0,
           unpricedGuardrailCalls: 2,
+          guardrailCalls: 2,
         },
       },
     });
     const wrapper = mount();
     await flushPromises();
-    expect(wrapper.text()).toContain('OCA_REPORT.GUARDRAIL_COST');
-    expect(wrapper.text()).toContain('OCA_REPORT.COMBINED_COST');
-    expect(wrapper.text()).toContain('OCA_REPORT.PARTIAL_COST');
-    expect(wrapper.text()).toContain('OCA_REPORT.PRICE_STALE');
-    expect(wrapper.text()).toContain('OCA_REPORT.LONG_TERM_COST_NOTE');
-    expect(wrapper.text()).toContain('USD —');
+    const costs = shallowMount(OcaCostEstimate, {
+      props: { usage: wrapper.findComponent(OcaCostEstimate).props('usage') },
+      global: { mocks: { $t: key => key } },
+    });
+    expect(costs.text()).toContain('OCA_REPORT.GUARDRAIL_COST');
+    expect(costs.text()).toContain('OCA_REPORT.KNOWN_SUBTOTAL');
+    expect(costs.text()).toContain('OCA_REPORT.PARTIAL_COST');
+    expect(costs.text()).toContain('OCA_REPORT.PRICE_STALE');
+    expect(costs.text()).toContain('OCA_REPORT.LONG_TERM_COST_NOTE');
+    expect(costs.text()).toContain('—');
+    expect(wrapper.text()).not.toContain('OCA_REPORT.GUARDRAIL_COST');
   });
   it('shows usage failure independently from successful conversation reporting', async () => {
     ReportsAPI.getBotUsage.mockRejectedValue(new Error('unavailable'));
@@ -141,3 +148,52 @@ describe('OCA Bot reports', () => {
     expect(wrapper.text()).not.toContain('999,999');
   });
 });
+
+it('hides non-applicable Guardrails and distinguishes no data from zero cost', () => {
+  const wrapper = shallowMount(OcaCostEstimate, {
+    props: {
+      usage: {
+        storage: 'long_term_metering',
+        total: {
+          guardrailCalls: 0,
+          estimatedCostUsd: 0,
+          estimatedCombinedCostUsd: 0,
+        },
+        priceSourceMode: 'maintained_table',
+      },
+    },
+    global: { mocks: { $t: key => key } },
+  });
+  expect(wrapper.text()).not.toContain('OCA_REPORT.GUARDRAIL_COST');
+  expect(wrapper.text()).toContain('USD 0');
+  expect(wrapper.text()).toContain('OCA_REPORT.MAINTAINED_PRICES');
+});
+
+it.each([undefined, 'long_term_metering'])(
+  'uses the actual retention and cost scope for storage %s, preserving unknown costs',
+  storage => {
+    const wrapper = shallowMount(OcaCostEstimate, {
+      props: {
+        usage: {
+          storage,
+          total: {
+            estimatedCostUsd: null,
+            estimatedCombinedCostUsd: null,
+            unpricedCalls: 1,
+          },
+        },
+      },
+      global: { mocks: { $t: key => key } },
+    });
+    const text = wrapper.text();
+    expect(text).toContain(
+      storage ? 'OCA_REPORT.LONG_TERM_COST_NOTE' : 'OCA_REPORT.COST_NOTE'
+    );
+    expect(text).not.toContain(
+      storage ? 'OCA_REPORT.COST_NOTE' : 'OCA_REPORT.LONG_TERM_COST_NOTE'
+    );
+    expect(text).toContain('OCA_REPORT.PARTIAL_COST');
+    expect(text).not.toContain('USD 0');
+    expect(text).toContain('—');
+  }
+);

@@ -101,4 +101,22 @@ RSpec.describe 'Label API', type: :request do
       end
     end
   end
+
+  describe 'AI classification management' do
+    it 'allows an administrator to create an AI label and returns the classification fields' do
+      admin = create(:user, account: account, role: :administrator)
+      attributes = { title: 'dynamic-ai', ai_category: true, ai_category_name: 'Dynamic AI', description: 'Synthetic test' }
+      post "/api/v1/accounts/#{account.id}/labels", headers: admin.create_new_auth_token, params: attributes, as: :json
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include('ai_category' => true, 'ai_category_name' => 'Dynamic AI')
+    end
+
+    it 'does not allow an agent to enable AI categories' do
+      agent = create(:user, account: account, role: :agent)
+      patch "/api/v1/accounts/#{account.id}/labels/#{label.id}", headers: agent.create_new_auth_token,
+                                                                 params: { ai_category: true, ai_category_name: 'Forged' }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(label.reload.ai_category).to be false
+    end
+  end
 end

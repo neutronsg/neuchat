@@ -27,6 +27,34 @@ class Label < ApplicationRecord
             format: { with: UNICODE_CHARACTER_NUMBER_HYPHEN_UNDERSCORE },
             uniqueness: { scope: :account_id }
 
+  validates :ai_category_name, presence: true, if: :ai_category?
+  validates :ai_category_name, length: { maximum: 100 }, uniqueness: { scope: :account_id }, allow_nil: true
+  validates :description, length: { maximum: 500 }, if: :ai_category?
+  validate :stable_ai_category
+  validate :ai_category_capacity
+  before_destroy :retain_ai_category
+
+  def stable_ai_category
+    if persisted? && ai_category_name_in_database.present? && ai_category_name_changed?
+      errors.add(:ai_category_name, 'cannot change; disable this category and create another')
+    end
+    errors.add(:ai_category, 'Others must remain enabled') if ai_category_name == 'Others' && !ai_category?
+  end
+
+  def ai_category_capacity
+    return unless ai_category? && (!persisted? || !ai_category_in_database)
+    return if account.labels.where(ai_category: true).count < 100
+
+    errors.add(:ai_category, 'at most 100 active categories are supported')
+  end
+
+  def retain_ai_category
+    return if ai_category_name.blank?
+
+    errors.add(:base, 'Disable AI categories instead of deleting them to preserve historical reports')
+    throw :abort
+  end
+
   after_update_commit :update_associated_models
   default_scope { order(:title) }
 

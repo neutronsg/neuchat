@@ -56,3 +56,5 @@ json.sla_policy_id conversation.sla_policy_id
 json.partial! 'enterprise/api/v1/conversations/partials/conversation', conversation: conversation if ChatwootApp.enterprise?
 
 json.bot_outcome conversation.bot_conversation_outcome&.snapshot
+
+json.bot_categories Conversations::BotCategoryCatalog.for(conversation.account)

@@ -2,6 +2,9 @@
 class Conversations::BotCategoryLabels
   def self.sync!(conversation, categories)
     titles = categories.sort.map do |category|
+      existing = conversation.account.labels.find_by(ai_category_name: category)
+      next existing.title if existing
+
       title = category.downcase.gsub(/[^a-z0-9]+/, '-').delete_suffix('-')
       ensure_label(conversation.account, title, category).title
     end
