@@ -26,13 +26,18 @@ const maximum = computed(() => Math.max(1, ...sorted.value.map(row => row[1])));
       <div>
         <h2
           id="category-heading"
-          class="m-0 text-base font-medium text-n-slate-12"
+          class="m-0 flex items-center gap-1 text-base font-medium text-n-slate-12"
         >
           {{ $t('OCA_REPORT.CATEGORIES') }}
+          <button
+            v-tooltip="$t('OCA_REPORT.CATEGORIES_HELP')"
+            type="button"
+            :aria-label="$t('OCA_REPORT.CATEGORIES_HELP')"
+            class="inline-flex rounded text-n-slate-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-brand"
+          >
+            <fluent-icon icon="info" size="14" />
+          </button>
         </h2>
-        <p class="mb-0 mt-1 text-sm text-n-slate-11">
-          {{ $t('OCA_REPORT.CATEGORIES_HELP') }}
-        </p>
       </div>
       <router-link
         :to="`/app/accounts/${accountId}/reports/labels_overview`"

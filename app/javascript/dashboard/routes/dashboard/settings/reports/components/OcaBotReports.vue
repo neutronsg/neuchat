@@ -134,6 +134,9 @@ function exportUsage() {
     'cacheWriteTokens',
     'cacheHitRate',
     'estimatedCostUsd',
+    'estimatedGuardrailCostUsd',
+    'estimatedCombinedCostUsd',
+    'unpricedGuardrailCalls',
     'usageMissingCalls',
     'unpricedCalls',
   ];
@@ -207,6 +210,18 @@ const usageStats = computed(() => [
     key: 'COST',
     value: `${usage.value?.currency ?? 'USD'} ${number(usage.value?.total?.estimatedCostUsd)}`,
   },
+  ...(usage.value?.storage === 'long_term_metering'
+    ? [
+        {
+          key: 'GUARDRAIL_COST',
+          value: `${usage.value?.currency ?? 'USD'} ${number(usage.value?.total?.estimatedGuardrailCostUsd)}`,
+        },
+        {
+          key: 'COMBINED_COST',
+          value: `${usage.value?.currency ?? 'USD'} ${number(usage.value?.total?.estimatedCombinedCostUsd)}`,
+        },
+      ]
+    : []),
 ]);
 </script>
 
@@ -388,6 +403,19 @@ const usageStats = computed(() => [
                   class="m-0 mt-1 text-lg font-medium tabular-nums text-n-slate-12"
                 >
                   {{ stat.value }}
+                  <span
+                    v-if="
+                      (stat.key === 'COST' && usage.total?.unpricedCalls > 0) ||
+                      (stat.key === 'GUARDRAIL_COST' &&
+                        usage.total?.unpricedGuardrailCalls > 0) ||
+                      (stat.key === 'COMBINED_COST' &&
+                        (usage.total?.unpricedCalls > 0 ||
+                          usage.total?.unpricedGuardrailCalls > 0))
+                    "
+                    class="mt-1 block text-xs font-normal text-n-slate-11"
+                  >
+                    {{ $t('OCA_REPORT.PARTIAL_COST') }}
+                  </span>
                 </dd>
               </div>
             </dl>
@@ -397,7 +425,33 @@ const usageStats = computed(() => [
               >
                 {{ $t('OCA_REPORT.USAGE_ABOUT') }}
               </summary>
-              <p class="mb-0 mt-2">{{ $t('OCA_REPORT.COST_NOTE') }}</p>
+              <p class="mb-0 mt-2">
+                {{
+                  $t(
+                    usage.storage === 'long_term_metering'
+                      ? 'OCA_REPORT.LONG_TERM_COST_NOTE'
+                      : 'OCA_REPORT.COST_NOTE'
+                  )
+                }}
+              </p>
+              <p
+                v-if="usage.storage === 'long_term_metering'"
+                class="mb-0 mt-1"
+              >
+                {{ $t('OCA_REPORT.GUARDRAIL_COVERAGE') }}
+                {{ number(usage.total?.unpricedGuardrailCalls) }}
+              </p>
+              <p v-if="usage.priceSyncStale" class="mb-0 mt-1">
+                {{ $t('OCA_REPORT.PRICE_STALE') }}
+              </p>
+              <p v-if="usage.priceLastSyncedAt" class="mb-0 mt-1">
+                {{ $t('OCA_REPORT.PRICE_SYNC') }}
+                {{
+                  new Date(usage.priceLastSyncedAt).toLocaleString('en-SG', {
+                    timeZone: 'Asia/Singapore',
+                  })
+                }}
+              </p>
               <p class="mb-0 mt-1">
                 {{ $t('OCA_REPORT.COVERAGE') }}
                 {{ number(usage.total?.usageMissingCalls) }} /

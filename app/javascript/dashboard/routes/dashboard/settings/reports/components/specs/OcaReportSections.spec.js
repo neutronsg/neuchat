@@ -4,6 +4,7 @@ import OcaEscalationDetails from '../OcaEscalationDetails.vue';
 const global = {
   stubs: {
     'router-link': true,
+    'fluent-icon': true,
     Button: {
       props: ['label', 'disabled'],
       template: '<button :disabled="disabled">{{ label }}</button>',
@@ -25,9 +26,15 @@ describe('OCA report sections', () => {
     });
     expect(wrapper.findAll('li')).toHaveLength(8);
     expect(wrapper.find('li').text()).toContain('Long enquiry category 19');
-    await wrapper.find('button').trigger('click');
+    expect(wrapper.find('button[aria-label]').attributes('aria-label')).toBe(
+      'OCA_REPORT.CATEGORIES_HELP'
+    );
+    expect(wrapper.find('p').exists()).toBe(false);
+    await wrapper.find('button[aria-expanded]').trigger('click');
     expect(wrapper.findAll('li')).toHaveLength(20);
-    expect(wrapper.find('button').attributes('aria-expanded')).toBe('true');
+    expect(
+      wrapper.find('button[aria-expanded]').attributes('aria-expanded')
+    ).toBe('true');
   });
   it('offers a clear filter action rather than an empty table or invalid pagination', async () => {
     const wrapper = mount(OcaEscalationDetails, {

@@ -47,6 +47,31 @@ describe('OCA Bot reports', () => {
       wrapper.findAllComponents({ name: 'ReportMetricCard' })[2].props('value')
     ).toBe('0%');
   });
+  it('shows separate costs and incomplete/stale estimates without pretending missing Guardrails usage is free', async () => {
+    ReportsAPI.getBotUsage.mockResolvedValue({
+      data: {
+        storage: 'long_term_metering',
+        days: [],
+        currency: 'USD',
+        priceSyncStale: true,
+        total: {
+          estimatedCostUsd: 1.2,
+          estimatedGuardrailCostUsd: null,
+          estimatedCombinedCostUsd: 1.2,
+          unpricedCalls: 0,
+          unpricedGuardrailCalls: 2,
+        },
+      },
+    });
+    const wrapper = mount();
+    await flushPromises();
+    expect(wrapper.text()).toContain('OCA_REPORT.GUARDRAIL_COST');
+    expect(wrapper.text()).toContain('OCA_REPORT.COMBINED_COST');
+    expect(wrapper.text()).toContain('OCA_REPORT.PARTIAL_COST');
+    expect(wrapper.text()).toContain('OCA_REPORT.PRICE_STALE');
+    expect(wrapper.text()).toContain('OCA_REPORT.LONG_TERM_COST_NOTE');
+    expect(wrapper.text()).toContain('USD —');
+  });
   it('shows usage failure independently from successful conversation reporting', async () => {
     ReportsAPI.getBotUsage.mockRejectedValue(new Error('unavailable'));
     const wrapper = mount();

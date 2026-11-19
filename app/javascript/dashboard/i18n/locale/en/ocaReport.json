@@ -16,7 +16,7 @@
     "TOKENS": "Token consumption",
     "CACHE": "Input-token cache hit rate",
     "COST": "Estimated model cost",
-    "COVERAGE": "Recorded calls with missing usage / missing price:",
+    "COVERAGE": "Recorded calls with missing token usage / unpriced model calls:",
     "COST_NOTE": "Usage is based on retained diagnostic records. Estimates exclude Guardrails and other AWS charges. Dates use Asia/Singapore.",
     "DETAILS": "Escalation details",
     "REASON": "Reason",
@@ -68,6 +68,13 @@
     "NO_USAGE": "No recorded usage in this period.",
     "USAGE_ABOUT": "About usage and estimates",
     "DATE_HELP": "Dates use Singapore time (UTC+8). Select up to 93 calendar days, including both dates.",
-    "DATE_ERROR": "Select a valid range of 1–93 days. The report still shows the last valid range."
+    "DATE_ERROR": "Select a valid range of 1–93 days. The report still shows the last valid range.",
+    "LONG_TERM_COST_NOTE": "Usage is retained separately from diagnostic logs. Model and Guardrails estimates use public rates effective at the time of each call. Missing usage or rates are excluded from the subtotal. Other AWS charges, discounts and taxes are not included. Dates use Asia/Singapore.",
+    "PARTIAL_COST": "Partial estimate — some recorded calls could not be priced.",
+    "PRICE_SYNC": "Prices last synced:",
+    "GUARDRAIL_COST": "Estimated Guardrails cost",
+    "COMBINED_COST": "Estimated known-cost subtotal",
+    "GUARDRAIL_COVERAGE": "Guardrails calls with missing usage or price:",
+    "PRICE_STALE": "Price sync is pending or overdue. Estimates may not reflect recent price changes."
   }
 }
