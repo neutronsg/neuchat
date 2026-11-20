@@ -11,6 +11,22 @@ class Inboxes extends CacheEnabledApiClient {
     return 'inbox';
   }
 
+  async validateCacheKey(newKey) {
+    if (!(await super.validateCacheKey(newKey))) return false;
+
+    // Existing sessions can retain pre-release inbox records under the same server key.
+    const records = await this.dataManager.get({
+      modelName: this.cacheModelName,
+    });
+    return records.every(
+      inbox =>
+        inbox.channel_type !== 'Channel::Whatsapp' ||
+        (typeof inbox.image_messages_enabled === 'boolean' &&
+          typeof inbox.image_unavailable_message === 'string' &&
+          typeof inbox.default_image_unavailable_message === 'string')
+    );
+  }
+
   getCampaigns(inboxId) {
     return axios.get(`${this.url}/${inboxId}/campaigns`);
   }
