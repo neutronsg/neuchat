@@ -26,6 +26,90 @@ RSpec.describe 'AgentBot idle protocol integration', type: :request do
     conversation.reload
   end
 
+  def reject_image(id: 'image-rejection-id')
+    conversation.contact_inbox.update!(source_id: '12025550109')
+    params = { contacts: [{ wa_id: '12025550109', profile: { name: 'Local image test' } }],
+               messages: [{ id: id, from: '12025550109', type: 'image', image: { id: 'not-downloaded', caption: 'ignored' } }] }
+    Whatsapp::IncomingMessageService.new(inbox: inbox, params: params.with_indifferent_access).perform
+    conversation.messages.outgoing.reorder(id: :desc).first
+  end
+
+  it 'arms image-only conversations and closes once without a model reply' do
+    rejected = reject_image
+    expect(conversation.reload.bot_idle_reply_id).to eq(rejected.id)
+    expect(rejected.content_attributes['bot_trigger_message_id']).to eq(conversation.messages.incoming.last.id)
+    expect(conversation.messages.incoming.last.content).to be_nil
+    expect(expire.status).to eq('resolved')
+    expect { Conversations::BotIdleResolutionJob.perform_now }.not_to change(conversation.messages, :count)
+  end
+
+  it 'rearms after an image rejection, retains the prior notice and deduplicates the rejection' do
+    reply
+    travel 5.minutes
+    rejected = reject_image
+    expect(conversation.reload.bot_idle_deadline_at).to be_within(1.second).of(10.minutes.from_now)
+    expect { reject_image }.not_to change(conversation.messages, :count)
+    expect(rejected.content_attributes['bot_idle_notice']).to eq('闲置自动结束')
+    expect(expire.status).to eq('resolved')
+    expect(conversation.messages.last.content).to eq('闲置自动结束')
+  end
+
+  it 'does not close on a failed image rejection reply' do
+    reject_image.update!(status: :failed)
+    expect(expire.status).to eq('pending')
+    expect(conversation.reload.bot_idle_deadline_at).to be_nil
+  end
+
+  it 'cancels image rejection idle waits for new text and respects paused conversations' do
+    reject_image
+    input
+    expect(conversation.reload.bot_idle_deadline_at).to be_nil
+    conversation.update!(custom_attributes: { ai_paused: true })
+    reject_image(id: 'paused-image')
+    expect(conversation.reload.bot_idle_deadline_at).to be_nil
+    expect(expire.status).to eq('pending')
+  end
+
+  it 'reopens a single conversation before arming the image rejection deadline' do
+    inbox.update!(lock_to_single_conversation: true)
+    conversation.update!(status: :resolved)
+    rejected = reject_image
+    expect(conversation.reload.status).to eq('pending')
+    expect(conversation.bot_idle_reply_id).to eq(rejected.id)
+    expect { reject_image }.not_to change(conversation.messages, :count)
+    expect(expire.status).to eq('resolved')
+  end
+
+  it 'keeps local image waits isolated from other active conversations and legacy resolution' do
+    account.update!(auto_resolve_after: 10, auto_resolve_ignore_waiting: true)
+    bot.update!(bot_config: { idle_auto_resolve_enabled: true, idle_auto_resolve_after: 20 })
+    other = create(:conversation, account: account, inbox: inbox, status: :pending, waiting_since: nil)
+    other.update!(waiting_since: nil)
+    reject_image
+    expect(bot.reload.idle_protocol_seen_at).to be_nil
+    expect(Conversations::BotIdleState.managed?(other.reload)).to be false
+    travel 11.minutes
+    Conversations::ResolutionJob.perform_now(account: account)
+    expect(other.reload.status).to eq('resolved')
+    expect(conversation.reload.status).to eq('pending')
+    expect(expire.status).to eq('resolved')
+  end
+
+  it 'retains another protocol conversation deadline when rejecting an image' do
+    other = create(:conversation, account: account, inbox: inbox, status: :pending)
+    other_input = create(:message, conversation: other, message_type: :incoming)
+    create(:message, conversation: other, sender: bot, message_type: :outgoing, content_attributes: {
+             bot_idle_authorized: true, bot_idle_protocol: 1, bot_awaiting_user: true,
+             bot_trigger_message_id: other_input.id, bot_idle_notice: 'Closing this chat.'
+           })
+    deadline = other.reload.bot_idle_deadline_at
+    expect(deadline).to be_present
+    reject_image
+    expect(other.reload.bot_idle_deadline_at).to eq(deadline)
+    expire
+    expect(other.reload.status).to eq('resolved')
+  end
+
   it 'arms persistently without clearing human waiting and resolves once with localized notice' do
     reply
     expect(bot.reload.idle_protocol_seen_at).to be_present

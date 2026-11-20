@@ -19,7 +19,16 @@ class Conversations::BotIdleState
   end
 
   def self.managed?(conversation)
-    conversation.pending? && enabled_for_inbox?(conversation.inbox)
+    return false unless conversation.pending?
+
+    enabled_for_inbox?(conversation.inbox) || local_wait?(conversation)
+  end
+
+  def self.local_wait?(conversation)
+    # Local replies may own a deadline without opting other conversations into the protocol.
+    binding = conversation.inbox.agent_bot_inbox
+    conversation.bot_idle_deadline_at.present? && binding&.active? && binding.agent_bot&.idle_auto_resolve? &&
+      conversation.bot_idle_agent_bot_id == binding.agent_bot_id
   end
 
   def self.enabled_for_inbox?(inbox)

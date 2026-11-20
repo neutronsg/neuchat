@@ -114,6 +114,9 @@ json.provider resource.channel.try(:provider)
 
 ### WhatsApp Channel
 if resource.whatsapp?
+  json.image_messages_enabled resource.channel.image_messages_enabled?
+  json.image_unavailable_message resource.channel.image_rejection_message
+  json.default_image_unavailable_message I18n.t('whatsapp.image_messages_disabled', locale: :en)
   json.message_templates resource.channel.try(:message_templates)
   json.provider_config resource.channel.try(:provider_config) if Current.account_user&.administrator?
 end

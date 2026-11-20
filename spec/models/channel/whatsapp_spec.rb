@@ -28,6 +28,38 @@ RSpec.describe Channel::Whatsapp do
     end
   end
 
+  describe 'image message settings' do
+    it 'uses the default reply and accepts a custom reply without changing the image switch' do
+      channel = create(:channel_whatsapp, provider: 'whatsapp_cloud', sync_templates: false, validate_provider_config: false)
+      expect(channel.image_rejection_message).to eq(I18n.t('whatsapp.image_messages_disabled', locale: :en))
+      channel.update!(image_unavailable_message: 'Please send your question as text.')
+      expect(channel.reload.image_rejection_message).to eq('Please send your question as text.')
+      expect(channel.image_messages_enabled?).to be false
+      channel.update!(image_unavailable_message: nil)
+      expect(channel.reload.image_rejection_message).to eq(I18n.t('whatsapp.image_messages_disabled', locale: :en))
+    end
+
+    it 'rejects blank or oversized replies and accepts the exact Unicode character boundary' do
+      channel = create(:channel_whatsapp, provider: 'whatsapp_cloud', sync_templates: false, validate_provider_config: false)
+      ['', "  \n ", 'a' * 1001].each do |text|
+        expect(channel.update(image_unavailable_message: text)).to be false
+        expect(channel.errors[:image_unavailable_message]).to be_present
+      end
+      expect(channel.update(image_unavailable_message: '🙂' * 1000)).to be true
+    end
+
+    it 'defaults to disabled and persists toggles without contacting the provider' do
+      channel = create(:channel_whatsapp, provider: 'whatsapp_cloud', sync_templates: false, validate_provider_config: false)
+      channel = described_class.find(channel.id)
+      expect(channel.image_messages_enabled?).to be false
+      expect(channel).not_to receive(:provider_service)
+      channel.update!(image_messages_enabled: true)
+      expect(channel.reload.image_messages_enabled?).to be true
+      channel.update!(image_messages_enabled: false)
+      expect(channel.reload.image_messages_enabled?).to be false
+    end
+  end
+
   describe 'validate_provider_config' do
     let(:channel) { build(:channel_whatsapp, provider: 'whatsapp_cloud', account: create(:account)) }
 

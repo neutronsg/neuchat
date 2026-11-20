@@ -907,6 +907,17 @@
       "INSTAGRAM": "Instagram",
       "VOICE": "Voice",
       "WECHAT": "WeChat Mini Program"
+    },
+    "WHATSAPP_IMAGES": {
+      "TITLE": "Image messages",
+      "LABEL": "Allow images and stickers",
+      "DESCRIPTION": "Manage incoming images and stickers.",
+      "REPLY_LABEL": "Automatic reply",
+      "REPLY_ERROR": "Enter a reply of 1–1,000 characters.",
+      "SAVE": "Update",
+      "RESET": "Restore default",
+      "REPLY_HELP": "Sent only when images are disabled.",
+      "REPLY_COUNT": "{count} / 1,000"
     }
   }
 }

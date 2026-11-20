@@ -24,6 +24,7 @@ class AgentBotListener < BaseListener
     inbox = message.inbox
     return unless connected_agent_bot_exist?(inbox)
     return unless message.webhook_sendable?
+    return if message.content_attributes['whatsapp_image_rejected']
 
     method_name = __method__.to_s
     process_message_event(method_name, inbox.agent_bot, message, event)
@@ -34,6 +35,7 @@ class AgentBotListener < BaseListener
     inbox = message.inbox
     return unless connected_agent_bot_exist?(inbox)
     return unless message.webhook_sendable?
+    return if message.content_attributes['whatsapp_image_rejected']
 
     method_name = __method__.to_s
     process_message_event(method_name, inbox.agent_bot, message, event)

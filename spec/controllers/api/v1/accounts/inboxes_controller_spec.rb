@@ -497,6 +497,49 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(api_channel.reload.webhook_url).to eq('webhook.test')
       end
 
+      it 'preserves WhatsApp disconnection and error count when saving local image settings' do
+        channel = create(:channel_whatsapp, account: account, sync_templates: false, validate_provider_config: false)
+        channel.authorization_error!
+        channel.prompt_reauthorization!
+        count = channel.authorization_error_count
+        patch "/api/v1/accounts/#{account.id}/inboxes/#{channel.inbox.id}",
+              headers: admin.create_new_auth_token,
+              params: { channel: { image_messages_enabled: true, image_unavailable_message: 'Please send text.' } }, as: :json
+        expect(response).to have_http_status(:success)
+        expect(channel.reload.image_messages_enabled?).to be true
+        expect(channel.image_unavailable_message).to eq('Please send text.')
+        expect(channel).to be_reauthorization_required
+        expect(channel.authorization_error_count).to eq(count)
+      end
+
+      it 'preserves WhatsApp disconnection when credential validation fails' do
+        channel = create(:channel_whatsapp, account: account, sync_templates: false, validate_provider_config: false)
+        channel.prompt_reauthorization!
+        stub_request(:post, 'https://waba.360dialog.io/v1/configs/webhook').to_return(status: 401)
+        patch "/api/v1/accounts/#{account.id}/inboxes/#{channel.inbox.id}",
+              headers: admin.create_new_auth_token,
+              params: { channel: { provider_config: { api_key: 'invalid-key' } } }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(channel.reload).to be_reauthorization_required
+        expect(channel.provider_config['api_key']).not_to eq('invalid-key')
+      end
+
+      [200, 401].each do |status|
+        it "revalidates identical WhatsApp credentials and preserves disconnection unless successful (#{status})" do
+          channel = create(:channel_whatsapp, account: account, sync_templates: false, validate_provider_config: false)
+          channel.authorization_error!
+          channel.prompt_reauthorization!
+          validation = stub_request(:post, 'https://waba.360dialog.io/v1/configs/webhook').to_return(status: status)
+          patch "/api/v1/accounts/#{account.id}/inboxes/#{channel.inbox.id}",
+                headers: admin.create_new_auth_token,
+                params: { channel: { provider_config: channel.provider_config } }, as: :json
+          expect(validation).to have_been_requested.once
+          expect(response).to have_http_status(status == 200 ? :success : :unprocessable_entity)
+          expect(channel.reload.reauthorization_required?).to eq(status != 200)
+          expect(channel.authorization_error_count).to eq(status == 200 ? 0 : 1)
+        end
+      end
+
       it 'updates whatsapp inbox when administrator' do
         stub_request(:post, 'https://waba.360dialog.io/v1/configs/webhook').to_return(status: 200, body: '', headers: {})
         stub_request(:get, 'https://waba.360dialog.io/v1/configs/templates').to_return(status: 200, body: '', headers: {})

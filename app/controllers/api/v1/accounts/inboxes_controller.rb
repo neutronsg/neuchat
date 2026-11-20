@@ -115,8 +115,17 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
   end
 
   def reauthorize_and_update_channel(channel_attributes)
-    @inbox.channel.reauthorized! if @inbox.channel.respond_to?(:reauthorized!)
-    @inbox.channel.update!(permitted_params(channel_attributes)[:channel])
+    channel = @inbox.channel
+    attributes = permitted_params(channel_attributes)[:channel]
+    if channel.is_a?(Channel::Whatsapp)
+      channel.assign_attributes(attributes)
+      reauthorizing = attributes.keys.intersect?(%w[provider provider_config phone_number])
+      channel.save!(context: reauthorizing ? :reauthorization : :update)
+      channel.reauthorized! if reauthorizing
+    else
+      channel.reauthorized! if channel.respond_to?(:reauthorized!)
+      channel.update!(attributes)
+    end
   end
 
   def update_channel_feature_flags

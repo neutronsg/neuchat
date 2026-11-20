@@ -201,7 +201,54 @@ describe Whatsapp::IncomingMessageService do
       end
     end
 
+    context 'when image messages are disabled' do
+      before do
+        params[:messages].first.except!(:text)
+        params[:messages].first.merge!(type: 'image', image: { id: 'must-not-download', caption: 'Do not forward this caption' })
+      end
+
+      it 'rejects images once without downloading or forwarding captions' do
+        service = described_class.new(inbox: whatsapp_channel.inbox, params: params)
+        expect(service).not_to receive(:download_attachment_file)
+        2.times { service.perform }
+        messages = whatsapp_channel.inbox.messages
+        expect(messages.incoming.count).to eq(1)
+        expect(messages.outgoing.count).to eq(1)
+        expect(messages.incoming.first.content).to be_nil
+        expect(messages.incoming.first.attachments).to be_empty
+        expect(messages.incoming.first.content_attributes['whatsapp_image_rejected']).to be true
+        expect(messages.outgoing.first.content).to eq(I18n.t('whatsapp.image_messages_disabled', locale: :en))
+      end
+
+      it 'sends the configured reply verbatim' do
+        text = "Images are paused.\nPlease describe the issue in text."
+        whatsapp_channel.update!(image_unavailable_message: text)
+        described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+        expect(whatsapp_channel.inbox.messages.outgoing.first.content).to eq(text)
+      end
+
+      it 'also rejects stickers without downloading them' do
+        params[:messages].first[:type] = 'sticker'
+        params[:messages].first[:sticker] = params[:messages].first.delete(:image)
+        service = described_class.new(inbox: whatsapp_channel.inbox, params: params)
+        expect(service).not_to receive(:download_attachment_file)
+        service.perform
+        expect(whatsapp_channel.inbox.messages.outgoing.count).to eq(1)
+        expect(whatsapp_channel.inbox.messages.incoming.first.attachments).to be_empty
+      end
+
+      it 'does not reply to a blocked contact or create an extra conversation' do
+        contact_inbox = create(:contact_inbox, inbox: whatsapp_channel.inbox, source_id: wa_id)
+        contact_inbox.contact.update!(blocked: true)
+        described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+        expect(whatsapp_channel.inbox.conversations.count).to eq(1)
+        expect(whatsapp_channel.inbox.messages.outgoing).to be_empty
+      end
+    end
+
     context 'when valid attachment message params' do
+      before { whatsapp_channel.update!(image_messages_enabled: true) }
+
       it 'creates appropriate conversations, message and contacts' do
         stub_request(:get, whatsapp_channel.media_url('b1c68f38-8734-4ad3-b4a1-ef0c10d683')).to_return(
           status: 200,

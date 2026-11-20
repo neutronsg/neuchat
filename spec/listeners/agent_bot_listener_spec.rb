@@ -31,6 +31,14 @@ describe AgentBotListener do
         listener.message_created(event)
       end
 
+      it 'does not forward rejected images or rejection notices on creation or status updates' do
+        create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
+        message.content_attributes['whatsapp_image_rejected'] = true
+        expect(AgentBots::WebhookJob).not_to receive(:perform_later)
+        listener.message_created(event)
+        listener.message_updated(event)
+      end
+
       it 'does not send message to agent bot if url is empty' do
         agent_bot = create(:agent_bot, outgoing_url: '')
         create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)

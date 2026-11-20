@@ -26,7 +26,8 @@ class Conversations::ResolutionJob < ApplicationJob
     end
     # Exclude before applying the batch limit, so bot conversations cannot starve human work.
     managed_conversations = account.conversations.pending.where(inbox_id: managed_inboxes.map(&:id)).select(:id)
-    legacy_scope(account).where.not(id: managed_conversations)
+    local_waits = account.conversations.pending.where.not(bot_idle_deadline_at: nil).select(:id)
+    legacy_scope(account).where.not(id: managed_conversations).where.not(id: local_waits)
   end
 
   def legacy_scope(account)

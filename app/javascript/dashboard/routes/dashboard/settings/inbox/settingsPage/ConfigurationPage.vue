@@ -7,6 +7,7 @@ import SmtpSettings from '../SmtpSettings.vue';
 import { useVuelidate } from '@vuelidate/core';
 import { required } from '@vuelidate/validators';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import WhatsappImageSettings from './components/WhatsappImageSettings.vue';
 
 export default {
   components: {
@@ -14,6 +15,7 @@ export default {
     ImapSettings,
     SmtpSettings,
     NextButton,
+    WhatsappImageSettings,
   },
   mixins: [inboxMixin],
   props: {
@@ -210,6 +212,7 @@ export default {
   </div>
   <div v-else-if="isAWhatsAppChannel && !isATwilioChannel">
     <div v-if="inbox.provider_config" class="mx-8">
+      <WhatsappImageSettings :inbox="inbox" />
       <SettingsSection
         :title="$t('INBOX_MGMT.SETTINGS_POPUP.WHATSAPP_WEBHOOK_TITLE')"
         :sub-title="$t('INBOX_MGMT.SETTINGS_POPUP.WHATSAPP_WEBHOOK_SUBHEADER')"
@@ -228,13 +231,11 @@ export default {
           $t('INBOX_MGMT.SETTINGS_POPUP.WHATSAPP_SECTION_UPDATE_SUBHEADER')
         "
       >
-        <div
-          class="flex items-center justify-between flex-1 mt-2 whatsapp-settings--content"
-        >
+        <div class="flex items-center gap-2 mt-2">
           <woot-input
             v-model="whatsAppInboxAPIKey"
             type="text"
-            class="flex-1 mr-2"
+            class="flex-1 min-w-0 [&_input]:!mb-0"
             :placeholder="
               $t(
                 'INBOX_MGMT.SETTINGS_POPUP.WHATSAPP_SECTION_UPDATE_PLACEHOLDER'
@@ -252,11 +253,3 @@ export default {
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.whatsapp-settings--content {
-  ::v-deep input {
-    margin-bottom: 0;
-  }
-}
-</style>

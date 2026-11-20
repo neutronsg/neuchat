@@ -159,6 +159,8 @@ class Message < ApplicationRecord
   end
 
   def record_bot_idle_capability
+    # A local channel reply is not evidence of the external bot's capabilities.
+    return if content_attributes['whatsapp_image_rejected']
     return unless Conversations::BotIdleState.protocol_reply?(self)
 
     AgentBot.where(id: sender_id, idle_protocol_seen_at: nil).update_all(idle_protocol_seen_at: Time.current) # rubocop:disable Rails/SkipsModelValidations

@@ -366,3 +366,7 @@ en:
 
       Transcript:
       %{format_messages}
+
+  whatsapp:
+    image_messages_disabled: "Thank you for your message. Please note that image upload responses are currently unavailable. Kindly describe the issue in text, and I will assist you accordingly."
+    image_idle_notice: "This conversation has ended due to inactivity. Send a text message to start a new chat."

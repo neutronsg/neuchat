@@ -29,6 +29,7 @@ RSpec.describe Conversations::ResolutionJob do
     it 'resolves pending non-waiting conversations if time of inactivity is more than auto resolve duration' do
       account.update(auto_resolve_after: 14_400, auto_resolve_ignore_waiting: true) # 10 days in minutes
       pending_conversation = create(:conversation, account: account, status: :pending, last_activity_at: 13.days.ago, waiting_since: nil)
+      pending_conversation.update!(waiting_since: nil)
 
       described_class.perform_now(account: account)
 
@@ -59,6 +60,7 @@ RSpec.describe Conversations::ResolutionJob do
     it 'resolves pending conversations if time of inactivity is more than auto resolve duration' do
       account.update(auto_resolve_after: 14_400, auto_resolve_ignore_waiting: false) # 10 days in minutes
       pending_conversation = create(:conversation, account: account, status: :pending, last_activity_at: 13.days.ago, waiting_since: nil)
+      pending_conversation.update!(waiting_since: nil)
 
       described_class.perform_now(account: account)
 

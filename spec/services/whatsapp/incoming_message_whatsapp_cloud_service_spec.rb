@@ -28,6 +28,8 @@ describe Whatsapp::IncomingMessageWhatsappCloudService do
     end
 
     context 'when valid attachment message params' do
+      before { whatsapp_channel.update!(image_messages_enabled: true) }
+
       it 'creates appropriate conversations, message and contacts' do
         stub_request(:get, whatsapp_channel.media_url('b1c68f38-8734-4ad3-b4a1-ef0c10d683')).to_return(
           status: 200,

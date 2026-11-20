@@ -249,7 +249,8 @@
     "SIDEBAR": {
       "CONTACT": "Contact",
       "COPILOT": "Copilot"
-    }
+    },
+    "WHATSAPP_IMAGE_REJECTED": "Image or sticker not accepted. Image messages are disabled for this inbox."
   },
   "EMAIL_TRANSCRIPT": {
     "TITLE": "Send conversation transcript",

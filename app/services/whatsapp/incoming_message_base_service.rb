@@ -92,10 +92,49 @@ class Whatsapp::IncomingMessageBaseService
   end
 
   def create_regular_message(message)
+    return reject_image_message(message) if %w[image sticker].include?(message_type) && !inbox.channel.image_messages_enabled?
+
     create_message(message)
     attach_files
     attach_location if message_type == 'location'
     @message.save!
+  end
+
+  def reject_image_message(message)
+    # Keep the provider ID for deduplication, but never download or retain the caption/media.
+    create_message(message)
+    @message.content = nil
+    @message.content_attributes = { is_unsupported: true, whatsapp_image_rejected: true }
+    @message.save!
+    return if @contact.blocked?
+
+    # The incoming after-commit callback otherwise reopens too late for this local reply.
+    @conversation.pending! if @conversation.resolved? && !@conversation.muted? && @inbox.active_bot?
+    @conversation.messages.create!(
+      account_id: @inbox.account_id,
+      inbox_id: @inbox.id,
+      message_type: :outgoing,
+      content: inbox.channel.image_rejection_message,
+      sender: image_rejection_bot,
+      content_attributes: image_rejection_attributes
+    )
+  end
+
+  def image_rejection_bot
+    binding = @inbox.agent_bot_inbox
+    binding.agent_bot if binding&.active?
+  end
+
+  def image_rejection_attributes
+    attributes = { whatsapp_image_rejected: true }
+    bot = image_rejection_bot
+    return attributes unless bot
+
+    previous = @conversation.messages.where(sender: bot, message_type: :outgoing).reorder(id: :desc).first
+    notice = previous&.content_attributes&.[]('bot_idle_notice')
+    notice = I18n.t('whatsapp.image_idle_notice', locale: :en) unless Conversations::BotIdleState.valid_notice?(notice)
+    attributes.merge(bot_idle_authorized: true, bot_idle_protocol: 1, bot_awaiting_user: true,
+                     bot_trigger_message_id: @message.id, bot_idle_notice: notice)
   end
 
   def set_contact
