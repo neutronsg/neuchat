@@ -128,6 +128,27 @@ RSpec.describe 'AgentBot idle protocol integration', type: :request do
     expect { Conversations::BotIdleResolutionJob.perform_now }.not_to change(conversation.messages, :count)
   end
 
+  it 'closes after a delivered error notice without recording a successful answer or resolution' do
+    notice = reply(extra: { bot_completed_turn: false })
+    expect(conversation.reload.bot_idle_reply_id).to eq(notice.id)
+    expect(notice.content_attributes['bot_outcome']).to be_nil
+    expect(expire.status).to eq('resolved')
+    closing = conversation.messages.reload.find { |message| message.content_attributes['bot_close_reason'] == 'idle_timeout' }
+    expect(closing).to be_present
+    expect(closing.content_attributes['bot_completed_turn']).not_to be true
+    expect { Conversations::BotIdleResolutionJob.perform_now }.not_to change(conversation.messages, :count)
+  end
+
+  it 'cancels the error-notice wait if delivery fails or the user sends another message' do
+    reply(extra: { bot_completed_turn: false }).update!(status: :failed)
+    expect(expire.status).to eq('pending')
+    expect(conversation.reload.bot_idle_deadline_at).to be_nil
+    reply(extra: { bot_completed_turn: false })
+    input
+    expect(conversation.reload.bot_idle_deadline_at).to be_nil
+    expect(expire.status).to eq('pending')
+  end
+
   it 'cancels on new input and rearms only after its reply' do
     reply
     newer = input
