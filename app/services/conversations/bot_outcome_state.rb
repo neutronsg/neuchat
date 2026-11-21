@@ -35,7 +35,7 @@ class Conversations::BotOutcomeState
     apply_outcome(state, attrs['bot_outcome'], trigger, message)
     restored = restore_command_outcome(state, trigger, attrs)
     state.last_reply_assessed = attrs['bot_outcome'].present? || restored == true
-    state.all_solved &&= delivery_evidence_valid?(state)
+    state.all_solved &&= latest_input?(trigger) && delivery_evidence_valid?(state)
     state.evaluated_input_id = trigger.id
     state.last_message_id = message.id
     state.save!
@@ -59,8 +59,11 @@ class Conversations::BotOutcomeState
   end
 
   def current_trigger(attrs)
-    trigger = @conversation.messages.incoming.find_by(private: false, id: attrs['bot_trigger_message_id'])
-    trigger if trigger && trigger.id == @conversation.messages.incoming.where(private: false).maximum(:id)
+    @conversation.messages.incoming.find_by(private: false, id: attrs['bot_trigger_message_id'])
+  end
+
+  def latest_input?(trigger)
+    trigger.id == @conversation.messages.incoming.where(private: false).maximum(:id)
   end
 
   def apply_outcome(state, outcome, trigger, message)

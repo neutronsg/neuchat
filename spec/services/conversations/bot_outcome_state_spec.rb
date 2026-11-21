@@ -41,6 +41,21 @@ RSpec.describe Conversations::BotOutcomeState do
     expect(conversation.reload.bot_conversation_outcome.all_solved).to be(false)
   end
 
+  it 'retains queued answer categories and enquiries without solving a newer unanswered input' do
+    first = input
+    second = input
+    reply(first)
+    state = conversation.reload.bot_conversation_outcome
+    expect(state).to be_present
+    expect(state.categories).to eq(['Sign-up/login'])
+    expect(state.enquiries).to contain_exactly({ 'id' => 'q1', 'status' => 'answered' })
+    expect(state.all_solved).to be(false)
+    reply(second, nil)
+    expect(state.reload.categories).to eq(['Sign-up/login'])
+    expect(state.enquiries).not_to be_empty
+    expect(state.all_solved).to be(false)
+  end
+
   it 'retains omitted unresolved enquiries across topic changes and restarts' do
     reply(input, outcome(status: 'unresolved'))
     conversation.reload
