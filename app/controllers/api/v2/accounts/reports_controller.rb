@@ -54,8 +54,11 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
 
   def bot_metrics
     BotUsageReportClient.period(from: params[:since], to: params[:until]) if oca_report?
-    bot_metrics = V2::Reports::BotMetricsBuilder.new(Current.account, params).metrics
+    limit = oca_report? ? V2::Reports::BotMetricsBuilder::OCA_CONVERSATION_LIMIT : nil
+    bot_metrics = V2::Reports::BotMetricsBuilder.new(Current.account, params.merge(conversation_limit: limit)).metrics
     render json: bot_metrics.merge(oca_reports_enabled: oca_report?)
+  rescue BotReportLimitError
+    render json: { error: 'report_too_large' }, status: :unprocessable_entity
   rescue ArgumentError, TypeError
     render json: { error: 'invalid_range' }, status: :unprocessable_entity
   end
@@ -64,6 +67,8 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
     return head :not_found unless oca_report?
 
     render json: V2::Reports::BotOutcomesBuilder.new(Current.account, params).build
+  rescue BotReportLimitError
+    render json: { error: 'report_too_large' }, status: :unprocessable_entity
   rescue ArgumentError, TypeError
     render json: { error: 'invalid_range' }, status: :unprocessable_entity
   end
@@ -72,6 +77,20 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
     return head :not_found unless oca_report?
 
     send_data V2::Reports::BotOutcomesBuilder.new(Current.account, params).csv, filename: 'bot_conversations.csv', type: 'text/csv'
+  rescue BotReportLimitError
+    render json: { error: 'report_too_large' }, status: :unprocessable_entity
+  rescue ArgumentError, TypeError
+    render json: { error: 'invalid_range' }, status: :unprocessable_entity
+  end
+
+  def bot_workbook
+    return head :not_found unless oca_report?
+
+    exporter = V2::Reports::BotWorkbookBuilder.new(Current.account, params)
+    send_data exporter.to_stream.read, filename: exporter.filename,
+                                       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  rescue BotReportLimitError
+    render json: { error: 'report_too_large' }, status: :unprocessable_entity
   rescue ArgumentError, TypeError
     render json: { error: 'invalid_range' }, status: :unprocessable_entity
   end
@@ -81,6 +100,8 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
 
     BotUsageReportClient.period(params)
     render json: BotUsageReportClient.fetch(Current.account.id, params)
+  rescue BotReportLimitError
+    render json: { error: 'report_too_large' }, status: :unprocessable_entity
   rescue ArgumentError, TypeError
     render json: { error: 'invalid_range' }, status: :unprocessable_entity
   rescue StandardError

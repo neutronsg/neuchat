@@ -41,4 +41,19 @@ RSpec.describe V2::Reports::BotMetricsBuilder do
       end
     end
   end
+
+  it 'protects historical untracked conversations before counting messages' do
+    expect(inbox.account.bot_conversation_outcomes.count).to eq(0)
+    limited = described_class.new(inbox.account, params.merge(conversation_limit: 1))
+    expect(limited).not_to receive(:bot_messages)
+    expect { limited.metrics }.to raise_error(BotReportLimitError)
+    expect(described_class.new(inbox.account, params.merge(conversation_limit: 2)).metrics[:conversation_count]).to eq(2)
+  end
+
+  it 'counts messages through a database subquery without loading conversation IDs' do
+    relation = bot_metrics_builder.send(:bot_conversations)
+    expect(relation).not_to receive(:ids)
+    expect(bot_metrics_builder.send(:bot_messages).to_sql).to match(/IN \(SELECT "conversations"\."id"/)
+    expect(bot_metrics_builder.metrics[:message_count]).to eq(1)
+  end
 end

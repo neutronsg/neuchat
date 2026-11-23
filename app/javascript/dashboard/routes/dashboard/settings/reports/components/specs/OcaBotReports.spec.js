@@ -1,3 +1,8 @@
+import { downloadReport } from '../reportDownload';
+vi.mock('../reportDownload', async original => ({
+  ...(await original()),
+  downloadReport: vi.fn(),
+}));
 import { shallowMount, flushPromises } from '@vue/test-utils';
 import ReportsAPI from 'dashboard/api/reports';
 import OcaCostEstimate from '../OcaCostEstimate.vue';
@@ -105,20 +110,6 @@ describe('OCA Bot reports', () => {
       wrapper.findAllComponents({ name: 'ReportMetricCard' })[2].props('value')
     ).toBe('0%');
   });
-  it('retains visible report data after an export failure and permits a retry', async () => {
-    ReportsAPI.getBotOutcomesCSV.mockRejectedValue(new Error('network'));
-    const wrapper = mount();
-    await flushPromises();
-    const button = wrapper
-      .findAllComponents({ name: 'Button' })
-      .find(b => b.props('label') === 'OCA_REPORT.DOWNLOAD');
-    button.vm.$emit('click');
-    await flushPromises();
-    expect(wrapper.text()).toContain('OCA_REPORT.EXPORT_ERROR');
-    expect(
-      wrapper.findComponent({ name: 'OcaEscalationDetails' }).exists()
-    ).toBe(true);
-  });
   it('resets pagination when changing reasons and ignores stale usage after a date round trip', async () => {
     let finish;
     ReportsAPI.getBotUsage.mockImplementationOnce(
@@ -197,3 +188,43 @@ it.each([undefined, 'long_term_metering'])(
     expect(text).toContain('—');
   }
 );
+
+it('exports usage CSV with the selected timezone and local date filename', async () => {
+  ReportsAPI.getBotUsage.mockResolvedValue({
+    data: {
+      timezone: 'America/New_York',
+      days: [{ group: '2026-03-08', calls: 1, inputTokens: 100 }],
+      total: { calls: 1 },
+    },
+  });
+  const wrapper = mount();
+  await wrapper.setProps({
+    filters: {
+      from: Date.parse('2026-03-08T05:00Z') / 1000,
+      to: Date.parse('2026-03-09T04:00Z') / 1000,
+      timezone: 'America/New_York',
+    },
+  });
+  await flushPromises();
+  wrapper.vm.exportUsage();
+  expect(downloadReport).toHaveBeenCalledWith(
+    expect.stringContaining('2026-03-08,America/New_York,1,100'),
+    'usage-report-2026-03-08.csv'
+  );
+  expect(ReportsAPI.getBotUsage).toHaveBeenLastCalledWith(
+    expect.objectContaining({ timezone: 'America/New_York' })
+  );
+});
+
+it('shows the smaller-range prompt when untracked history exceeds the metrics limit', async () => {
+  ReportsAPI.getBotOutcomes.mockResolvedValue({ data });
+  ReportsAPI.getBotUsage.mockResolvedValue({ data: { days: [], total: null } });
+  ReportsAPI.getBotMetrics.mockReset();
+  ReportsAPI.getBotMetrics.mockRejectedValueOnce({
+    response: { data: { error: 'report_too_large' } },
+  });
+  const wrapper = mount();
+  await flushPromises();
+  expect(wrapper.text()).toContain('OCA_REPORT.TOO_LARGE');
+  expect(wrapper.text()).not.toContain('OCA_REPORT.METRICS_ERROR');
+});

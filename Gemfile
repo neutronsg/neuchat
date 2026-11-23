@@ -245,3 +245,5 @@ group :development, :test do
 end
 
 gem "rubyzip", "~> 3.2"
+
+gem "caxlsx", "~> 4.4"

@@ -1,5 +1,6 @@
 class V2::Reports::BotMetricsBuilder
   include DateRangeHelper
+  OCA_CONVERSATION_LIMIT = 50_000
   attr_reader :account, :params
 
   def initialize(account, params)
@@ -9,7 +10,7 @@ class V2::Reports::BotMetricsBuilder
 
   def metrics
     {
-      conversation_count: bot_conversations.count,
+      conversation_count: conversation_count,
       message_count: bot_messages.count,
       resolution_rate: bot_resolution_rate.to_i,
       handoff_rate: bot_handoff_rate.to_i
@@ -17,6 +18,16 @@ class V2::Reports::BotMetricsBuilder
   end
 
   private
+
+  def conversation_count
+    return @conversation_count if defined?(@conversation_count)
+
+    limit = params[:conversation_limit]
+    count = limit ? bot_conversations.limit(limit + 1).count : bot_conversations.count
+    raise BotReportLimitError, 'Reporting period too large' if limit && count > limit
+
+    @conversation_count = count
+  end
 
   def bot_activated_inbox_ids
     @bot_activated_inbox_ids ||= account.inboxes.filter(&:active_bot?).map(&:id)
@@ -27,7 +38,7 @@ class V2::Reports::BotMetricsBuilder
   end
 
   def bot_messages
-    @bot_messages ||= account.messages.outgoing.where(conversation_id: bot_conversations.ids).where(created_at: range)
+    @bot_messages ||= account.messages.outgoing.where(conversation_id: bot_conversations.select(:id)).where(created_at: range)
   end
 
   def bot_resolutions_count
@@ -41,14 +52,14 @@ class V2::Reports::BotMetricsBuilder
   end
 
   def bot_resolution_rate
-    return 0 if bot_conversations.count.zero?
+    return 0 if conversation_count.zero?
 
-    bot_resolutions_count.to_f / bot_conversations.count * 100
+    bot_resolutions_count.to_f / conversation_count * 100
   end
 
   def bot_handoff_rate
-    return 0 if bot_conversations.count.zero?
+    return 0 if conversation_count.zero?
 
-    bot_handoffs_count.to_f / bot_conversations.count * 100
+    bot_handoffs_count.to_f / conversation_count * 100
   end
 end

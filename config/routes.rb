@@ -395,6 +395,7 @@ Rails.application.routes.draw do
               get :bot_outcomes
               get :bot_usage
               get :bot_outcomes_csv
+              get :bot_workbook
             end
           end
           resources :live_reports, only: [] do

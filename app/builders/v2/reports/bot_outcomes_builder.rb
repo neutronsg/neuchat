@@ -2,23 +2,32 @@ require 'csv'
 class V2::Reports::BotOutcomesBuilder
   def initialize(account, params)
     @account = account
+    @timezone = BotUsageReportClient.timezone(params)
     @from = Time.at(Integer(params[:from])).utc
     @to = Time.at(Integer(params[:to])).utc
-    raise ArgumentError, 'Invalid reporting period' unless @to > @from && @to - @from <= 93.days
+    raise ArgumentError, 'Invalid reporting period' unless @to > @from
 
     @params = params
   end
 
   def build
-    raise ArgumentError, 'Reporting period too large' if scope.count > 50_000
-
-    rows = scope.includes(:conversation).to_a
+    rows = export_rows
     summary(rows).merge(days: days(rows), categories: rows.flat_map(&:categories).tally,
-                        tracking_started_at: @account.bot_conversation_outcomes.minimum(:created_at), timezone: 'Asia/Singapore').merge(details(rows))
+                        tracking_started_at: @account.bot_conversation_outcomes.minimum(:created_at), timezone: @timezone).merge(details(rows))
+  end
+
+  # One bounded, account-scoped snapshot shared by all workbook sheets.
+  def export_rows
+    return @export_rows if @export_rows
+
+    rows = scope.includes(:conversation).order(:created_at, :id).limit(50_001).to_a
+    raise BotReportLimitError, 'Reporting period too large' if rows.size > 50_000
+
+    @export_rows = rows
   end
 
   def csv
-    raise ArgumentError, 'Reporting period too large' if scope.count > 50_000
+    raise BotReportLimitError, 'Reporting period too large' if scope.count > 50_000
 
     CSV.generate do |csv|
       csv << %w[conversation_id handled_at categories escalated_at reasons destination closed_at all_solved]
@@ -34,11 +43,13 @@ class V2::Reports::BotOutcomesBuilder
   end
 
   def days(rows)
-    groups = rows.group_by { |r| r.created_at.in_time_zone('Asia/Singapore').to_date }
-    range = @from.in_time_zone('Asia/Singapore').to_date..(@to - 1.second).in_time_zone('Asia/Singapore').to_date
+    groups = rows.group_by { |r| r.created_at.in_time_zone(@timezone).to_date }
+    range = @from.in_time_zone(@timezone).to_date..(@to - 1.second).in_time_zone(@timezone).to_date
+    raise BotReportLimitError, 'Reporting period too large' if (range.end - range.begin).to_i >= 50_000
+
     range.map do |day|
       cohort = groups.fetch(day, [])
-      { day: day.iso8601, resolutions: cohort.count { |r| solved?(r) }, escalations: cohort.count(&:escalated_at) }
+      { day: day.iso8601, conversations: cohort.size, resolutions: cohort.count { |r| solved?(r) }, escalations: cohort.count(&:escalated_at) }
     end
   end
 
@@ -68,8 +79,9 @@ class V2::Reports::BotOutcomesBuilder
 
   def csv_row(row)
     data = detail(row)
-    [data[:conversation_id], row.created_at.iso8601, data[:categories].join('; '), row.escalated_at&.iso8601,
-     data[:reasons].join('; '), data[:destination], row.closed_at&.iso8601, data[:all_solved]]
+    [data[:conversation_id], row.created_at.in_time_zone(@timezone).iso8601, data[:categories].join('; '),
+     row.escalated_at&.in_time_zone(@timezone)&.iso8601,
+     data[:reasons].join('; '), data[:destination], row.closed_at&.in_time_zone(@timezone)&.iso8601, data[:all_solved]]
   end
 
   def csv_cell(value)

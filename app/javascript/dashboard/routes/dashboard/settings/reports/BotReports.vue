@@ -3,6 +3,7 @@ import { useOcaReports } from 'dashboard/composables/useOcaReports';
 import { useAlert, useTrack } from 'dashboard/composables';
 import OcaReportDateFilter from './components/OcaReportDateFilter.vue';
 import OcaBotReports from './components/OcaBotReports.vue';
+import OcaReportDownload from './components/OcaReportDownload.vue';
 import BotMetrics from './components/BotMetrics.vue';
 import ReportFilterSelector from './components/FilterSelector.vue';
 import { GROUP_BY_FILTER } from './constants';
@@ -15,6 +16,7 @@ export default {
   components: {
     BotMetrics,
     OcaBotReports,
+    OcaReportDownload,
     OcaReportDateFilter,
     ReportHeader,
     ReportFilterSelector,
@@ -27,6 +29,7 @@ export default {
     return {
       from: 0,
       to: 0,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       groupBy: GROUP_BY_FILTER[1],
       reportKeys: {
         BOT_RESOLUTION_COUNT: 'bot_resolutions_count',
@@ -40,6 +43,7 @@ export default {
       return {
         from: this.from,
         to: this.to,
+        timezone: this.timezone,
       };
     },
   },
@@ -77,9 +81,10 @@ export default {
         businessHours,
       };
     },
-    onFilterChange({ from, to, groupBy, businessHours }) {
+    onFilterChange({ from, to, timezone, groupBy, businessHours }) {
       this.from = from;
       this.to = to;
+      if (timezone) this.timezone = timezone;
       this.groupBy = groupBy;
       this.businessHours = businessHours;
       if (!this.ocaEnabled) this.fetchAllData();
@@ -94,7 +99,9 @@ export default {
 </script>
 
 <template>
-  <ReportHeader :header-title="$t('BOT_REPORTS.HEADER')" />
+  <ReportHeader :header-title="$t('BOT_REPORTS.HEADER')">
+    <OcaReportDownload v-if="ocaEnabled" :filters="requestPayload" />
+  </ReportHeader>
   <div class="flex flex-col gap-4">
     <OcaReportDateFilter v-if="ocaEnabled" @filter-change="onFilterChange" />
     <ReportFilterSelector

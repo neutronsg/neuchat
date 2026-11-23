@@ -1,0 +1,17 @@
+# Bot report workbook
+
+When OCA reports are enabled for the configured account, the Bot Reports header offers **Download bot reports**. It downloads `bot-report-YYYY-MM-DD[-to-YYYY-MM-DD].xlsx` using selected browser calendar dates (inclusive dates in the filename; exclusive end timestamp in requests). **Export usage** keeps its existing label and CSV format, named `usage-report-YYYY-MM-DD[-to-YYYY-MM-DD].csv`.
+
+`GET /api/v2/accounts/:account_id/reports/bot_workbook` uses the same report authorization and OCA account/feature gate as the page. It accepts `from`/`to`, accepts ranges longer than 93 days and enforces a 50,000-conversation limit independently for the bot-inbox totals cohort (including historical untracked chats) and tracked outcomes, plus a 50,000 daily-output-row safety limit, and ignores screen detail pagination/reason filters. No new database tables or Bot Service API are required.
+
+The workbook contains Summary, Daily metrics, Enquiry categories, Token usage, Cost estimates, Conversations, and Escalations. Outcome sheets share one loaded tracked-conversation cohort. The Summary documents the existing difference between top-level bot-inbox conversation/message totals and the tracked cohort used for resolution/escalation rates. Escalations contains every accepted event for that cohort; the rate counts each conversation once. These are current outcome snapshots, not historical as-of reconstructions.
+
+Usage is retrieved from the existing usage report service for the same period. Its daily aggregates and totals, missing/unpriced-call counters and price metadata are included. A usage service failure does not discard otherwise available outcome data: relevant sheets explicitly say `Unavailable`. Null fields remain unavailable, numeric zero remains zero, and costs remain estimates, with missing amounts excluded from known subtotals. Independent service reads are not a cross-service transactional snapshot.
+
+The workbook uses caxlsx with explicit cell types and formula escaping; source text must never execute as Excel formulas. Header rows are frozen, with filters and readable widths. Tests cover seven-sheet output, all rows beyond page one, tenant/role gates, range validation, unavailable data, formula safety, date filenames, retry and stale download handling.
+
+The Bot page reuses the SLA date picker, using today in the browser timezone. Selected dates, daily groups, timestamps and filenames share the browser IANA timezone; no SGT badge or three-month restriction is shown. Oversized data is rejected with a smaller-range prompt, never silently truncated. The usage service bounds long-term calls at 100,000 and diagnostic events at 100,000, with database query timeouts.
+
+The workbook Summary records the selected IANA timezone; usage CSV includes a timezone column. Named zones handle daylight saving transitions. The exclusive end is the next local midnight, not a fixed 24 hours after the start. Price effective timestamps, provider billing calendars and Singapore daily conversation quotas are unchanged. Legacy API calls without a timezone continue to use Asia/Singapore.
+
+The top-level metrics use a bounded count before downstream work and a database subquery for outgoing-message counting, never a Ruby array of every conversation ID. Clients cannot override the OCA limit. Escalation event timestamps and price-sync timestamps in Excel are converted to the report timezone, including historical DST offsets.

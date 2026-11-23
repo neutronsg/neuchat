@@ -97,6 +97,13 @@ class ReportsAPI extends ApiClient {
     return axios.get(`${this.url}/bot_outcomes_csv`, { params });
   }
 
+  getBotWorkbook(params) {
+    return axios.get(`${this.url}/bot_workbook`, {
+      params,
+      responseType: 'blob',
+    });
+  }
+
   getBotMetrics({ from, to } = {}) {
     return axios.get(`${this.url}/bot_metrics`, {
       params: { since: from, until: to },

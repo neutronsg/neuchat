@@ -114,11 +114,7 @@ const money = value =>
           "
         >
           {{ $t('OCA_REPORT.PRICE_SYNC') }}
-          {{
-            new Date(usage.priceLastSyncedAt).toLocaleString('en-SG', {
-              timeZone: 'Asia/Singapore',
-            })
-          }}
+          {{ new Date(usage.priceLastSyncedAt).toLocaleString() }}
         </p>
       </details>
     </template>

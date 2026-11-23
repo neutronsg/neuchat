@@ -1,87 +1,60 @@
 import { mount } from '@vue/test-utils';
-import { singaporeRange, singaporeToday } from '../ocaReportDates';
+import {
+  browserRange,
+  browserPreset,
+  browserTimezone,
+} from '../ocaReportDates';
 import OcaReportDateFilter from '../OcaReportDateFilter.vue';
-import DateRange from '../Filters/DateRange.vue';
 
-describe('Singapore calendar report dates', () => {
-  it('uses midnight in Singapore and the next exclusive midnight, including fractional seconds', () => {
-    const result = singaporeRange([
+describe('Browser calendar report dates', () => {
+  it('uses browser midnight and next calendar midnight, with a named timezone', () => {
+    const result = browserRange([
       new Date(2026, 10, 19),
       new Date(2026, 10, 19),
     ]);
-    expect(new Date(result.from * 1000).toISOString()).toBe(
-      '2026-11-18T16:00:00.000Z'
-    );
-    expect(new Date(result.to * 1000).toISOString()).toBe(
-      '2026-11-19T16:00:00.000Z'
-    );
-    expect(Date.parse('2026-11-19T15:59:59.999Z') / 1000).toBeLessThan(
-      result.to
-    );
-    const today = singaporeToday(new Date('2026-11-18T17:00:00Z'));
-    expect([today.getFullYear(), today.getMonth(), today.getDate()]).toEqual([
-      2026, 10, 19,
-    ]);
+    expect(result).toEqual({
+      from: new Date(2026, 10, 19).getTime() / 1000,
+      to: new Date(2026, 10, 20).getTime() / 1000,
+      timezone: browserTimezone(),
+    });
+    expect(browserPreset(6).timezone).toBe(browserTimezone());
   });
-  it('accepts exactly 93 days across the year boundary; rejects 94, reversed and invalid dates', () => {
+  it('covers complete spring/fall transition days, rather than adding 86400 seconds', () => {
+    const spring = browserRange([new Date(2026, 2, 8), new Date(2026, 2, 8)]);
+    const fall = browserRange([new Date(2026, 10, 1), new Date(2026, 10, 1)]);
+    expect(spring.to).toBe(new Date(2026, 2, 9).getTime() / 1000);
+    expect(fall.to).toBe(new Date(2026, 10, 2).getTime() / 1000);
+    if (browserTimezone() === 'America/New_York') {
+      expect(spring.to - spring.from).toBe(23 * 3600);
+      expect(fall.to - fall.from).toBe(25 * 3600);
+    }
+  });
+  it('accepts annual ranges and rejects reversed or invalid dates', () => {
     expect(
-      singaporeRange([new Date(2025, 11, 1), new Date(2026, 2, 3)]).to
-    ).toBe(Date.parse('2026-03-03T16:00Z') / 1000);
+      browserRange([new Date(2026, 0, 1), new Date(2026, 11, 31)]).to
+    ).toBe(new Date(2027, 0, 1).getTime() / 1000);
     [
-      [new Date(2025, 11, 1), new Date(2026, 2, 4)],
       [new Date(2026, 1, 2), new Date(2026, 1, 1)],
       [new Date('bad'), new Date()],
-    ].forEach(dates => {
-      expect(() => singaporeRange(dates)).toThrow(RangeError);
-    });
+      [],
+      null,
+    ].forEach(dates => expect(() => browserRange(dates)).toThrow(RangeError));
   });
-  it('does not request an oversized custom range, shows an error, and recovers on valid input', async () => {
+  it('uses the SLA picker and forwards timezone with dates', async () => {
     const wrapper = mount(OcaReportDateFilter, {
-      global: {
-        stubs: { ReportsFiltersDateRange: true, WootDateRangePicker: true },
-        mocks: { $t: key => key },
-      },
+      global: { stubs: { DatePicker: true }, mocks: { $t: key => key } },
     });
-    wrapper
-      .findComponent({ name: 'ReportsFiltersDateRange' })
-      .vm.$emit('onRangeChange', { offset: null });
-    await wrapper.vm.$nextTick();
-    const picker = wrapper.findComponent({ name: 'WootDateRangePicker' });
-    const before = wrapper.emitted('filterChange').length;
-    picker.vm.$emit('change', [new Date(2026, 0, 1), new Date(2026, 5, 1)]);
-    await wrapper.vm.$nextTick();
-    expect(wrapper.emitted('filterChange')).toHaveLength(before);
-    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
-    picker.vm.$emit('change', [new Date(2026, 0, 1), new Date(2026, 0, 1)]);
-    await wrapper.vm.$nextTick();
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
-    expect(wrapper.emitted('filterChange')).toHaveLength(before + 1);
-  });
-  it('hides six-month and annual presets only for constrained reports', () => {
-    const global = {
-      stubs: {
-        multiselect: {
-          name: 'multiselect',
-          props: ['options'],
-          template: '<div />',
-        },
-      },
-    };
-    const limited = mount(DateRange, { props: { maxDays: 93 }, global });
-    expect(
-      limited
-        .findComponent({ name: 'multiselect' })
-        .props('options')
-        .map(o => o.id)
-    ).toEqual([
-      'LAST_7_DAYS',
-      'LAST_30_DAYS',
-      'LAST_3_MONTHS',
-      'CUSTOM_DATE_RANGE',
+    const picker = wrapper.findComponent({ name: 'DatePicker' });
+    picker.vm.$emit('dateRangeChanged', [
+      new Date(2026, 0, 1),
+      new Date(2026, 11, 31),
     ]);
-    const legacy = mount(DateRange, { global });
-    expect(
-      legacy.findComponent({ name: 'multiselect' }).props('options')
-    ).toHaveLength(6);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.emitted('filterChange').at(-1)[0].timezone).toBe(
+      browserTimezone()
+    );
+    picker.vm.$emit('dateRangeChanged', []);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
   });
 });

@@ -11,7 +11,8 @@ const props = defineProps({
 const emit = defineEmits(['filter', 'page']);
 const dateTime = value =>
   new Date(value).toLocaleString('en-SG', {
-    timeZone: 'Asia/Singapore',
+    timeZone:
+      props.report.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     day: '2-digit',
     month: 'short',
     hour: '2-digit',

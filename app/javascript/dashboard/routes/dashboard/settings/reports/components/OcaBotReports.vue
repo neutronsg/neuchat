@@ -9,14 +9,14 @@ import { useRoute } from 'vue-router';
 import ReportsAPI from 'dashboard/api/reports';
 import BarChart from 'shared/components/charts/BarChart.vue';
 import ReportMetricCard from './ReportMetricCard.vue';
+import { downloadReport, reportFilename } from './reportDownload';
 const props = defineProps({ filters: { type: Object, required: true } });
 const route = useRoute();
 const { t } = useI18n();
 const metrics = ref(null);
 const metricsError = ref(false);
+const metricsTooLarge = ref(false);
 const usageLoading = ref(false);
-const exporting = ref(false);
-const exportError = ref(false);
 const report = ref(null);
 const usage = ref(null);
 const error = ref(false);
@@ -26,7 +26,9 @@ const page = ref(1);
 const reason = ref('');
 const dateTime = value =>
   value
-    ? new Date(value).toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })
+    ? new Date(value).toLocaleString('en-SG', {
+        timeZone: props.filters.timezone,
+      })
     : '—';
 let generation = 0;
 let usageGeneration = 0;
@@ -78,9 +80,12 @@ async function fetchReport() {
       reason: reason.value,
     });
     if (current === generation) report.value = response.data;
-  } catch {
+  } catch (failure) {
     if (current === generation) {
-      error.value = true;
+      error.value =
+        failure.response?.data?.error === 'report_too_large'
+          ? 'OCA_REPORT.TOO_LARGE'
+          : 'OCA_REPORT.ERROR';
       report.value = null;
     }
   } finally {
@@ -97,37 +102,20 @@ async function fetchUsage() {
   try {
     const response = await ReportsAPI.getBotUsage(filters);
     if (current === usageGeneration) usage.value = response.data;
-  } catch {
-    if (current === usageGeneration) usageError.value = true;
+  } catch (failure) {
+    if (current === usageGeneration)
+      usageError.value =
+        failure.response?.data?.error === 'report_too_large'
+          ? 'OCA_REPORT.TOO_LARGE'
+          : 'OCA_REPORT.USAGE_ERROR';
   } finally {
     if (current === usageGeneration) usageLoading.value = false;
-  }
-}
-function download(data, name) {
-  const url = URL.createObjectURL(
-    new Blob([data], { type: 'text/csv;charset=utf-8' })
-  );
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-async function exportConversations() {
-  exporting.value = true;
-  exportError.value = false;
-  try {
-    const response = await ReportsAPI.getBotOutcomesCSV(props.filters);
-    download(response.data, 'bot-conversations.csv');
-  } catch {
-    exportError.value = true;
-  } finally {
-    exporting.value = false;
   }
 }
 function exportUsage() {
   const keys = [
     'group',
+    'timezone',
     'calls',
     'inputTokens',
     'outputTokens',
@@ -141,12 +129,16 @@ function exportUsage() {
     'usageMissingCalls',
     'unpricedCalls',
   ];
-  download(
+  downloadReport(
     [
       keys.join(','),
-      ...usage.value.days.map(d => keys.map(k => d[k] ?? '').join(',')),
+      ...usage.value.days.map(d =>
+        keys
+          .map(k => (k === 'timezone' ? usage.value.timezone : (d[k] ?? '')))
+          .join(',')
+      ),
     ].join('\r\n'),
-    'bot-usage.csv'
+    reportFilename('usage', props.filters, 'csv')
   );
 }
 let metricsGeneration = 0;
@@ -154,12 +146,17 @@ async function fetchMetrics() {
   metricsGeneration += 1;
   const current = metricsGeneration;
   metricsError.value = false;
+  metricsTooLarge.value = false;
   metrics.value = null;
   try {
     const response = await ReportsAPI.getBotMetrics(props.filters);
     if (current === metricsGeneration) metrics.value = response.data;
-  } catch {
-    if (current === metricsGeneration) metricsError.value = true;
+  } catch (failure) {
+    if (current === metricsGeneration) {
+      metricsError.value = true;
+      metricsTooLarge.value =
+        failure.response?.data?.error === 'report_too_large';
+    }
   }
 }
 function setReason(value) {
@@ -170,16 +167,21 @@ function setPage(value) {
   page.value = value;
 }
 watch(
-  () => [props.filters.from, props.filters.to, page.value, reason.value],
+  () => [
+    props.filters.from,
+    props.filters.to,
+    props.filters.timezone,
+    page.value,
+    reason.value,
+  ],
   fetchReport,
   { immediate: true }
 );
 watch(
-  () => [props.filters.from, props.filters.to],
+  () => [props.filters.from, props.filters.to, props.filters.timezone],
   () => {
     page.value = 1;
     report.value = null;
-    exportError.value = false;
     if (props.filters.from && props.filters.to) {
       fetchUsage();
       fetchMetrics();
@@ -212,33 +214,18 @@ const usageStats = computed(() => [
 
 <template>
   <div class="flex min-w-0 flex-col gap-6 pb-8">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <span class="text-sm text-n-slate-11">{{
-        $t('OCA_REPORT.TIMEZONE')
-      }}</span>
-      <Button
-        variant="outline"
-        color="slate"
-        size="sm"
-        icon="i-lucide-download"
-        :disabled="!report || loading || exporting"
-        :is-loading="exporting"
-        :label="$t('OCA_REPORT.DOWNLOAD')"
-        @click="exportConversations"
-      />
-    </div>
     <div
-      v-if="error || exportError"
+      v-if="error"
       role="alert"
       class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-n-ruby-3 p-4 text-sm text-n-ruby-11"
     >
-      {{ $t(exportError ? 'OCA_REPORT.EXPORT_ERROR' : 'OCA_REPORT.ERROR') }}
+      {{ $t(error) }}
       <Button
         variant="outline"
         size="sm"
         color="slate"
         :label="$t('OCA_REPORT.RETRY')"
-        @click="exportError ? exportConversations() : fetchReport()"
+        @click="fetchReport"
       />
     </div>
     <p
@@ -278,7 +265,10 @@ const usageStats = computed(() => [
         role="alert"
         class="flex items-center gap-3 text-sm text-n-slate-11"
       >
-        {{ $t('OCA_REPORT.METRICS_ERROR')
+        {{
+          metricsTooLarge
+            ? $t('OCA_REPORT.TOO_LARGE')
+            : $t('OCA_REPORT.METRICS_ERROR')
         }}<Button
           size="sm"
           variant="ghost"
@@ -358,7 +348,7 @@ const usageStats = computed(() => [
             role="alert"
             class="flex flex-col items-start gap-3 py-6 text-sm text-n-slate-11"
           >
-            {{ $t('OCA_REPORT.USAGE_ERROR')
+            {{ $t(usageError)
             }}<Button
               variant="outline"
               color="slate"
@@ -414,7 +404,7 @@ const usageStats = computed(() => [
       <OcaCostEstimate
         :usage="usage"
         :loading="usageLoading"
-        :error="usageError"
+        :error="!!usageError"
         @retry="fetchUsage"
       />
       <OcaEscalationDetails
