@@ -4,6 +4,9 @@ import OcaSafetyReport from '../OcaSafetyReport.vue';
 vi.mock('dashboard/api/reports', () => ({
   default: { getBotSafety: vi.fn() },
 }));
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ params: { accountId: 1 } }),
+}));
 const filters = { from: 1000, to: 2000, timezone: 'America/New_York' };
 const report = {
   groups: [{ day: '2026-11-01', enforced: true, status: 'block', count: 2 }],
@@ -27,11 +30,13 @@ const mountReport = () =>
   mount(OcaSafetyReport, {
     props: { filters },
     global: {
+      directives: { 'on-clickaway': {} },
       mocks: {
         $t: (key, args) => (args ? `${key} ${JSON.stringify(args)}` : key),
       },
       stubs: {
         BarChart: true,
+        RouterLink: { template: '<a><slot /></a>' },
         Button: {
           props: ['label', 'disabled'],
           template: '<button :disabled="disabled">{{ label }}</button>',
@@ -82,5 +87,84 @@ describe('Safety reports', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('OCA_REPORT.SAFETY.EMPTY');
     expect(wrapper.find('table').exists()).toBe(false);
+  });
+  it('groups checks into one request, expands evidence and filters shadow disagreements', async () => {
+    ReportsAPI.getBotSafety.mockResolvedValue({
+      data: {
+        ...report,
+        events: [
+          { ...report.events[0], message_id: 10, day: '2026-11-01' },
+          {
+            ...report.events[0],
+            message_id: 10,
+            day: '2026-11-01',
+            provider: 'aws',
+            enforced: true,
+            status: 'allow',
+          },
+        ],
+      },
+    });
+    const wrapper = mountReport();
+    await flushPromises();
+    expect(wrapper.vm.requests).toHaveLength(1);
+    expect(wrapper.vm.blockedRequests).toBe(0);
+    expect(wrapper.vm.trend.datasets.map(d => d.data)).toEqual([[1], [0]]);
+    expect(wrapper.find('select').exists()).toBe(false);
+    expect(wrapper.findAll('tbody tr')).toHaveLength(1);
+    wrapper.vm.toggleRequest(wrapper.vm.requests[0].key);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll('tbody tr')).toHaveLength(2);
+    expect(wrapper.text()).toContain('OCA_REPORT.SAFETY.EVIDENCE_NOTE');
+    wrapper.vm.showStatusMenu = true;
+    await wrapper.vm.$nextTick();
+    wrapper
+      .findComponent({ name: 'DropdownMenu' })
+      .vm.$emit('action', { value: 'aws_only' });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('table').exists()).toBe(false);
+    expect(wrapper.vm.showStatusMenu).toBe(false);
+    wrapper.vm.status = 'custom_only';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('table').exists()).toBe(true);
+  });
+  it('counts required skipped shadow checks, filters them, and explains expected omissions', async () => {
+    const base = {
+      ...report.events[0],
+      provider: 'aws',
+      enforced: true,
+      status: 'allow',
+      message_id: 10,
+    };
+    ReportsAPI.getBotSafety.mockResolvedValue({
+      data: {
+        ...report,
+        events: [
+          base,
+          { ...base, provider: 'custom', enforced: false, status: 'skipped' },
+          { ...base, message_id: 11, attempt_id: 'blocked', status: 'block' },
+          {
+            ...base,
+            message_id: 11,
+            attempt_id: 'blocked',
+            stage: 'output',
+            status: 'unavailable',
+          },
+        ],
+      },
+    });
+    const wrapper = mountReport();
+    await flushPromises();
+    expect(wrapper.vm.issueRequests).toBe(1);
+    expect(wrapper.vm.blockedRequests).toBe(1);
+    wrapper.vm.status = 'unavailable';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.rows.map(r => r.messageId)).toEqual([10]);
+    expect(wrapper.text()).toContain('OCA_REPORT.SAFETY.SHADOW_MISSING');
+    wrapper.vm.status = 'block';
+    await wrapper.vm.$nextTick();
+    wrapper.vm.toggleRequest(wrapper.vm.rows[0].key);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain('OCA_REPORT.SAFETY.STATUS.not_required');
   });
 });

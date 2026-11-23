@@ -9,7 +9,7 @@ RSpec.describe 'Agent Bot safety settings', type: :request do
 
   before do
     allow(BotSafetyClient).to receive(:fetch).with(account.id, '/internal/safety/capabilities')
-                                           .and_return({ 'modes' => %w[aws aws_shadow custom] })
+                                             .and_return({ 'modes' => %w[aws aws_shadow aws_custom custom] })
   end
 
   it 'updates mode atomically with a versioned audit and preserves idle settings' do
@@ -38,7 +38,7 @@ RSpec.describe 'Agent Bot safety settings', type: :request do
     expect(response).to have_http_status(:unauthorized)
     other = create(:agent_bot, account: create(:account))
     patch "/api/v1/accounts/#{account.id}/agent_bots/#{other.id}", params: { safety_mode: 'custom', safety_version: 0 },
-                                                               headers: admin.create_new_auth_token, as: :json
+                                                                   headers: admin.create_new_auth_token, as: :json
     expect(response).to have_http_status(:not_found)
   end
 
@@ -49,5 +49,17 @@ RSpec.describe 'Agent Bot safety settings', type: :request do
     expect(bot.reload.safety_mode).to be_nil
     patch path, params: { name: 'renamed' }, headers: admin.create_new_auth_token, as: :json
     expect(response).to have_http_status(:success)
+  end
+
+  it 'persists dual enforcement and rejects it when AWS is unavailable' do
+    allow(BotSafetyClient).to receive(:fetch).and_return({ 'modes' => %w[custom] })
+    patch path, params: { safety_mode: 'aws_custom', safety_version: 0 }, headers: admin.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(bot.reload.safety_mode).to be_nil
+    allow(BotSafetyClient).to receive(:fetch).and_return({ 'modes' => %w[aws custom aws_custom] })
+    patch path, params: { safety_mode: 'aws_custom', safety_version: 0 }, headers: admin.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:success)
+    expect(bot.reload.safety_mode).to eq('aws_custom')
+    expect(bot.bot_safety_changes.last.mode).to eq('aws_custom')
   end
 end

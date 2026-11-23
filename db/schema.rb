@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_23_010000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_23_020000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -121,7 +121,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_23_010000) do
     t.string "safety_mode"
     t.bigint "safety_version", default: 0, null: false
     t.index ["account_id"], name: "index_agent_bots_on_account_id"
-    t.check_constraint "safety_mode IS NULL OR (safety_mode::text = ANY (ARRAY['aws'::character varying, 'aws_shadow'::character varying, 'custom'::character varying]::text[]))", name: "agent_bot_safety_mode"
+    t.check_constraint "safety_mode IS NULL OR (safety_mode::text = ANY (ARRAY['aws'::character varying, 'aws_shadow'::character varying, 'aws_custom'::character varying, 'custom'::character varying]::text[]))", name: "agent_bot_safety_mode"
   end
 
   create_table "applied_slas", force: :cascade do |t|

@@ -373,7 +373,7 @@ defineExpose({ dialogRef });
             class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm"
           >
             <option
-              v-for="mode in ['aws', 'aws_shadow', 'custom']"
+              v-for="mode in ['aws', 'aws_shadow', 'aws_custom', 'custom']"
               :key="mode"
               :value="mode"
               :disabled="!safetyOptions?.modes?.includes(mode)"

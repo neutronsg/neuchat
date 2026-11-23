@@ -1,18 +1,52 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { summarizeSafety } from './safetyReport';
 import { useI18n } from 'vue-i18n';
 import { Chart as ChartJS, Legend } from 'chart.js';
 import BarChart from 'shared/components/charts/BarChart.vue';
 import ReportsAPI from 'dashboard/api/reports';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
-ChartJS.register(Legend);
 const props = defineProps({ filters: { type: Object, required: true } });
+ChartJS.register(Legend);
 const { t } = useI18n();
+const route = useRoute();
 const data = ref(null);
+const expanded = ref(new Set());
+const toggleRequest = key => {
+  const next = new Set(expanded.value);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  expanded.value = next;
+};
 const loading = ref(false);
 const error = ref(false);
 const page = ref(1);
 const status = ref('');
+const showStatusMenu = ref(false);
+const statusItems = computed(() =>
+  [
+    '',
+    'block',
+    'error',
+    'unavailable',
+    'no_block',
+    'aws_only',
+    'custom_only',
+  ].map(value => ({
+    action: 'filter',
+    value: value || 'all',
+    label: value
+      ? t(`OCA_REPORT.SAFETY.REQUEST_RESULTS.${value}`)
+      : t('OCA_REPORT.SAFETY.ALL'),
+    isSelected: value === status.value,
+  }))
+);
+const selectStatus = ({ value }) => {
+  status.value = value === 'all' ? '' : value;
+  showStatusMenu.value = false;
+};
 let generation = 0;
 async function load() {
   generation += 1;
@@ -21,6 +55,7 @@ async function load() {
   error.value = false;
   data.value = null;
   page.value = 1;
+  expanded.value = new Set();
   try {
     const response = await ReportsAPI.getBotSafety({ ...props.filters });
     if (current === generation) data.value = response.data;
@@ -34,63 +69,72 @@ async function load() {
     if (current === generation) loading.value = false;
   }
 }
-const groups = computed(() => data.value?.groups || []);
-const enforcedChecks = computed(() =>
-  groups.value.filter(g => g.enforced).reduce((n, g) => n + g.count, 0)
+const summary = computed(() => summarizeSafety(data.value?.events));
+const requests = computed(() => summary.value.requests);
+const blockedRequests = computed(
+  () => requests.value.filter(r => r.blocked).length
 );
-const blockedChecks = computed(() =>
-  groups.value
-    .filter(g => g.enforced && g.status === 'block')
-    .reduce((n, g) => n + g.count, 0)
+const issueRequests = computed(
+  () => requests.value.filter(r => r.reviewFailed || r.incomplete).length
 );
-const failedChecks = computed(() =>
-  groups.value
-    .filter(
-      g =>
-        g.enforced &&
-        [
-          'error',
-          'timeout',
-          'indeterminate',
-          'unavailable',
-          'unsupported',
-        ].includes(g.status)
-    )
-    .reduce((n, g) => n + g.count, 0)
+const blockRate = computed(() =>
+  requests.value.length
+    ? `${((blockedRequests.value / requests.value.length) * 100).toFixed(1)}%`
+    : '—'
 );
 const hasShadow = computed(() =>
-  data.value?.events.some(e => e.mode === 'aws_shadow')
+  requests.value.some(r => r.comparisons.length)
+);
+const comparisonCards = computed(() =>
+  Object.entries(summary.value.comparison)
 );
 const filtered = computed(() =>
-  (data.value?.events || []).filter(
-    e => !status.value || e.status === status.value
-  )
+  requests.value.filter(r => {
+    if (!status.value) return true;
+    if (['aws_only', 'custom_only'].includes(status.value))
+      return r.comparisons.includes(status.value);
+    if (status.value === 'error') return r.reviewFailed;
+    if (status.value === 'unavailable') return r.incomplete;
+    return r.result === status.value;
+  })
 );
-const events = computed(() =>
+const rows = computed(() =>
   filtered.value.slice((page.value - 1) * 20, page.value * 20)
 );
+const reasonCounts = computed(() => {
+  const counts = new Map();
+  requests.value.forEach(r =>
+    r.reasons.forEach(reason =>
+      counts.set(reason, (counts.get(reason) || 0) + 1)
+    )
+  );
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+});
 const trend = computed(() => {
-  const labels = [...new Set(groups.value.map(g => g.day))].sort();
+  const days = new Map();
+  requests.value.forEach(r => {
+    const count = days.get(r.day) || { total: 0, blocked: 0 };
+    count.total += 1;
+    if (r.blocked) count.blocked += 1;
+    days.set(r.day, count);
+  });
+  const labels = [...days.keys()].sort();
   return {
     labels,
-    datasets: [true, false]
-      .filter(enforced => enforced || hasShadow.value)
-      .map(enforced => ({
-        label: t(
-          enforced
-            ? 'OCA_REPORT.SAFETY.BLOCKED'
-            : 'OCA_REPORT.SAFETY.WOULD_BLOCK'
-        ),
-        backgroundColor: enforced ? '#3182CE' : '#94A3B8',
-        data: labels.map(day =>
-          groups.value
-            .filter(
-              g =>
-                g.day === day && g.enforced === enforced && g.status === 'block'
-            )
-            .reduce((n, g) => n + g.count, 0)
-        ),
-      })),
+    datasets: [
+      {
+        label: t('OCA_REPORT.SAFETY.TREND_REQUESTS'),
+        backgroundColor: '#3182CE',
+        maxBarThickness: 48,
+        data: labels.map(day => days.get(day).total),
+      },
+      {
+        label: t('OCA_REPORT.SAFETY.BLOCKED'),
+        backgroundColor: '#B7791F',
+        maxBarThickness: 48,
+        data: labels.map(day => days.get(day).blocked),
+      },
+    ],
   };
 });
 const chartOptions = {
@@ -146,74 +190,106 @@ watch(status, () => {
       />
     </div>
     <template v-else-if="data">
-      <dl class="my-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <dl class="my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <dt class="text-sm text-n-slate-11">
             {{ $t('OCA_REPORT.SAFETY.CHECKS') }}
           </dt>
-          <dd class="text-2xl font-semibold">{{ enforcedChecks }}</dd>
+          <dd class="text-2xl font-semibold">{{ requests.length }}</dd>
         </div>
         <div>
           <dt class="text-sm text-n-slate-11">
             {{ $t('OCA_REPORT.SAFETY.BLOCKED') }}
           </dt>
-          <dd class="text-2xl font-semibold">{{ blockedChecks }}</dd>
+          <dd class="text-2xl font-semibold">{{ blockedRequests }}</dd>
         </div>
         <div>
           <dt class="text-sm text-n-slate-11">
-            {{ $t('OCA_REPORT.SAFETY.UNKNOWN') }}
+            {{ $t('OCA_REPORT.SAFETY.BLOCK_RATE') }}
           </dt>
-          <dd class="text-2xl font-semibold">{{ failedChecks }}</dd>
+          <dd class="text-2xl font-semibold">{{ blockRate }}</dd>
+        </div>
+        <div>
+          <dt class="text-sm text-n-slate-11">
+            {{ $t('OCA_REPORT.SAFETY.ISSUES') }}
+          </dt>
+          <dd class="text-2xl font-semibold">{{ issueRequests }}</dd>
         </div>
       </dl>
-      <div v-if="groups.length" class="mb-6 h-48">
+      <h4 v-if="requests.length" class="font-medium">
+        {{ $t('OCA_REPORT.SAFETY.TREND_TITLE') }}
+      </h4>
+      <p v-if="requests.length" class="mb-4 mt-1 text-xs text-n-slate-11">
+        {{ $t('OCA_REPORT.SAFETY.TREND_NOTE') }}
+      </p>
+      <div v-if="requests.length" class="mb-6 h-48">
         <BarChart :collection="trend" :chart-options="chartOptions" />
       </div>
-      <p v-if="data.reviewerUsage" class="mb-5 text-sm text-n-slate-11">
-        {{
-          $t('OCA_REPORT.SAFETY.USAGE', {
-            input: data.reviewerUsage.inputTokens ?? '—',
-            output: data.reviewerUsage.outputTokens ?? '—',
-            missing: data.reviewerUsage.missingUsageChecks,
-          })
-        }}
-      </p>
+      <div
+        v-if="reasonCounts.length"
+        class="mb-6 rounded-lg border border-n-weak p-4"
+      >
+        <h4 class="font-medium">{{ $t('OCA_REPORT.SAFETY.REASONS_TITLE') }}</h4>
+        <p class="mt-1 text-xs text-n-slate-11">
+          {{ $t('OCA_REPORT.SAFETY.REASONS_NOTE') }}
+        </p>
+        <ul class="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+          <li
+            v-for="[reason, count] in reasonCounts"
+            :key="reason"
+            class="flex justify-between text-sm"
+          >
+            <span>{{ $t(`OCA_REPORT.SAFETY.REASONS.${reason}`) }}</span
+            ><strong>{{ count }}</strong>
+          </li>
+        </ul>
+      </div>
       <div v-if="hasShadow" class="mb-6 rounded-lg bg-n-alpha-2 p-4">
         <h4 class="font-medium">{{ $t('OCA_REPORT.SAFETY.SHADOW') }}</h4>
-        <p class="mt-2 text-sm">
-          {{ $t('OCA_REPORT.SAFETY.COMPARISON', data.comparison) }}
-        </p>
         <p class="mt-1 text-xs text-n-slate-11">
           {{ $t('OCA_REPORT.SAFETY.COMPARISON_NOTE') }}
         </p>
+        <dl class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <div v-for="[key, count] in comparisonCards" :key="key">
+            <dt class="text-xs text-n-slate-11">
+              {{ $t(`OCA_REPORT.SAFETY.COMPARISON_RESULTS.${key}`) }}
+            </dt>
+            <dd class="mt-1 text-xl font-semibold">{{ count }}</dd>
+          </div>
+        </dl>
       </div>
-      <label for="safety-status" class="text-sm">{{
-        $t('OCA_REPORT.SAFETY.RESULT')
-      }}</label>
-      <select
-        id="safety-status"
-        v-model="status"
-        class="mb-3 ml-2 !w-auto rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm"
+      <div
+        v-if="data.events?.length"
+        class="mb-4 flex items-center justify-between gap-3"
       >
-        <option value="">{{ $t('OCA_REPORT.SAFETY.ALL') }}</option>
-        <option
-          v-for="value in [
-            'allow',
-            'block',
-            'indeterminate',
-            'error',
-            'timeout',
-            'unsupported',
-            'skipped',
-            'unavailable',
-            'masked',
-          ]"
-          :key="value"
-          :value="value"
+        <h4 class="font-medium">{{ $t('OCA_REPORT.SAFETY.DETAILS') }}</h4>
+        <div
+          v-on-clickaway="() => (showStatusMenu = false)"
+          class="relative"
+          @keydown.esc="showStatusMenu = false"
         >
-          {{ $t(`OCA_REPORT.SAFETY.STATUS.${value}`) }}
-        </option>
-      </select>
+          <Button
+            sm
+            slate
+            faded
+            trailing-icon="i-lucide-chevron-down"
+            :label="
+              status
+                ? $t(`OCA_REPORT.SAFETY.REQUEST_RESULTS.${status}`)
+                : $t('OCA_REPORT.SAFETY.ALL')
+            "
+            :aria-label="$t('OCA_REPORT.SAFETY.FILTER_RESULT')"
+            :aria-expanded="showStatusMenu"
+            @click="showStatusMenu = !showStatusMenu"
+          />
+          <DropdownMenu
+            v-if="showStatusMenu"
+            :menu-items="statusItems"
+            class="right-0 top-full mt-1"
+            @action="selectStatus"
+          />
+        </div>
+      </div>
       <div v-if="filtered.length" class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead class="border-b border-n-weak text-n-slate-11">
@@ -222,10 +298,11 @@ watch(status, () => {
                 v-for="key in [
                   'TIME',
                   'CONVERSATION',
-                  'PROVIDER',
-                  'STAGE',
+                  'MODE',
+                  'AWS',
+                  'CUSTOM',
                   'RESULT',
-                  'REASON',
+                  'CHECK_DETAILS',
                 ]"
                 :key="key"
                 class="px-2 py-3 font-medium"
@@ -235,33 +312,136 @@ watch(status, () => {
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="event in events"
-              :key="`${event.attempt_id}:${event.stage}:${event.provider}`"
-              class="border-b border-n-weak"
-            >
-              <td class="px-2 py-3">{{ dateTime(event.created_at) }}</td>
-              <td class="px-2 py-3">#{{ event.conversation_id }}</td>
-              <td class="px-2 py-3">
-                {{ $t(`OCA_REPORT.SAFETY.PROVIDERS.${event.provider}`) }} ·
-                {{
-                  $t(
-                    event.enforced
-                      ? 'OCA_REPORT.SAFETY.ENFORCED'
-                      : 'OCA_REPORT.SAFETY.SHADOW_LABEL'
-                  )
-                }}
-              </td>
-              <td class="px-2 py-3">
-                {{ $t(`OCA_REPORT.SAFETY.STAGES.${event.stage}`) }}
-              </td>
-              <td class="px-2 py-3">
-                {{ $t(`OCA_REPORT.SAFETY.STATUS.${event.status}`) }}
-              </td>
-              <td class="px-2 py-3">
-                {{ $t(`OCA_REPORT.SAFETY.REASONS.${event.reason}`) }}
-              </td>
-            </tr>
+            <template v-for="request in rows" :key="request.key">
+              <tr class="border-b border-n-weak align-top">
+                <td class="whitespace-nowrap px-2 py-3">
+                  {{ dateTime(request.createdAt) }}
+                </td>
+                <td class="px-2 py-3">
+                  <router-link
+                    class="text-n-blue-text"
+                    :to="`/app/accounts/${route.params.accountId}/conversations/${request.conversationId}`"
+                  >
+                    #{{ request.conversationId }}
+                  </router-link>
+                  <span
+                    v-if="request.messageId != null"
+                    class="block text-xs text-n-slate-11"
+                    >{{
+                      $t('OCA_REPORT.SAFETY.MESSAGE_ID', {
+                        id: request.messageId,
+                      })
+                    }}</span
+                  >
+                </td>
+                <td class="px-2 py-3">
+                  <div v-for="mode in request.modes" :key="mode">
+                    {{ $t(`OCA_REPORT.SAFETY.MODES.${mode}`) }}
+                  </div>
+                </td>
+                <td class="px-2 py-3">
+                  {{ $t(`OCA_REPORT.SAFETY.STATUS.${request.aws}`) }}
+                </td>
+                <td class="px-2 py-3">
+                  {{ $t(`OCA_REPORT.SAFETY.STATUS.${request.custom}`)
+                  }}<span
+                    v-if="
+                      request.checks.some(
+                        check => check.provider === 'custom' && !check.enforced
+                      )
+                    "
+                    class="mt-1 block text-xs text-n-slate-11"
+                    >{{ $t('OCA_REPORT.SAFETY.SHADOW_ONLY') }}</span
+                  >
+                </td>
+                <td class="px-2 py-3">
+                  <span
+                    :class="
+                      request.blocked ? 'font-medium text-n-amber-11' : ''
+                    "
+                    >{{
+                      $t(`OCA_REPORT.SAFETY.REQUEST_RESULTS.${request.result}`)
+                    }}</span
+                  >
+                  <span
+                    v-if="request.shadowMissing"
+                    class="mt-1 block text-xs text-n-slate-11"
+                    >{{ $t('OCA_REPORT.SAFETY.SHADOW_MISSING') }}</span
+                  >
+                  <span
+                    v-if="request.reviewFailed && !request.failed"
+                    class="mt-1 block text-xs text-n-slate-11"
+                    >{{ $t('OCA_REPORT.SAFETY.SHADOW_FAILURE') }}</span
+                  >
+                  <span
+                    v-for="reason in request.reasons"
+                    :key="reason"
+                    class="mt-1 block text-xs text-n-slate-11"
+                    >{{ $t(`OCA_REPORT.SAFETY.REASONS.${reason}`) }}</span
+                  >
+                </td>
+                <td class="px-2 py-3">
+                  <Button
+                    sm
+                    slate
+                    faded
+                    :aria-expanded="expanded.has(request.key)"
+                    :label="
+                      $t(
+                        expanded.has(request.key)
+                          ? 'OCA_REPORT.SAFETY.HIDE_CHECKS'
+                          : 'OCA_REPORT.SAFETY.SHOW_CHECKS',
+                        { count: request.checks.length }
+                      )
+                    "
+                    @click="toggleRequest(request.key)"
+                  />
+                </td>
+              </tr>
+              <tr v-if="expanded.has(request.key)" class="bg-n-alpha-2">
+                <td colspan="7" class="p-4">
+                  <p class="mb-3 text-xs text-n-slate-11">
+                    {{ $t('OCA_REPORT.SAFETY.EVIDENCE_NOTE') }}
+                  </p>
+                  <ol class="space-y-3">
+                    <li
+                      v-for="check in request.checks"
+                      :key="`${check.attempt_id}:${check.stage}:${check.provider}`"
+                      class="flex flex-wrap gap-x-3 gap-y-1 text-xs"
+                    >
+                      <span>{{ dateTime(check.created_at) }}</span>
+                      <strong>{{
+                        $t(`OCA_REPORT.SAFETY.PROVIDERS.${check.provider}`)
+                      }}</strong>
+                      <span>{{
+                        $t(`OCA_REPORT.SAFETY.STAGES.${check.stage}`)
+                      }}</span>
+                      <span>{{
+                        $t(
+                          check.enforced
+                            ? 'OCA_REPORT.SAFETY.ENFORCED'
+                            : 'OCA_REPORT.SAFETY.SHADOW_LABEL'
+                        )
+                      }}</span>
+                      <span>{{
+                        $t(
+                          `OCA_REPORT.SAFETY.STATUS.${check.notRequired ? 'not_required' : check.status}`
+                        )
+                      }}</span>
+                      <span>{{
+                        $t(`OCA_REPORT.SAFETY.REASONS.${check.reason}`)
+                      }}</span>
+                      <span class="basis-full break-all text-n-slate-11">{{
+                        $t('OCA_REPORT.SAFETY.ATTEMPT', {
+                          id: check.attempt_id,
+                          version: check.policy_version || '—',
+                        })
+                      }}</span>
+                    </li>
+                  </ol>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -283,6 +463,21 @@ watch(status, () => {
           @click="page++"
         />
       </div>
+      <details class="mt-6 text-sm text-n-slate-11">
+        <summary class="cursor-pointer">
+          {{ $t('OCA_REPORT.SAFETY.TECHNICAL') }}
+        </summary>
+        <p class="mt-2">{{ $t('OCA_REPORT.SAFETY.COUNTING_NOTE') }}</p>
+        <p v-if="data.reviewerUsage" class="mt-2">
+          {{
+            $t('OCA_REPORT.SAFETY.USAGE', {
+              input: data.reviewerUsage.inputTokens ?? '—',
+              output: data.reviewerUsage.outputTokens ?? '—',
+              missing: data.reviewerUsage.missingUsageChecks,
+            })
+          }}
+        </p>
+      </details>
     </template>
   </section>
 </template>

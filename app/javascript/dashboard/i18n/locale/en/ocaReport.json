@@ -81,17 +81,17 @@
     "MAINTAINED_PRICES": "Provider prices are maintained as dated versions. Calls without a verified price or billing calendar remain unpriced.",
     "SAFETY": {
       "TITLE": "Safety protection",
-      "DESCRIPTION": "Input and output checks are counted separately. Only enforced checks affect replies.",
+      "DESCRIPTION": "Requests with safety records, counted once per user message in this period. Checks and retries are grouped together.",
       "ERROR": "Safety data could not be loaded.",
       "LOADING": "Loading safety data…",
       "RETRY": "Retry",
-      "CHECKS": "Enforced checks",
-      "BLOCKED": "Blocked checks",
-      "UNKNOWN": "Incomplete checks",
+      "CHECKS": "Recorded requests",
+      "BLOCKED": "Requests with blocks",
+      "UNKNOWN": "Review failures",
       "SHADOW": "AWS vs custom shadow",
       "COMPARISON": "Comparable: {comparable} · Agree: {agree} · Disagree: {disagree} · Unavailable: {unavailable}",
-      "COMPARISON_NOTE": "Disagreement requires review; it does not establish a false positive or missed attack.",
-      "RESULT": "Result",
+      "COMPARISON_NOTE": "Shadow mode only: pairs from the same attempt and input/output stage. A request can have multiple pairs. Disagreement needs review; it is not proof of a mistake. Missing checks, masked results and AWS-blocked original outputs are not comparable.",
+      "RESULT": "Enforced result",
       "ALL": "All results",
       "TIME": "Time",
       "CONVERSATION": "Conversation",
@@ -100,7 +100,7 @@
       "REASON": "Reason",
       "ENFORCED": "Enforced",
       "SHADOW_LABEL": "Shadow",
-      "EMPTY": "No checks in this selection.",
+      "EMPTY": "No requests match this view.",
       "PREVIOUS": "Previous",
       "NEXT": "Next",
       "STAGES": {
@@ -116,14 +116,17 @@
         "unsupported": "Unsupported",
         "skipped": "Skipped",
         "unavailable": "Unavailable",
-        "masked": "Masked"
+        "masked": "Masked",
+        "not_recorded": "Not recorded",
+        "not_required": "Not required after block"
       },
       "CURRENT_MODE": "Current setting · {name}: {mode}",
       "MODES": {
         "default": "Environment default",
         "aws": "AWS Guardrails",
         "aws_shadow": "AWS + custom shadow",
-        "custom": "Custom guard"
+        "custom": "Custom guard",
+        "aws_custom": "AWS + custom (both enforce)"
       },
       "USAGE": "Custom reviewer usage (separate from Bot): {input} input tokens including cache · {output} output tokens · {missing} checks with missing usage. Reviewer costs are not included in cost estimates.",
       "WOULD_BLOCK": "Shadow would block",
@@ -142,7 +145,50 @@
         "protected_information": "Protected information",
         "business_scope": "Outside support scope",
         "uncertain": "Not determined"
-      }
+      },
+      "NOT_EVALUATED": "Not evaluated",
+      "TREND_TITLE": "Requests and recorded blocks",
+      "TREND_NOTE": "Blocks are part of recorded requests. Review issues include shadow failures; they are not safety violations. Dates use the first recorded check in this period.",
+      "BLOCKED_STAGES": {
+        "input": "Input blocked",
+        "output": "Output blocked"
+      },
+      "DETAILS": "Request details",
+      "FILTER_RESULT": "Filter requests",
+      "BLOCK_RATE": "Recorded block rate",
+      "ISSUES": "Requests with review issues",
+      "TREND_REQUESTS": "Recorded requests",
+      "REASONS_TITLE": "Why requests were blocked",
+      "REASONS_NOTE": "Enforced blocks only. A request can have more than one reason.",
+      "MODE": "Mode at time of request",
+      "AWS": "AWS",
+      "CUSTOM": "Custom guard",
+      "MESSAGE_ID": "Message #{id}",
+      "SHOW_CHECKS": "View {count} checks",
+      "HIDE_CHECKS": "Hide checks",
+      "EVIDENCE_NOTE": "Recorded checks, including retries. Provider summaries prioritise blocks, then review issues. No recorded block does not prove a complete review or successful delivery. Message content is not stored in this report; open the conversation for context.",
+      "ATTEMPT": "Attempt: {id} · Policy: {version}",
+      "TECHNICAL": "About counting and reviewer usage",
+      "REQUEST_RESULTS": {
+        "block": "Recorded block",
+        "error": "Review failure",
+        "unavailable": "Missing review result",
+        "no_block": "No recorded block",
+        "aws_only": "Only AWS would block",
+        "custom_only": "Only custom would block"
+      },
+      "COMPARISON_RESULTS": {
+        "both_allow": "Both allow",
+        "both_block": "Both block",
+        "aws_only": "Only AWS blocks",
+        "custom_only": "Only custom blocks",
+        "unavailable": "Not comparable"
+      },
+      "CHECK_DETAILS": "Checks",
+      "SHADOW_ONLY": "Shadow recommendation",
+      "COUNTING_NOTE": "Counts cover only safety records within the selected period, not all incoming messages. Older records without a message ID are grouped by attempt. No recorded block does not prove a complete review or reply delivery. A missing or skipped review counts as an issue when it was required. Downstream reviews made unnecessary by an enforced block in the same attempt do not count as issues; they remain not comparable.",
+      "SHADOW_FAILURE": "Shadow review failed",
+      "SHADOW_MISSING": "Shadow review missing"
     }
   }
 }
