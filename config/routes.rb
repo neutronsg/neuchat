@@ -84,6 +84,7 @@ Rails.application.routes.draw do
           resources :agent_bots, only: [:index, :create, :show, :update, :destroy] do
             delete :avatar, on: :member
             post :reset_access_token, on: :member
+            get :safety_options, on: :collection
           end
           resources :contact_inboxes, only: [] do
             collection do
@@ -394,6 +395,7 @@ Rails.application.routes.draw do
               get :bot_metrics
               get :bot_outcomes
               get :bot_usage
+              get :bot_safety
               get :bot_outcomes_csv
               get :bot_workbook
             end

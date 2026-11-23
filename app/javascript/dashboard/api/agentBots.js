@@ -25,6 +25,10 @@ class AgentBotsAPI extends ApiClient {
   resetAccessToken(botId) {
     return axios.post(`${this.url}/${botId}/reset_access_token`);
   }
+
+  safetyOptions() {
+    return axios.get(`${this.url}/safety_options`);
+  }
 }
 
 export default new AgentBotsAPI();

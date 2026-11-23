@@ -58,3 +58,6 @@ json.partial! 'enterprise/api/v1/conversations/partials/conversation', conversat
 json.bot_outcome conversation.bot_conversation_outcome&.snapshot
 
 json.bot_categories Conversations::BotCategoryCatalog.for(conversation.account)
+if (safety_bot = conversation.inbox.agent_bot) && safety_bot.safety_mode.present?
+  json.bot_safety({ mode: safety_bot.safety_mode, version: safety_bot.safety_version })
+end

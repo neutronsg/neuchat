@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_20_011000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_23_010000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -118,7 +118,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_20_011000) do
     t.integer "bot_type", default: 0
     t.jsonb "bot_config", default: {}
     t.datetime "idle_protocol_seen_at"
+    t.string "safety_mode"
+    t.bigint "safety_version", default: 0, null: false
     t.index ["account_id"], name: "index_agent_bots_on_account_id"
+    t.check_constraint "safety_mode IS NULL OR (safety_mode::text = ANY (ARRAY['aws'::character varying, 'aws_shadow'::character varying, 'custom'::character varying]::text[]))", name: "agent_bot_safety_mode"
   end
 
   create_table "applied_slas", force: :cascade do |t|
@@ -239,6 +242,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_20_011000) do
     t.index ["account_id", "created_at"], name: "index_bot_conversation_outcomes_on_account_id_and_created_at"
     t.index ["account_id"], name: "index_bot_conversation_outcomes_on_account_id"
     t.index ["conversation_id"], name: "index_bot_conversation_outcomes_on_conversation_id", unique: true
+  end
+
+  create_table "bot_safety_changes", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "agent_bot_id", null: false
+    t.bigint "user_id"
+    t.string "previous_mode"
+    t.string "mode", null: false
+    t.bigint "version", null: false
+    t.datetime "created_at", null: false
+    t.index ["account_id"], name: "index_bot_safety_changes_on_account_id"
+    t.index ["agent_bot_id", "version"], name: "index_bot_safety_changes_on_agent_bot_id_and_version", unique: true
+    t.index ["agent_bot_id"], name: "index_bot_safety_changes_on_agent_bot_id"
   end
 
   create_table "campaigns", force: :cascade do |t|
@@ -1225,6 +1241,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_20_011000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "bot_conversation_outcomes", "accounts"
   add_foreign_key "bot_conversation_outcomes", "conversations"
+  add_foreign_key "bot_safety_changes", "accounts"
+  add_foreign_key "bot_safety_changes", "agent_bots"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "kbase_documents", "kbase_knowledge_bases", column: "knowledge_base_id"
   add_foreign_key "kbase_documents", "users", column: "created_by_id"

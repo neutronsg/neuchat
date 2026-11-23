@@ -108,6 +108,22 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
     render json: { error: 'usage_unavailable' }, status: :service_unavailable
   end
 
+  def bot_safety
+    return head :not_found unless oca_report?
+
+    from, to = BotUsageReportClient.period(params)
+    report = BotSafetyClient.fetch(Current.account.id, '/internal/reports/safety',
+                                   from: from.iso8601, to: to.iso8601, timezone: BotUsageReportClient.timezone(params))
+    report['current_modes'] = Current.account.agent_bots.map { |bot| { name: bot.name, mode: bot.safety_mode || 'default' } }
+    render json: report
+  rescue BotReportLimitError
+    render json: { error: 'report_too_large' }, status: :unprocessable_entity
+  rescue ArgumentError, TypeError
+    render json: { error: 'invalid_range' }, status: :unprocessable_entity
+  rescue StandardError
+    render json: { error: 'safety_unavailable' }, status: :service_unavailable
+  end
+
   private
 
   def oca_report?

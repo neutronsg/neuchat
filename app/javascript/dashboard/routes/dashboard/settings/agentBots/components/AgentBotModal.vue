@@ -15,6 +15,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import AccessToken from 'dashboard/routes/dashboard/settings/profile/AccessToken.vue';
+import AgentBotsAPI from 'dashboard/api/agentBots';
 
 const props = defineProps({
   type: {
@@ -37,6 +38,10 @@ const store = useStore();
 const { t } = useI18n();
 const dialogRef = ref(null);
 const uiFlags = useMapGetter('agentBots/getUIFlags');
+const safetyOptions = ref(null);
+const safetyUnavailable = ref(false);
+const safetyMode = ref('');
+const initialSafetyMode = ref('');
 
 const formState = reactive({
   botName: '',
@@ -176,6 +181,13 @@ const handleSubmit = async () => {
     idle_auto_resolve_enabled: formState.idleEnabled,
     idle_auto_resolve_after: Number(formState.idleMinutes),
   };
+  if (
+    props.selectedBot.safety_configurable &&
+    safetyMode.value !== initialSafetyMode.value
+  ) {
+    botData.safety_mode = safetyMode.value;
+    botData.safety_version = props.selectedBot.safety_version;
+  }
 
   const isCreate = props.type === MODAL_TYPES.CREATE;
 
@@ -218,7 +230,11 @@ const handleSubmit = async () => {
   }
 };
 
-const initializeForm = () => {
+const initializeForm = async () => {
+  safetyOptions.value = null;
+  safetyUnavailable.value = false;
+  safetyMode.value = props.selectedBot.safety_mode || '';
+  initialSafetyMode.value = safetyMode.value;
   if (props.selectedBot && Object.keys(props.selectedBot).length) {
     const {
       name,
@@ -240,6 +256,18 @@ const initializeForm = () => {
     }
   } else {
     resetForm();
+  }
+  if (props.selectedBot.safety_configurable) {
+    const botId = props.selectedBot.id;
+    try {
+      const { data } = await AgentBotsAPI.safetyOptions();
+      if (props.selectedBot.id !== botId) return;
+      safetyOptions.value = data;
+      safetyMode.value = props.selectedBot.safety_mode || data.default_mode;
+      initialSafetyMode.value = safetyMode.value;
+    } catch {
+      safetyUnavailable.value = true;
+    }
   }
 };
 
@@ -334,6 +362,35 @@ defineExpose({ dialogRef });
           :message-type="botUrlError ? 'error' : 'info'"
           @blur="v$.botUrl.$touch()"
         />
+        <div v-if="selectedBot.safety_configurable" class="flex flex-col gap-2">
+          <label for="bot-safety-mode">{{
+            $t('AGENT_BOTS.SAFETY.LABEL')
+          }}</label>
+          <select
+            id="bot-safety-mode"
+            v-model="safetyMode"
+            :disabled="!safetyOptions"
+            class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm"
+          >
+            <option
+              v-for="mode in ['aws', 'aws_shadow', 'custom']"
+              :key="mode"
+              :value="mode"
+              :disabled="!safetyOptions?.modes?.includes(mode)"
+            >
+              {{ $t(`AGENT_BOTS.SAFETY.MODES.${mode}`) }}
+            </option>
+          </select>
+          <p class="text-sm text-n-slate-11">
+            {{
+              $t(
+                safetyUnavailable
+                  ? 'AGENT_BOTS.SAFETY.UNAVAILABLE'
+                  : 'AGENT_BOTS.SAFETY.DESCRIPTION'
+              )
+            }}
+          </p>
+        </div>
         <div class="flex items-center justify-between gap-2">
           <label for="bot-idle-enabled">{{
             $t('AGENT_BOTS.IDLE.ENABLED')

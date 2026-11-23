@@ -33,10 +33,37 @@ class V2::Reports::BotWorkbookBuilder
     usage_sheet('Cost estimates', COST_COLUMNS)
     conversation_sheet
     escalation_sheet
+    safety_sheets
     package.to_stream
   end
 
   private
+
+  def safety_sheets
+    safety = BotSafetyClient.fetch(@account.id, '/internal/reports/safety',
+                                   from: @from.iso8601, to: @to.iso8601, timezone: @timezone)
+    summary_fields = %w[day provider enforced stage status count]
+    summary_rows = safety.fetch('groups').map { |row| summary_fields.map { |field| row[field] } }
+    fields = %w[created_at conversation_id message_id attempt_id provider mode config_version enforced stage status reason policy_version model
+                duration_ms input_tokens output_tokens cache_read_tokens cache_write_tokens]
+    events = safety_event_rows(safety, fields)
+    comparison = safety.fetch('comparison')
+    table('Safety summary', summary_fields, summary_rows)
+    table('Safety events', fields, events)
+    table('Shadow comparison', %w[Metric Count], comparison.to_a + [['Timezone', @timezone], ['Note', safety['note']]])
+  rescue BotReportLimitError
+    raise
+  rescue StandardError
+    ['Safety summary', 'Safety events', 'Shadow comparison'].each do |name|
+      table(name, %w[Status], [[MISSING]])
+    end
+  end
+
+  def safety_event_rows(safety, fields)
+    safety.fetch('events').map do |row|
+      fields.map { |field| field == 'created_at' ? local_time(Time.iso8601(row.fetch(field))) : row[field] }
+    end
+  end
 
   def load_data
     builder = V2::Reports::BotOutcomesBuilder.new(@account, @params)

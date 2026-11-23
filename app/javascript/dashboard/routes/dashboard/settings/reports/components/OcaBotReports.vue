@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
 import OcaCostEstimate from './OcaCostEstimate.vue';
+import OcaSafetyReport from './OcaSafetyReport.vue';
 import OcaCategoryBreakdown from './OcaCategoryBreakdown.vue';
 import OcaEscalationDetails from './OcaEscalationDetails.vue';
 import { useRoute } from 'vue-router';
@@ -416,6 +417,7 @@ const usageStats = computed(() => [
         @filter="setReason"
         @page="setPage"
       />
+      <OcaSafetyReport :filters="filters" />
     </template>
   </div>
 </template>

@@ -2,14 +2,14 @@
   "OCA_REPORT": {
     "DOWNLOAD": "Download bot reports",
     "DOWNLOAD_USAGE": "Export usage",
-    "LOADING": "Loading reports\u2026",
+    "LOADING": "Loading reports…",
     "ERROR": "Unable to load or export the report. Please try again.",
     "USAGE_ERROR": "Token usage is unavailable; this does not mean zero consumption.",
     "COHORT": "Rates and daily counts cover chats first handled in the selected period. Tracking started:",
     "RESOLUTION": "Resolution Rate",
     "ESCALATION": "Escalation Rate",
-    "RESOLUTION_INFO": "Closed conversations with all enquiries solved / tracked conversations handled by the bot \u00d7 100",
-    "ESCALATION_INFO": "Conversations with accepted escalation / tracked conversations handled by the bot \u00d7 100",
+    "RESOLUTION_INFO": "Closed conversations with all enquiries solved / tracked conversations handled by the bot × 100",
+    "ESCALATION_INFO": "Conversations with accepted escalation / tracked conversations handled by the bot × 100",
     "RESOLUTION_COUNT": "Resolution Count",
     "ESCALATION_COUNT": "Escalation Count",
     "CATEGORIES": "Enquiry categories",
@@ -58,7 +58,7 @@
     "UNCLASSIFIED": "Unclassified",
     "SOLVED_STATUS": "Solved & closed",
     "UNRESOLVED_STATUS": "Not resolved",
-    "ROWS": "{start}\u2013{end} of {total} conversations",
+    "ROWS": "{start}–{end} of {total} conversations",
     "EXPORT_ERROR": "The report could not be downloaded. Please try again.",
     "RETRY": "Try again",
     "METRICS_ERROR": "Conversation and response totals are unavailable.",
@@ -69,7 +69,7 @@
     "TOO_LARGE": "Too much data. Select a smaller date range.",
     "DATE_ERROR": "Select a valid date range",
     "LONG_TERM_COST_NOTE": "Usage is retained separately from diagnostic logs. Model and Guardrails estimates use public rates effective at the time of each call. Missing usage or rates are excluded from the subtotal. Other AWS charges, discounts and taxes are not included. Dates use your browser timezone.",
-    "PARTIAL_COST": "Partial estimate \u2014 some recorded calls could not be priced.",
+    "PARTIAL_COST": "Partial estimate — some recorded calls could not be priced.",
     "PRICE_SYNC": "Prices last synced:",
     "GUARDRAIL_COST": "Estimated Guardrails cost",
     "COMBINED_COST": "Estimated known-cost subtotal",
@@ -78,6 +78,71 @@
     "COST_HEADING": "Estimated cost",
     "KNOWN_SUBTOTAL": "Known cost subtotal",
     "MISSING_USAGE": "Calls with missing token usage:",
-    "MAINTAINED_PRICES": "Provider prices are maintained as dated versions. Calls without a verified price or billing calendar remain unpriced."
+    "MAINTAINED_PRICES": "Provider prices are maintained as dated versions. Calls without a verified price or billing calendar remain unpriced.",
+    "SAFETY": {
+      "TITLE": "Safety protection",
+      "DESCRIPTION": "Input and output checks are counted separately. Only enforced checks affect replies.",
+      "ERROR": "Safety data could not be loaded.",
+      "LOADING": "Loading safety data…",
+      "RETRY": "Retry",
+      "CHECKS": "Enforced checks",
+      "BLOCKED": "Blocked checks",
+      "UNKNOWN": "Incomplete checks",
+      "SHADOW": "AWS vs custom shadow",
+      "COMPARISON": "Comparable: {comparable} · Agree: {agree} · Disagree: {disagree} · Unavailable: {unavailable}",
+      "COMPARISON_NOTE": "Disagreement requires review; it does not establish a false positive or missed attack.",
+      "RESULT": "Result",
+      "ALL": "All results",
+      "TIME": "Time",
+      "CONVERSATION": "Conversation",
+      "PROVIDER": "Protection",
+      "STAGE": "Stage",
+      "REASON": "Reason",
+      "ENFORCED": "Enforced",
+      "SHADOW_LABEL": "Shadow",
+      "EMPTY": "No checks in this selection.",
+      "PREVIOUS": "Previous",
+      "NEXT": "Next",
+      "STAGES": {
+        "input": "Input",
+        "output": "Output"
+      },
+      "STATUS": {
+        "allow": "Allowed",
+        "block": "Blocked",
+        "indeterminate": "Indeterminate",
+        "error": "Error",
+        "timeout": "Timed out",
+        "unsupported": "Unsupported",
+        "skipped": "Skipped",
+        "unavailable": "Unavailable",
+        "masked": "Masked"
+      },
+      "CURRENT_MODE": "Current setting · {name}: {mode}",
+      "MODES": {
+        "default": "Environment default",
+        "aws": "AWS Guardrails",
+        "aws_shadow": "AWS + custom shadow",
+        "custom": "Custom guard"
+      },
+      "USAGE": "Custom reviewer usage (separate from Bot): {input} input tokens including cache · {output} output tokens · {missing} checks with missing usage. Reviewer costs are not included in cost estimates.",
+      "WOULD_BLOCK": "Shadow would block",
+      "PROVIDERS": {
+        "aws": "AWS",
+        "custom": "Custom Guard"
+      },
+      "REASONS": {
+        "none": "No violation",
+        "violence": "Violence",
+        "sexual": "Sexual content",
+        "hate": "Hate",
+        "harassment": "Harassment",
+        "misconduct": "Misconduct",
+        "prompt_attack": "Prompt attack",
+        "protected_information": "Protected information",
+        "business_scope": "Outside support scope",
+        "uncertain": "Not determined"
+      }
+    }
   }
 }

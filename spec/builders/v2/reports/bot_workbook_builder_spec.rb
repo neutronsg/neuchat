@@ -13,6 +13,7 @@ RSpec.describe V2::Reports::BotWorkbookBuilder do
   end
 
   before do
+    allow(BotSafetyClient).to receive(:fetch).and_return({ 'groups' => [], 'events' => [], 'comparison' => {} })
     expected = params.slice(:from, :to).merge(timezone: params[:timezone] || 'Asia/Singapore')
     allow(BotUsageReportClient).to receive(:fetch).with(account.id, expected).and_return(usage)
   end
@@ -30,7 +31,7 @@ RSpec.describe V2::Reports::BotWorkbookBuilder do
     end
   end
 
-  it 'exports all seven sheets, all tracked conversations and every escalation, ignoring screen pagination/reason' do
+  it 'exports all ten sheets, all tracked conversations and every escalation, ignoring screen pagination/reason' do
     26.times do |index|
       conversation = create(:conversation, account: account)
       BotConversationOutcome.create!(account: account, conversation: conversation, created_at: from,
@@ -45,12 +46,28 @@ RSpec.describe V2::Reports::BotWorkbookBuilder do
     BotConversationOutcome.create!(account: account, conversation: create(:conversation, account: account), created_at: from + 1.day)
     files = workbook
     expect(files['xl/workbook.xml'].remove_namespaces!.xpath('//sheet').map { |s| s['name'] }).to eq(
-      ['Summary', 'Daily metrics', 'Enquiry categories', 'Token usage', 'Cost estimates', 'Conversations', 'Escalations']
+      ['Summary', 'Daily metrics', 'Enquiry categories', 'Token usage', 'Cost estimates', 'Conversations', 'Escalations', 'Safety summary', 'Safety events', 'Shadow comparison']
     )
     expect(rows(files['xl/worksheets/sheet6.xml']).size).to eq(27)
     expect(rows(files['xl/worksheets/sheet7.xml']).size).to eq(53)
     expect(rows(files['xl/worksheets/sheet2.xml'])[1]).to eq(%w[2026-11-02 26 0 26])
     expect(files.values.sum { |xml| xml.remove_namespaces!.xpath('//f').size }).to eq(0)
+  end
+
+  it 'shows missing safety as unavailable, without removing other sheets' do
+    allow(BotSafetyClient).to receive(:fetch).and_raise(IOError)
+    files = workbook
+    [8, 9, 10].each { |index| expect(rows(files["xl/worksheets/sheet#{index}.xml"])[1]).to eq(['Unavailable']) }
+  end
+
+  it 'formats safety timestamps using the same browser timezone and preserves missing tokens' do
+    params[:timezone] = 'America/New_York'
+    allow(BotUsageReportClient).to receive(:fetch).with(account.id, params.slice(:from, :to, :timezone)).and_return(usage)
+    allow(BotSafetyClient).to receive(:fetch).and_return({ 'groups' => [], 'comparison' => {},
+      'events' => [{ 'created_at' => '2026-11-01T06:30:00Z', 'input_tokens' => nil }] })
+    event = rows(workbook['xl/worksheets/sheet9.xml'])[1]
+    expect(event.first).to eq('2026-11-01T01:30:00-05:00')
+    expect(event[14]).not_to eq('0')
   end
 
   it 'preserves unavailable and zero costs separately and includes pricing metadata' do

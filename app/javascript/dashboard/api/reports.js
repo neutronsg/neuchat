@@ -93,6 +93,10 @@ class ReportsAPI extends ApiClient {
     return axios.get(`${this.url}/bot_usage`, { params });
   }
 
+  getBotSafety(params) {
+    return axios.get(`${this.url}/bot_safety`, { params });
+  }
+
   getBotOutcomesCSV(params) {
     return axios.get(`${this.url}/bot_outcomes_csv`, { params });
   }

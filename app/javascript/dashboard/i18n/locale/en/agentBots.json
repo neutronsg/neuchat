@@ -106,6 +106,16 @@
       "INVALID": "Enter a whole number from 10 to 1439.",
       "CONFIRMED": "Bot support detected.",
       "UNCONFIRMED": "Awaiting bot support confirmation."
+    },
+    "SAFETY": {
+      "LABEL": "Safety protection",
+      "DESCRIPTION": "Changes apply to the next message. Shadow mode records custom checks without changing replies.",
+      "UNAVAILABLE": "Safety settings are unavailable. Current protection is unchanged.",
+      "MODES": {
+        "aws": "AWS Guardrails",
+        "aws_shadow": "AWS + custom shadow",
+        "custom": "Custom guard"
+      }
     }
   }
 }

@@ -1,4 +1,7 @@
 class AgentBotPolicy < ApplicationPolicy
+  def safety_options?
+    @account_user.administrator?
+  end
   def index?
     @account_user.administrator? || @account_user.agent?
   end
