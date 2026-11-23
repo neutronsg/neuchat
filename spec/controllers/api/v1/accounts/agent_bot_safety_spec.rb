@@ -62,4 +62,16 @@ RSpec.describe 'Agent Bot safety settings', type: :request do
     expect(bot.reload.safety_mode).to eq('aws_custom')
     expect(bot.bot_safety_changes.last.mode).to eq('aws_custom')
   end
+
+  it 'saves hybrid shadow atomically and rejects stale toggles' do
+    allow(BotSafetyClient).to receive(:fetch).and_return({ 'modes' => %w[hybrid hybrid_shadow dual custom aws] })
+    patch path, params: { safety_mode: 'hybrid', safety_version: 0 }, headers: admin.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:success)
+    patch path, params: { safety_mode: 'hybrid_shadow', safety_version: 1 }, headers: admin.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:success)
+    expect(bot.reload).to have_attributes(safety_mode: 'hybrid_shadow', safety_version: 2)
+    patch path, params: { safety_mode: 'hybrid', safety_version: 1 }, headers: admin.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:conflict)
+    expect(bot.reload.safety_mode).to eq('hybrid_shadow')
+  end
 end

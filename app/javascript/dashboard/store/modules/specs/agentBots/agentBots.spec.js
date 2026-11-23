@@ -41,6 +41,8 @@ describe('#actions', () => {
       expect(axios.post.mock.calls.length).toBe(1);
       const formDataArg = axios.post.mock.calls[0][1];
       expect(formDataArg instanceof FormData).toBe(true);
+      expect(formDataArg.has('safety_mode')).toBe(false);
+      expect(formDataArg.has('safety_version')).toBe(false);
     });
 
     it('sends correct actions if API is error', async () => {
@@ -54,6 +56,27 @@ describe('#actions', () => {
   });
 
   describe('#update', () => {
+    it.each(['aws', 'aws_shadow', 'aws_custom', 'custom'])(
+      'includes the selected %s safety mode and optimistic version in the actual multipart request',
+      async safetyMode => {
+        axios.patch.mockResolvedValue({ data: agentBotRecords[0] });
+        await actions.update(
+          { commit },
+          {
+            id: 1,
+            data: {
+              ...agentBotData,
+              safety_mode: safetyMode,
+              safety_version: 0,
+            },
+          }
+        );
+        const form = axios.patch.mock.calls[0][1];
+        expect(form.get('safety_mode')).toBe(safetyMode);
+        expect(form.get('safety_version')).toBe('0');
+      }
+    );
+
     it('sends correct actions if API is success', async () => {
       axios.patch.mockResolvedValue({ data: agentBotRecords[0] });
       await actions.update(
@@ -73,6 +96,8 @@ describe('#actions', () => {
       expect(axios.patch.mock.calls.length).toBe(1);
       const formDataArg = axios.patch.mock.calls[0][1];
       expect(formDataArg instanceof FormData).toBe(true);
+      expect(formDataArg.has('safety_mode')).toBe(false);
+      expect(formDataArg.has('safety_version')).toBe(false);
     });
 
     it('sends correct actions if API is error', async () => {

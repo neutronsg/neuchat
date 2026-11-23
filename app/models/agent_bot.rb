@@ -29,7 +29,7 @@ class AgentBot < ApplicationRecord
   enum bot_type: { webhook: 0 }
 
   validates :outgoing_url, length: { maximum: Limits::URL_LENGTH_LIMIT }
-  validates :safety_mode, inclusion: { in: %w[aws aws_shadow aws_custom custom] }, allow_nil: true
+  validates :safety_mode, inclusion: { in: %w[aws aws_shadow aws_custom custom hybrid hybrid_shadow dual] }, allow_nil: true
   before_save :increment_safety_version, if: :will_save_change_to_safety_mode?
   after_update :cancel_idle_waits_when_disabled
   after_save :record_safety_change, if: :saved_change_to_safety_mode?

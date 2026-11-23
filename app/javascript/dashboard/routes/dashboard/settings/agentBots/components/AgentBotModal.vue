@@ -41,6 +41,20 @@ const uiFlags = useMapGetter('agentBots/getUIFlags');
 const safetyOptions = ref(null);
 const safetyUnavailable = ref(false);
 const safetyMode = ref('');
+// The independent shadow switch maps to a versioned execution profile atomically.
+const protectionMode = computed({
+  get: () =>
+    safetyMode.value === 'hybrid_shadow' ? 'hybrid' : safetyMode.value,
+  set: value => {
+    safetyMode.value = value;
+  },
+});
+const basicShadow = computed({
+  get: () => safetyMode.value === 'hybrid_shadow',
+  set: enabled => {
+    safetyMode.value = enabled ? 'hybrid_shadow' : 'hybrid';
+  },
+});
 const initialSafetyMode = ref('');
 
 const formState = reactive({
@@ -368,12 +382,19 @@ defineExpose({ dialogRef });
           }}</label>
           <select
             id="bot-safety-mode"
-            v-model="safetyMode"
+            v-model="protectionMode"
             :disabled="!safetyOptions"
             class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm"
           >
             <option
-              v-for="mode in ['aws', 'aws_shadow', 'aws_custom', 'custom']"
+              v-for="mode in [
+                'hybrid',
+                'custom',
+                'dual',
+                'aws',
+                'aws_shadow',
+                'aws_custom',
+              ]"
               :key="mode"
               :value="mode"
               :disabled="!safetyOptions?.modes?.includes(mode)"
@@ -381,6 +402,19 @@ defineExpose({ dialogRef });
               {{ $t(`AGENT_BOTS.SAFETY.MODES.${mode}`) }}
             </option>
           </select>
+          <div
+            v-if="protectionMode === 'hybrid'"
+            class="flex items-center justify-between gap-2"
+          >
+            <label for="bot-basic-shadow">{{
+              $t('AGENT_BOTS.SAFETY.BASIC_SHADOW')
+            }}</label>
+            <Switch
+              id="bot-basic-shadow"
+              v-model="basicShadow"
+              :disabled="!safetyOptions?.modes?.includes('hybrid_shadow')"
+            />
+          </div>
           <p class="text-sm text-n-slate-11">
             {{
               $t(

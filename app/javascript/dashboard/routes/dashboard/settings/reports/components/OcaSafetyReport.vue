@@ -82,11 +82,28 @@ const blockRate = computed(() =>
     ? `${((blockedRequests.value / requests.value.length) * 100).toFixed(1)}%`
     : '—'
 );
-const hasShadow = computed(() =>
-  requests.value.some(r => r.comparisons.length)
-);
-const comparisonCards = computed(() =>
-  Object.entries(summary.value.comparison)
+const comparisonGroups = computed(() =>
+  ['basic', 'legacy']
+    .map(scope => {
+      const matching = requests.value.filter(
+        request =>
+          request.comparisonScope === scope && request.comparisons.length
+      );
+      const counts = Object.fromEntries(
+        Object.keys(summary.value.comparison).map(key => [key, 0])
+      );
+      matching.forEach(request =>
+        request.comparisons.forEach(key => {
+          counts[key] += 1;
+        })
+      );
+      return {
+        scope,
+        counts: Object.entries(counts),
+        visible: matching.length > 0,
+      };
+    })
+    .filter(group => group.visible)
 );
 const filtered = computed(() =>
   requests.value.filter(r => {
@@ -216,6 +233,28 @@ watch(status, () => {
           <dd class="text-2xl font-semibold">{{ issueRequests }}</dd>
         </div>
       </dl>
+      <dl class="mb-4 grid gap-4 sm:grid-cols-3">
+        <div
+          v-for="dimension in ['basic', 'business', 'legacy']"
+          :key="dimension"
+        >
+          <dt class="text-sm text-n-slate-11">
+            {{ $t(`OCA_REPORT.SAFETY.${dimension.toUpperCase()}`) }}
+          </dt>
+          <dd class="text-xl font-semibold">
+            {{
+              requests.filter(request =>
+                dimension === 'legacy'
+                  ? request.legacyBlocked
+                  : request[dimension] === 'block'
+              ).length
+            }}
+          </dd>
+        </div>
+      </dl>
+      <p class="mb-6 text-xs text-n-slate-11">
+        {{ $t('OCA_REPORT.SAFETY.DIMENSIONS_NOTE') }}
+      </p>
       <h4 v-if="requests.length" class="font-medium">
         {{ $t('OCA_REPORT.SAFETY.TREND_TITLE') }}
       </h4>
@@ -244,13 +283,25 @@ watch(status, () => {
           </li>
         </ul>
       </div>
-      <div v-if="hasShadow" class="mb-6 rounded-lg bg-n-alpha-2 p-4">
-        <h4 class="font-medium">{{ $t('OCA_REPORT.SAFETY.SHADOW') }}</h4>
+      <div
+        v-for="group in comparisonGroups"
+        :key="group.scope"
+        class="mb-6 rounded-lg bg-n-alpha-2 p-4"
+      >
+        <h4 class="font-medium">
+          {{
+            $t(
+              group.scope === 'basic'
+                ? 'OCA_REPORT.SAFETY.SHADOW_BASIC'
+                : 'OCA_REPORT.SAFETY.SHADOW_LEGACY'
+            )
+          }}
+        </h4>
         <p class="mt-1 text-xs text-n-slate-11">
           {{ $t('OCA_REPORT.SAFETY.COMPARISON_NOTE') }}
         </p>
         <dl class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
-          <div v-for="[key, count] in comparisonCards" :key="key">
+          <div v-for="[key, count] in group.counts" :key="key">
             <dt class="text-xs text-n-slate-11">
               {{ $t(`OCA_REPORT.SAFETY.COMPARISON_RESULTS.${key}`) }}
             </dt>
@@ -299,8 +350,8 @@ watch(status, () => {
                   'TIME',
                   'CONVERSATION',
                   'MODE',
-                  'AWS',
-                  'CUSTOM',
+                  'BASIC',
+                  'BUSINESS',
                   'RESULT',
                   'CHECK_DETAILS',
                 ]"
@@ -340,10 +391,10 @@ watch(status, () => {
                   </div>
                 </td>
                 <td class="px-2 py-3">
-                  {{ $t(`OCA_REPORT.SAFETY.STATUS.${request.aws}`) }}
+                  {{ $t(`OCA_REPORT.SAFETY.STATUS.${request.basic}`) }}
                 </td>
                 <td class="px-2 py-3">
-                  {{ $t(`OCA_REPORT.SAFETY.STATUS.${request.custom}`)
+                  {{ $t(`OCA_REPORT.SAFETY.STATUS.${request.business}`)
                   }}<span
                     v-if="
                       request.checks.some(
@@ -431,6 +482,29 @@ watch(status, () => {
                       <span>{{
                         $t(`OCA_REPORT.SAFETY.REASONS.${check.reason}`)
                       }}</span>
+                      <span
+                        v-for="dimension in ['basic', 'business'].filter(
+                          key => check[`${key}_status`]
+                        )"
+                        :key="dimension"
+                      >
+                        {{
+                          $t(`OCA_REPORT.SAFETY.${dimension.toUpperCase()}`)
+                        }}:
+                        {{
+                          $t(
+                            `OCA_REPORT.SAFETY.STATUS.${check[`${dimension}_status`]}`
+                          )
+                        }}
+                        ({{
+                          $t(
+                            dimension === 'basic' &&
+                              check.mode === 'hybrid_shadow'
+                              ? 'OCA_REPORT.SAFETY.SHADOW_LABEL'
+                              : 'OCA_REPORT.SAFETY.ENFORCED'
+                          )
+                        }})
+                      </span>
                       <span class="basis-full break-all text-n-slate-11">{{
                         $t('OCA_REPORT.SAFETY.ATTEMPT', {
                           id: check.attempt_id,

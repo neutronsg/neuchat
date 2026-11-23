@@ -197,3 +197,65 @@ describe('Request-level safety reporting', () => {
     });
   });
 });
+
+describe('Coordinated responsibilities', () => {
+  it('compares only basic results with equal evidence, never business blocks against AWS', () => {
+    const checks = [
+      event({ mode: 'hybrid_shadow', scope: 'basic', evidence_hash: 'same' }),
+      event({
+        mode: 'hybrid_shadow',
+        scope: 'split',
+        provider: 'custom',
+        status: 'block',
+        reason: 'business_scope',
+        basic_status: 'allow',
+        business_status: 'block',
+        evidence_hash: 'same',
+      }),
+    ];
+    const summary = summarizeSafety(checks);
+    expect(summary.requests).toHaveLength(1);
+    expect(summary.requests[0]).toMatchObject({
+      blocked: true,
+      basic: 'allow',
+      business: 'block',
+      comparisonScope: 'basic',
+    });
+    expect(summary.comparison.both_allow).toBe(1);
+    checks[1].evidence_hash = 'different';
+    expect(summarizeSafety(checks).comparison.unavailable).toBe(1);
+  });
+  it('a shadow basic block does not count as an enforced block', () => {
+    const summary = summarizeSafety([
+      event({ mode: 'hybrid_shadow', scope: 'basic', evidence_hash: 'same' }),
+      event({
+        mode: 'hybrid_shadow',
+        scope: 'split',
+        provider: 'custom',
+        basic_status: 'block',
+        basic_reason: 'violence',
+        business_status: 'allow',
+        evidence_hash: 'same',
+      }),
+    ]);
+    expect(summary.requests[0]).toMatchObject({
+      blocked: false,
+      basic: 'allow',
+      business: 'allow',
+    });
+    expect(summary.comparison.custom_only).toBe(1);
+  });
+  it('business input rejection makes AWS unnecessary and legacy stays unclassified', () => {
+    const summary = summarizeSafety([
+      event({
+        mode: 'hybrid',
+        scope: 'split',
+        provider: 'custom',
+        status: 'block',
+        business_status: 'block',
+      }),
+    ]);
+    expect(summary.requests[0].basic).toBe('not_required');
+    expect(summarizeSafety([event()]).requests[0].basic).toBe('legacy');
+  });
+});

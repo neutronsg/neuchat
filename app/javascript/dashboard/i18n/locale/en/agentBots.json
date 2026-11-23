@@ -109,14 +109,18 @@
     },
     "SAFETY": {
       "LABEL": "Safety protection",
-      "DESCRIPTION": "Changes apply to the next message. In dual protection, either guard can block a reply. In shadow mode, only AWS enforces; custom checks are recorded.",
+      "DESCRIPTION": "Coordinated: AWS handles basic safety; custom guard enforces business scope. Shadow decisions do not block replies.",
       "UNAVAILABLE": "Safety settings are unavailable. Current protection is unchanged.",
       "MODES": {
-        "aws": "AWS Guardrails",
-        "aws_shadow": "AWS + custom shadow",
+        "aws": "AWS Guardrails (legacy)",
+        "aws_shadow": "AWS + custom shadow (legacy)",
         "custom": "Custom guard",
-        "aws_custom": "AWS + custom (both enforce)"
-      }
+        "aws_custom": "AWS + custom (legacy dual)",
+        "hybrid": "Coordinated protection (recommended)",
+        "hybrid_shadow": "Coordinated protection + basic shadow",
+        "dual": "Dual protection"
+      },
+      "BASIC_SHADOW": "Compare custom basic safety in shadow mode"
     }
   }
 }

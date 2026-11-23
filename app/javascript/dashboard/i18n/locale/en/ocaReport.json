@@ -118,15 +118,19 @@
         "unavailable": "Unavailable",
         "masked": "Masked",
         "not_recorded": "Not recorded",
-        "not_required": "Not required after block"
+        "not_required": "Not required after block",
+        "legacy": "Legacy combined"
       },
       "CURRENT_MODE": "Current setting · {name}: {mode}",
       "MODES": {
         "default": "Environment default",
-        "aws": "AWS Guardrails",
-        "aws_shadow": "AWS + custom shadow",
+        "aws": "AWS Guardrails (legacy)",
+        "aws_shadow": "AWS + custom shadow (legacy)",
         "custom": "Custom guard",
-        "aws_custom": "AWS + custom (both enforce)"
+        "aws_custom": "AWS + custom (legacy dual)",
+        "hybrid": "Coordinated protection (recommended)",
+        "hybrid_shadow": "Coordinated protection + basic shadow",
+        "dual": "Dual protection"
       },
       "USAGE": "Custom reviewer usage (separate from Bot): {input} input tokens including cache · {output} output tokens · {missing} checks with missing usage. Reviewer costs are not included in cost estimates.",
       "WOULD_BLOCK": "Shadow would block",
@@ -188,7 +192,13 @@
       "SHADOW_ONLY": "Shadow recommendation",
       "COUNTING_NOTE": "Counts cover only safety records within the selected period, not all incoming messages. Older records without a message ID are grouped by attempt. No recorded block does not prove a complete review or reply delivery. A missing or skipped review counts as an issue when it was required. Downstream reviews made unnecessary by an enforced block in the same attempt do not count as issues; they remain not comparable.",
       "SHADOW_FAILURE": "Shadow review failed",
-      "SHADOW_MISSING": "Shadow review missing"
+      "SHADOW_MISSING": "Shadow review missing",
+      "BASIC": "Basic safety",
+      "BUSINESS": "Business scope",
+      "LEGACY": "Legacy blocks",
+      "SHADOW_BASIC": "Basic safety shadow comparison",
+      "DIMENSIONS_NOTE": "Blocked requests by responsibility. Requests are counted once overall; responsibility counts can overlap. Historical combined checks remain separate.",
+      "SHADOW_LEGACY": "Legacy combined shadow comparison"
     }
   }
 }

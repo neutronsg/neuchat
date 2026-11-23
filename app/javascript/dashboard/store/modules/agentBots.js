@@ -106,6 +106,11 @@ export const actions = {
         );
       }
 
+      if (data.safety_mode !== undefined) {
+        formData.append('safety_mode', data.safety_mode);
+        formData.append('safety_version', data.safety_version);
+      }
+
       if (data.avatar) {
         formData.append('avatar', data.avatar);
       }
