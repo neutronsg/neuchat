@@ -120,7 +120,7 @@
         "not_recorded": "Not recorded",
         "not_required": "Not required after block",
         "legacy": "Legacy combined",
-        "not_enabled": "Handled by Bot"
+        "not_enabled": "Not checked by Guard"
       },
       "CURRENT_MODE": "Current setting · {name}: {mode}",
       "MODES": {
@@ -199,7 +199,8 @@
       "LEGACY": "Legacy blocks",
       "SHADOW_BASIC": "Evaluation results — Basic safety",
       "DIMENSIONS_NOTE": "Blocked requests by responsibility. Requests are counted once overall; responsibility counts can overlap. Historical combined checks remain separate.",
-      "SHADOW_LEGACY": "Historical evaluation results"
+      "SHADOW_LEGACY": "Historical evaluation results",
+      "LEGACY_COMPARISON_NOTE": "Historical results from the previous combined policies, matched by attempt and stage. These are not directly comparable to current basic-safety evaluation results."
     }
   }
 }

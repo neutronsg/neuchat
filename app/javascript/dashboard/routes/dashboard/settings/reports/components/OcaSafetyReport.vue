@@ -298,7 +298,13 @@ watch(status, () => {
           }}
         </h4>
         <p class="mt-1 text-xs text-n-slate-11">
-          {{ $t('OCA_REPORT.SAFETY.COMPARISON_NOTE') }}
+          {{
+            $t(
+              group.scope === 'basic'
+                ? 'OCA_REPORT.SAFETY.COMPARISON_NOTE'
+                : 'OCA_REPORT.SAFETY.LEGACY_COMPARISON_NOTE'
+            )
+          }}
         </p>
         <dl class="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
           <div v-for="[key, count] in group.counts" :key="key">

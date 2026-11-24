@@ -381,24 +381,32 @@ defineExpose({ dialogRef });
           @blur="v$.botUrl.$touch()"
         />
         <div v-if="selectedBot.safety_configurable" class="flex flex-col gap-2">
-          <label for="bot-safety-mode">{{
-            $t('AGENT_BOTS.SAFETY.LABEL')
-          }}</label>
-          <select
-            id="bot-safety-mode"
-            v-model="protectionMode"
-            :disabled="!safetyOptions"
-            class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm"
+          <label
+            for="bot-safety-mode"
+            class="text-sm font-medium text-n-slate-12"
+            >{{ $t('AGENT_BOTS.SAFETY.LABEL') }}</label
           >
-            <option
-              v-for="mode in ['hybrid', 'aws', 'custom']"
-              :key="mode"
-              :value="mode"
-              :disabled="!safetyOptions?.modes?.includes(mode)"
+          <div class="relative">
+            <select
+              id="bot-safety-mode"
+              v-model="protectionMode"
+              :disabled="!safetyOptions"
+              class="reset-base block w-full h-10 !mb-0 !bg-none !pl-3 !pr-10 !py-2 text-sm text-n-slate-12 rounded-lg border-0 outline outline-1 outline-offset-[-1px] outline-n-weak bg-n-alpha-black2 hover:outline-n-slate-6 focus:outline-n-brand disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {{ $t(`AGENT_BOTS.SAFETY.MODES.${mode}`) }}
-            </option>
-          </select>
+              <option
+                v-for="mode in ['hybrid', 'aws', 'custom']"
+                :key="mode"
+                :value="mode"
+                :disabled="!safetyOptions?.modes?.includes(mode)"
+              >
+                {{ $t(`AGENT_BOTS.SAFETY.MODES.${mode}`) }}
+              </option>
+            </select>
+            <span
+              aria-hidden="true"
+              class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 i-lucide-chevron-down text-n-slate-11"
+            />
+          </div>
           <p class="text-sm text-n-slate-11">
             {{
               $t(
