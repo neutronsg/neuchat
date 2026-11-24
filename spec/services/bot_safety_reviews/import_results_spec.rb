@@ -33,6 +33,7 @@ RSpec.describe BotSafetyReviews::ImportResults do
     run = described_class.call(account, user, signed(data))
     expect(run.id).not_to eq(source.id)
     expect(run.calls_reserved).to eq(1)
+    expect(run.settings['dry_run']).to be(false)
     expect(run.resumable?).to be(false)
     expect(item.reload.result).to eq('outcome' => 'export_only')
     expect(described_class.call(account, user, signed(data)).id).to eq(run.id)
@@ -60,5 +61,6 @@ RSpec.describe BotSafetyReviews::ImportResults do
     expect(run.status).to eq('incomplete')
     expect(run.resumable?).to be(false)
     expect(run.calls_reserved).to eq(1)
+    expect(run.settings['dry_run']).to be(false)
   end
 end

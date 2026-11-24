@@ -110,7 +110,7 @@ class BotSafetyReviews::ImportResults
     BotSafetyReviewRun.create!(account: @account, user: @user, idempotency_key: execution_key,
                                status: incomplete ? 'incomplete' : 'completed', cutoff_at: source.cutoff_at, high_water_id: source.high_water_id,
                                calls_reserved: @data['calls_attempted'],
-                               settings: source.settings.merge('source_run_id' => source.id, 'external_review' => true,
+                               settings: source.settings.merge('source_run_id' => source.id, 'external_review' => true, 'dry_run' => false,
                                                                'profile' => @data['reviewer'], 'max_calls' => @data['max_calls']),
                                summary: { result_digest: @digest, execution_id: @data['execution_id'], selected: @data['records'].length,
                                           outside_budget: 0 })
