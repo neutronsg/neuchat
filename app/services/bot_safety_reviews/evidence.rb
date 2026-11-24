@@ -5,19 +5,20 @@ class BotSafetyReviews::Evidence
   VALID_DECISIONS = %w[allow block masked].freeze
 
   def self.call(run, message)
-    transcript = transcript_for(run, message)
     audit = BotSafetyReviews::Client.call(run.account_id, '/internal/safety/evidence',
                                           { conversation: message.conversation.display_id, message: message.id }, post: false)
     audit = at_cutoff(audit, run.cutoff_at)
+    transcript = transcript_for(run, message, audit)
     manifest = { messages: transcript.map { |m| { id: m[:id], hash: Digest::SHA256.hexdigest(m.to_json) } },
                  audit_hash: Digest::SHA256.hexdigest(audit.to_json) }
     { target_message_id: message.id, transcript: transcript, audit: audit, manifest: manifest }
   end
 
-  def self.transcript_for(run, message)
+  def self.transcript_for(run, message, audit = {})
+    reply_ids = audit.fetch('records', []).select { |r| r['kind'] == 'reply.result' }.filter_map { |r| r.dig('payload', 'messageId') }
     messages = run.account.messages.where(conversation_id: message.conversation_id, private: false)
                   .where('id <= ? AND created_at <= ?', run.high_water_id, run.cutoff_at)
-                  .where('id <= ? OR content_attributes ->> ? = ?', message.id, 'bot_trigger_message_id', message.id.to_s)
+                  .where('id <= ? OR content_attributes ->> ? = ? OR id IN (?)', message.id, 'bot_trigger_message_id', message.id.to_s, reply_ids)
                   .order(:id).limit(501).includes(:attachments).to_a
     raise ArgumentError, 'Conversation exceeds evidence limit' if messages.length > 500
 
@@ -53,6 +54,7 @@ class BotSafetyReviews::Evidence
     return false unless available_records?(audit, records)
     return false unless exact_records?(records)
     return false unless references_valid?(records, evidence.fetch(:transcript))
+    return false unless replies_valid?(records, evidence.fetch(:transcript))
 
     records.group_by { |r| r['request_id'] }.values.all? { |request| request_complete?(request, audit.fetch('events')) }
   end
@@ -102,6 +104,15 @@ class BotSafetyReviews::Evidence
 
   def self.input_blocked?(events)
     events.any? { |e| e['enforced'] && e['status'] == 'block' && e['stage'] == 'input' }
+  end
+
+  def self.replies_valid?(records, transcript)
+    sources = transcript.index_by { |m| m[:id] }
+    records.select { |r| r['kind'] == 'reply.result' }.all? do |record|
+      reply = record.fetch('payload')
+      source = sources[reply['messageId']]
+      source && Digest::SHA256.hexdigest(source[:content].to_s) == reply['contentHash']
+    end
   end
 
   def self.references_valid?(records, transcript)

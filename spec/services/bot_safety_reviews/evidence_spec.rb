@@ -55,4 +55,29 @@ RSpec.describe BotSafetyReviews::Evidence do
     expect(described_class.turn_valid?(turn.merge('hash' => 'invalid'), sources)).to be(false)
     expect(described_class.turn_valid?(turn.merge('recipe' => 'unknown'), sources)).to be(false)
   end
+
+  it 'requires the canonical outbound reply body, not only a delivery receipt or model candidate' do
+    records.last['sequence'] = 3
+    records[2...2] = [{ 'kind' => 'reply.result', 'sequence' => 2, 'request_id' => 'r',
+                        'payload' => { 'messageId' => 44, 'contentHash' => Digest::SHA256.hexdigest('Actual reply') } }]
+    expect(described_class.complete?(evidence)).to be(false)
+    evidence[:transcript] = [{ id: 44, content: 'Changed reply' }]
+    expect(described_class.complete?(evidence)).to be(false)
+    evidence[:transcript][0][:content] = 'Actual reply'
+    expect(described_class.complete?(evidence)).to be(true)
+  end
+
+  it 'loads audited replies without trigger attributes while excluding unrelated later messages' do
+    account = create(:account)
+    inbox = create(:inbox, account: account)
+    conversation = create(:conversation, account: account, inbox: inbox)
+    incoming = create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming)
+    reply = create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :outgoing, content_attributes: {})
+    later = create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming)
+    run = BotSafetyReviewRun.create!(account: account, idempotency_key: 'reply-association', cutoff_at: Time.current, high_water_id: later.id)
+    audit = { 'records' => [{ 'kind' => 'reply.result', 'payload' => { 'messageId' => reply.id } }] }
+    expect(described_class.transcript_for(run, incoming, audit).pluck(:id)).to eq([incoming.id, reply.id])
+    run.update!(high_water_id: incoming.id)
+    expect(described_class.transcript_for(run, incoming, audit).pluck(:id)).to eq([incoming.id])
+  end
 end
