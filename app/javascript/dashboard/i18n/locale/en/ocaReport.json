@@ -204,7 +204,7 @@
     },
     "REVIEW": {
       "TITLE": "Safety review batches",
-      "DESCRIPTION": "Review historical requests using a configured AI reviewer, or export evidence for manual review. AI findings require human confirmation. Missing evidence is never counted as a pass.",
+      "DESCRIPTION": "Export evidence for review in GitHub, then import the signed results. AI findings need human confirmation. Missing evidence is not a pass.",
       "REFRESH": "Refresh",
       "FROM": "From date",
       "TO": "To date",
@@ -219,7 +219,7 @@
       "EXPORT_ONLY": "Export only — no AI calls",
       "REQUESTS": "Maximum requests scanned",
       "CALLS": "Maximum AI calls",
-      "CREATE": "Create review batch",
+      "CREATE": "Create export batch",
       "ERROR": "Could not complete this operation. Check access and settings, then refresh before retrying.",
       "BATCH": "Batch",
       "STATUS": "Status",
@@ -263,7 +263,8 @@
       },
       "ITEM_ERROR": "The review could not be completed. Inspect the exported evidence before starting a new review.",
       "FINDINGS_ONLY": "Only possible false positives and false negatives",
-      "EXPORT_FAILED": "Export failed. Try a smaller batch."
+      "EXPORT_FAILED": "Export failed. Try a smaller batch.",
+      "IMPORT": "Import signed AI review results"
     }
   }
 }

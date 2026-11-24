@@ -22,7 +22,7 @@ class BotSafetyReviewRun < ApplicationRecord
   end
 
   def resumable?
-    status != 'completed' && !lease_until&.future? && !export_lease_until&.future?
+    !settings['external_review'] && status != 'completed' && !lease_until&.future? && !export_lease_until&.future?
   end
 
   validates :idempotency_key, presence: true, uniqueness: { scope: :account_id }

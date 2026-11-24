@@ -40,11 +40,10 @@ RSpec.describe BotSafetyReviews do
     allow(BotSafetyReviews::Client).to receive(:call).with(account.id, '/internal/safety/evidence', args, post: false).and_return(audit)
   end
 
-  it 'reviews once and exports the same canonical evidence with mocked model calls' do
-    result = { 'result' => { 'verdict' => 'no_issue', 'reason' => 'Mock reviewer result', 'messageIds' => [message.id] } }
-    expect(BotSafetyReviews::Client).to receive(:call).with(account.id, '/internal/safety/review', anything, post: true).once.and_return(result)
+  it 'exports canonical evidence without ever calling the backend model' do
+    expect(BotSafetyReviews::Client).not_to receive(:call).with(account.id, '/internal/safety/review', anything, post: true)
     BotSafetyReviews::RunJob.perform_now(run.id)
-    expect(run.reload).to have_attributes(status: 'completed', calls_reserved: 1)
+    expect(run.reload).to have_attributes(status: 'completed', calls_reserved: 0)
     BotSafetyReviews::RunJob.perform_now(run.id)
     BotSafetyReviews::ExportJob.perform_now(run.id)
     expect(run.reload.export_status).to eq('ready')
@@ -52,7 +51,7 @@ RSpec.describe BotSafetyReviews do
       data = JSON.parse(zip.read('records.jsonl').lines.first)
       expect(data.dig('evidence', 'transcript').pluck('content')).to include(message.content)
       expect(data.dig('evidence', 'audit', 'records').length).to eq(4)
-      expect(data.dig('result', 'result', 'verdict')).to eq('no_issue')
+      expect(data.dig('result', 'outcome')).to eq('export_only')
     end
   end
 end

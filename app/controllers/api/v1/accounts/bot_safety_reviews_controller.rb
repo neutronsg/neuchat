@@ -8,9 +8,17 @@ class Api::V1::Accounts::BotSafetyReviewsController < Api::V1::Accounts::BaseCon
   end
 
   def profiles
-    render json: BotSafetyReviews::Client.call(Current.account.id, '/internal/safety/review_profiles')
-  rescue StandardError
-    render json: { error: 'review_service_unavailable' }, status: :service_unavailable
+    render json: { profiles: [], execution: 'external' }
+  end
+
+  def import_results
+    upload = params[:file]
+    raise ArgumentError, 'Missing results file' unless upload.respond_to?(:size) && upload.size <= 5.megabytes
+
+    run = BotSafetyReviews::ImportResults.call(Current.account, current_user, upload.read)
+    render json: summary(run), status: :created
+  rescue ArgumentError, JSON::ParserError, ActiveRecord::RecordNotFound, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+    render json: { error: 'invalid_review_results' }, status: :unprocessable_entity
   end
 
   def show

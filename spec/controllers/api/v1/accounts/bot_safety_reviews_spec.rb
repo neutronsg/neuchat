@@ -19,6 +19,10 @@ RSpec.describe 'Safety review access', type: :request do
   it 'denies non-admins and cross-account access to raw exports and results' do
     get path, headers: agent.create_new_auth_token
     expect(response).to have_http_status(:unauthorized)
+    post "#{path}/import_results", headers: agent.create_new_auth_token
+    expect(response).to have_http_status(:unauthorized)
+    post "#{path}/import_results", headers: admin.create_new_auth_token
+    expect(response).to have_http_status(:unprocessable_entity)
     other = BotSafetyReviewRun.create!(account: create(:account), idempotency_key: 'other-account', cutoff_at: Time.current, high_water_id: 0)
     get "#{path}/#{other.id}", headers: admin.create_new_auth_token
     expect(response).to have_http_status(:not_found)

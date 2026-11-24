@@ -62,26 +62,7 @@ class BotSafetyReviews::ReviewItem
     unless BotSafetyReviews::Evidence.complete?(evidence)
       return update('insufficient_evidence', verdict: 'insufficient_evidence', reason: 'Audit evidence is incomplete')
     end
-    return update('completed', outcome: 'export_only') if @run.settings['dry_run'] || @run.settings['profile'].blank?
 
-    profile = @run.settings.fetch('profile')
-    return update('insufficient_evidence', error: 'evidence_too_large') if evidence.to_json.bytesize > profile.fetch('maxInputBytes')
-    return update('budget_exhausted', {}) unless reserve
-
-    result = BotSafetyReviews::Client.call(@run.account_id, '/internal/safety/review', {
-                                             profile: profile.fetch('name'), profileVersion: profile.fetch('version'),
-                                             evidence: evidence, messageIds: evidence[:transcript].pluck(:id)
-                                           }, post: true)
-    update('completed', result)
-  end
-
-  def reserve
-    @run.with_review_lease(@owner) do
-      next false if @run.calls_reserved >= @run.settings.fetch('max_calls')
-
-      @run.update!(calls_reserved: @run.calls_reserved + 1)
-      @item.update!(status: 'running')
-      true
-    end
+    update('completed', outcome: 'export_only')
   end
 end

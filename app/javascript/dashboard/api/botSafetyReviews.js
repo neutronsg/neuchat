@@ -5,6 +5,12 @@ class BotSafetyReviewsAPI extends ApiClient {
     super('bot_safety_reviews', { accountScoped: true });
   }
 
+  importResults(file) {
+    const data = new FormData();
+    data.append('file', file);
+    return axios.post(`${this.url}/import_results`, data);
+  }
+
   profiles() {
     return axios.get(`${this.url}/profiles`);
   }

@@ -2,7 +2,7 @@ class BotSafetyReviews::Create
   def self.call(account, user, params)
     raise ArgumentError, 'Review account unavailable' unless BotSafetyClient.enabled?(account.id)
 
-    settings = settings_for(account, params)
+    settings = settings_for(params)
     key = params.fetch(:idempotency_key)
     raise ArgumentError, 'Invalid idempotency key' unless key.match?(/\A[a-zA-Z0-9_-]{8,100}\z/)
 
@@ -18,25 +18,17 @@ class BotSafetyReviews::Create
     run
   end
 
-  def self.settings_for(account, params)
+  def self.settings_for(params)
     limit = Integer(params.fetch(:max_requests, 100))
     budget = Integer(params.fetch(:max_calls, 0))
+    raise ArgumentError, 'AI review runs externally' if budget != 0 || params[:profile].present?
     raise ArgumentError, 'Invalid budget' unless limit.between?(1, 10_000) && budget.between?(0, limit)
 
     scope = params.fetch(:scope, 'all')
     raise ArgumentError, 'Invalid scope' unless %w[all blocked allowed issues].include?(scope)
 
-    date_range(params).merge(scope: scope, max_requests: limit, max_calls: budget, profile: profile_for(account, params[:profile]),
-                             dry_run: ActiveModel::Type::Boolean.new.cast(params[:dry_run]))
-  end
-
-  def self.profile_for(account, name)
-    return if name.blank?
-
-    profile = BotSafetyReviews::Client.call(account.id, '/internal/safety/review_profiles')['profiles'].find { |p| p['name'] == name }
-    raise ArgumentError, 'Unknown review profile' unless profile
-
-    profile
+    date_range(params).merge(scope: scope, max_requests: limit, max_calls: budget, profile: nil,
+                             dry_run: true)
   end
 
   def self.date_range(params)

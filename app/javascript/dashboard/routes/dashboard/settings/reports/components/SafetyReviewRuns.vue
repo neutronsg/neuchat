@@ -5,13 +5,10 @@ import API from 'dashboard/api/botSafetyReviews';
 import Button from 'dashboard/components-next/button/Button.vue';
 const { t } = useI18n();
 const runs = ref([]);
-const profiles = ref([]);
 const from = ref(new Date().toLocaleDateString('en-CA'));
 const to = ref(from.value);
-const profile = ref('');
 const scope = ref('all');
 const maxRequests = ref(100);
-const maxCalls = ref(0);
 const busy = ref(false);
 const error = ref(false);
 const selected = ref(null);
@@ -78,11 +75,11 @@ async function create() {
       from_date: from.value,
       to_date: to.value,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      profile: profile.value,
+      profile: '',
       scope: scope.value,
       max_requests: Number(maxRequests.value),
-      max_calls: Number(maxCalls.value),
-      dry_run: !profile.value,
+      max_calls: 0,
+      dry_run: true,
     };
     const serialized = JSON.stringify(settings);
     if (!key || previousSettings !== serialized) key = crypto.randomUUID();
@@ -126,6 +123,16 @@ async function download(run) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 }
+async function importResults(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  await perform(async () => {
+    if (file.size > 5 * 1024 * 1024) throw new Error('Result file too large');
+    await API.importResults(file);
+    await refresh();
+  });
+  event.target.value = '';
+}
 async function annotate() {
   await perform(async () => {
     await API.action(selected.value.id, 'annotate', {
@@ -143,7 +150,6 @@ async function annotate() {
 onMounted(() =>
   perform(async () => {
     await refresh();
-    profiles.value = (await API.profiles()).data.profiles;
   })
 );
 </script>
@@ -166,6 +172,15 @@ onMounted(() =>
     <p class="mt-2 text-sm text-n-slate-11">
       {{ t('OCA_REPORT.REVIEW.DESCRIPTION') }}
     </p>
+    <label class="mt-4 block text-sm">
+      <span class="mb-1 block">{{ t('OCA_REPORT.REVIEW.IMPORT') }}</span>
+      <input
+        type="file"
+        accept=".json,application/json"
+        :disabled="busy"
+        @change="importResults"
+      />
+    </label>
     <form
       class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3"
       @submit.prevent="create"
@@ -191,30 +206,12 @@ onMounted(() =>
         </select></label
       >
       <label
-        >{{ t('OCA_REPORT.REVIEW.PROFILE')
-        }}<select v-model="profile">
-          <option value="">{{ t('OCA_REPORT.REVIEW.EXPORT_ONLY') }}</option>
-          <option v-for="p in profiles" :key="p.name" :value="p.name">
-            {{ p.name }} — {{ p.model }}
-          </option>
-        </select></label
-      >
-      <label
         >{{ t('OCA_REPORT.REVIEW.REQUESTS')
         }}<input
           v-model="maxRequests"
           type="number"
           min="1"
           max="10000"
-          required
-      /></label>
-      <label
-        >{{ t('OCA_REPORT.REVIEW.CALLS')
-        }}<input
-          v-model="maxCalls"
-          type="number"
-          min="0"
-          :max="maxRequests"
           required
       /></label>
       <div>

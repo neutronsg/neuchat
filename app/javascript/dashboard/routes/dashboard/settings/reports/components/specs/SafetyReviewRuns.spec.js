@@ -8,6 +8,7 @@ vi.mock('dashboard/api/botSafetyReviews', () => ({
     create: vi.fn(),
     items: vi.fn(),
     action: vi.fn(),
+    importResults: vi.fn(),
   },
 }));
 const render = () =>
@@ -53,4 +54,18 @@ describe('Safety review batches', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
     expect(API.profiles).not.toHaveBeenCalled();
   });
+  it('imports signed files and refreshes without requesting runtime reviewer profiles', async () => {
+    API.importResults.mockResolvedValue({ data: { id: 2 } });
+    const wrapper = render();
+    await flushPromises();
+    const input = wrapper.find('input[type=file]');
+    const file = new File(['{}'], 'signed-results.json', { type: 'application/json' });
+    Object.defineProperty(input.element, 'files', { value: [file] });
+    await input.trigger('change');
+    await flushPromises();
+    expect(API.importResults).toHaveBeenCalledWith(file);
+    expect(API.get).toHaveBeenCalledTimes(2);
+    expect(API.profiles).not.toHaveBeenCalled();
+  });
+
 });

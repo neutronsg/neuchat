@@ -61,7 +61,8 @@ class BotSafetyReviews::ExportJob < ApplicationJob
   def write_zip(path)
     Zip::OutputStream.open(path) do |zip|
       zip.put_next_entry('manifest.json')
-      zip.write({ id: @run.id, settings: @run.settings, cutoff_at: @run.cutoff_at, summary: @run.summary, exported_at: Time.current,
+      zip.write({ id: @run.id, account_id: @run.account_id, environment: ENV.fetch('OCA_BOT_SAFETY_ENVIRONMENT', 'local'),
+                  settings: @run.settings, cutoff_at: @run.cutoff_at, summary: @run.summary, exported_at: Time.current,
                   note: 'AI findings require human review. Missing evidence is not a pass. JSONL contains available evidence.' }.to_json)
       write_evidence(zip)
       zip.put_next_entry('review-results.xlsx')

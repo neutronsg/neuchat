@@ -82,6 +82,7 @@ Rails.application.routes.draw do
             end
           end
           resources :bot_safety_reviews, only: [:index, :create, :show] do
+            post :import_results, on: :collection
             get :profiles, on: :collection
             member do
               post :resume

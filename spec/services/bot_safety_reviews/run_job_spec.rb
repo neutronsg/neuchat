@@ -32,12 +32,12 @@ RSpec.describe BotSafetyReviews::RunJob do
     expect(run.reload.calls_reserved).to eq(1)
   end
 
-  it 'enforces budget, persists the model version and does not re-review completed items' do
-    expect(BotSafetyReviews::Client).to receive(:call).once.and_return({ 'result' => { 'verdict' => 'no_issue' }, 'profileVersion' => 'v1' })
+  it 'exports old profile-configured batches without runtime model calls' do
+    expect(BotSafetyReviews::Client).not_to receive(:call)
     described_class.perform_now(run.id)
     expect(run.reload.status).to eq('completed')
-    expect(run.calls_reserved).to eq(1)
-    expect(run.items.first.result['profileVersion']).to eq('v1')
+    expect(run.calls_reserved).to eq(0)
+    expect(run.items.first.result['outcome']).to eq('export_only')
     described_class.perform_now(run.id)
   end
 
