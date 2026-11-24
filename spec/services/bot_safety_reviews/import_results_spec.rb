@@ -12,7 +12,7 @@ RSpec.describe BotSafetyReviews::ImportResults do
                          manifest: { messages: [{ id: 1 }] })
   end
   let(:data) do
-    { format: 1, source_run_id: source.id, account_id: account.id, environment: 'sit', execution_id: 'github-123',
+    { format: 2, source_run_id: source.id, account_id: account.id, environment: 'sit', execution_id: 'github-123',
       reviewer: { model: 'mock', version: 'a' * 64 }, max_calls: 1, calls_attempted: 1,
       records: [{ message_id: 1, manifest: item.manifest, status: 'completed',
                   result: { result: { verdict: 'no_issue', reason: 'No safety issue found.', messageIds: [1] } } }] }
@@ -43,7 +43,7 @@ RSpec.describe BotSafetyReviews::ImportResults do
 
   it 'rejects signature, cross-account/environment, changed evidence and unsupported references' do
     expect { described_class.call(account, user, signed(data).sub('github-123', 'github-124')) }.to raise_error(ArgumentError)
-    [:account_id, :environment, :calls_attempted].each do |key|
+    [:format, :account_id, :environment, :calls_attempted].each do |key|
       bad = data.deep_dup
       bad[key] = key == :environment ? 'prod' : 999
       expect { described_class.call(account, user, signed(bad)) }.to raise_error(ArgumentError)

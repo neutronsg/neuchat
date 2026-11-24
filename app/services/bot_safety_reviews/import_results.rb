@@ -58,7 +58,7 @@ class BotSafetyReviews::ImportResults
   end
 
   def validate_identity!
-    raise ArgumentError unless @data['format'] == 1 && @data['account_id'] == @account.id
+    raise ArgumentError unless @data['format'] == 2 && @data['account_id'] == @account.id
     raise ArgumentError unless @data['environment'] == ENV.fetch('OCA_BOT_SAFETY_ENVIRONMENT', 'local')
     raise ArgumentError unless @data['execution_id'].is_a?(String) && @data['execution_id'].match?(/\A[a-zA-Z0-9_-]{1,70}\z/)
   end
