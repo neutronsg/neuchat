@@ -498,8 +498,9 @@ watch(status, () => {
                         }}
                         ({{
                           $t(
-                            dimension === 'basic' &&
-                              check.mode === 'hybrid_shadow'
+                            !check.enforced ||
+                              (dimension === 'basic' &&
+                                check.mode === 'hybrid_shadow')
                               ? 'OCA_REPORT.SAFETY.SHADOW_LABEL'
                               : 'OCA_REPORT.SAFETY.ENFORCED'
                           )

@@ -88,9 +88,9 @@
       "CHECKS": "Recorded requests",
       "BLOCKED": "Requests with blocks",
       "UNKNOWN": "Review failures",
-      "SHADOW": "AWS vs custom shadow",
+      "SHADOW": "Evaluation results",
       "COMPARISON": "Comparable: {comparable} · Agree: {agree} · Disagree: {disagree} · Unavailable: {unavailable}",
-      "COMPARISON_NOTE": "Shadow mode only: pairs from the same attempt and input/output stage. A request can have multiple pairs. Disagreement needs review; it is not proof of a mistake. Missing checks, masked results and AWS-blocked original outputs are not comparable.",
+      "COMPARISON_NOTE": "Evaluation only: compare basic safety decisions for the same attempt, stage and content. Business scope decisions are not compared with AWS basic safety. Different content, missing results and AWS-blocked original outputs are not comparable. Disagreement needs review; it does not prove a mistake.",
       "RESULT": "Enforced result",
       "ALL": "All results",
       "TIME": "Time",
@@ -99,7 +99,7 @@
       "STAGE": "Stage",
       "REASON": "Reason",
       "ENFORCED": "Enforced",
-      "SHADOW_LABEL": "Shadow",
+      "SHADOW_LABEL": "Evaluation only",
       "EMPTY": "No requests match this view.",
       "PREVIOUS": "Previous",
       "NEXT": "Next",
@@ -119,23 +119,24 @@
         "masked": "Masked",
         "not_recorded": "Not recorded",
         "not_required": "Not required after block",
-        "legacy": "Legacy combined"
+        "legacy": "Legacy combined",
+        "not_enabled": "Handled by Bot"
       },
       "CURRENT_MODE": "Current setting · {name}: {mode}",
       "MODES": {
         "default": "Environment default",
-        "aws": "AWS Guardrails (legacy)",
-        "aws_shadow": "AWS + custom shadow (legacy)",
-        "custom": "Custom guard",
-        "aws_custom": "AWS + custom (legacy dual)",
-        "hybrid": "Coordinated protection (recommended)",
-        "hybrid_shadow": "Coordinated protection + basic shadow",
-        "dual": "Dual protection"
+        "aws": "AWS Guardrails",
+        "aws_shadow": "AWS Guardrails · Evaluation on",
+        "custom": "Custom Guard",
+        "aws_custom": "Historical combined protection",
+        "hybrid": "AWS Guardrails + Custom Guard",
+        "hybrid_shadow": "AWS Guardrails + Custom Guard · Evaluation on",
+        "dual": "Historical dual protection"
       },
       "USAGE": "Custom reviewer usage (separate from Bot): {input} input tokens including cache · {output} output tokens · {missing} checks with missing usage. Reviewer costs are not included in cost estimates.",
-      "WOULD_BLOCK": "Shadow would block",
+      "WOULD_BLOCK": "Would block in evaluation",
       "PROVIDERS": {
-        "aws": "AWS",
+        "aws": "AWS Guardrails",
         "custom": "Custom Guard"
       },
       "REASONS": {
@@ -152,7 +153,7 @@
       },
       "NOT_EVALUATED": "Not evaluated",
       "TREND_TITLE": "Requests and recorded blocks",
-      "TREND_NOTE": "Blocks are part of recorded requests. Review issues include shadow failures; they are not safety violations. Dates use the first recorded check in this period.",
+      "TREND_NOTE": "Blocks are part of recorded requests. Review issues include evaluation failures; they are not safety violations. Dates use the first recorded check in this period.",
       "BLOCKED_STAGES": {
         "input": "Input blocked",
         "output": "Output blocked"
@@ -165,8 +166,8 @@
       "REASONS_TITLE": "Why requests were blocked",
       "REASONS_NOTE": "Enforced blocks only. A request can have more than one reason.",
       "MODE": "Mode at time of request",
-      "AWS": "AWS",
-      "CUSTOM": "Custom guard",
+      "AWS": "AWS Guardrails",
+      "CUSTOM": "Custom Guard",
       "MESSAGE_ID": "Message #{id}",
       "SHOW_CHECKS": "View {count} checks",
       "HIDE_CHECKS": "Hide checks",
@@ -189,16 +190,16 @@
         "unavailable": "Not comparable"
       },
       "CHECK_DETAILS": "Checks",
-      "SHADOW_ONLY": "Shadow recommendation",
+      "SHADOW_ONLY": "Evaluation only",
       "COUNTING_NOTE": "Counts cover only safety records within the selected period, not all incoming messages. Older records without a message ID are grouped by attempt. No recorded block does not prove a complete review or reply delivery. A missing or skipped review counts as an issue when it was required. Downstream reviews made unnecessary by an enforced block in the same attempt do not count as issues; they remain not comparable.",
-      "SHADOW_FAILURE": "Shadow review failed",
-      "SHADOW_MISSING": "Shadow review missing",
+      "SHADOW_FAILURE": "Evaluation failed",
+      "SHADOW_MISSING": "Evaluation missing",
       "BASIC": "Basic safety",
       "BUSINESS": "Business scope",
       "LEGACY": "Legacy blocks",
-      "SHADOW_BASIC": "Basic safety shadow comparison",
+      "SHADOW_BASIC": "Evaluation results — Basic safety",
       "DIMENSIONS_NOTE": "Blocked requests by responsibility. Requests are counted once overall; responsibility counts can overlap. Historical combined checks remain separate.",
-      "SHADOW_LEGACY": "Legacy combined shadow comparison"
+      "SHADOW_LEGACY": "Historical evaluation results"
     }
   }
 }

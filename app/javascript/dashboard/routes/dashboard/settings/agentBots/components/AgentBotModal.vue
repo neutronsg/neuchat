@@ -41,20 +41,24 @@ const uiFlags = useMapGetter('agentBots/getUIFlags');
 const safetyOptions = ref(null);
 const safetyUnavailable = ref(false);
 const safetyMode = ref('');
-// The independent shadow switch maps to a versioned execution profile atomically.
-const protectionMode = computed({
-  get: () =>
-    safetyMode.value === 'hybrid_shadow' ? 'hybrid' : safetyMode.value,
-  set: value => {
-    safetyMode.value = value;
-  },
-});
-const basicShadow = computed({
-  get: () => safetyMode.value === 'hybrid_shadow',
+// Persist protection and evaluation atomically using the existing versioned profile.
+const evaluationEnabled = computed({
+  get: () => ['aws_shadow', 'hybrid_shadow'].includes(safetyMode.value),
   set: enabled => {
-    safetyMode.value = enabled ? 'hybrid_shadow' : 'hybrid';
+    const mode = safetyMode.value.replace(/_shadow$/, '');
+    if (mode !== 'custom') safetyMode.value = enabled ? `${mode}_shadow` : mode;
   },
 });
+const protectionMode = computed({
+  get: () => safetyMode.value.replace(/_shadow$/, ''),
+  set: value => {
+    const evaluated = evaluationEnabled.value && value !== 'custom';
+    safetyMode.value = evaluated ? `${value}_shadow` : value;
+  },
+});
+const evaluationAvailable = computed(() =>
+  safetyOptions.value?.modes?.includes(`${protectionMode.value}_shadow`)
+);
 const initialSafetyMode = ref('');
 
 const formState = reactive({
@@ -387,14 +391,7 @@ defineExpose({ dialogRef });
             class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm"
           >
             <option
-              v-for="mode in [
-                'hybrid',
-                'custom',
-                'dual',
-                'aws',
-                'aws_shadow',
-                'aws_custom',
-              ]"
+              v-for="mode in ['hybrid', 'aws', 'custom']"
               :key="mode"
               :value="mode"
               :disabled="!safetyOptions?.modes?.includes(mode)"
@@ -402,26 +399,34 @@ defineExpose({ dialogRef });
               {{ $t(`AGENT_BOTS.SAFETY.MODES.${mode}`) }}
             </option>
           </select>
-          <div
-            v-if="protectionMode === 'hybrid'"
-            class="flex items-center justify-between gap-2"
-          >
-            <label for="bot-basic-shadow">{{
-              $t('AGENT_BOTS.SAFETY.BASIC_SHADOW')
-            }}</label>
-            <Switch
-              id="bot-basic-shadow"
-              v-model="basicShadow"
-              :disabled="!safetyOptions?.modes?.includes('hybrid_shadow')"
-            />
-          </div>
           <p class="text-sm text-n-slate-11">
             {{
               $t(
                 safetyUnavailable
                   ? 'AGENT_BOTS.SAFETY.UNAVAILABLE'
-                  : 'AGENT_BOTS.SAFETY.DESCRIPTION'
+                  : `AGENT_BOTS.SAFETY.DESCRIPTIONS.${protectionMode}`
               )
+            }}
+          </p>
+          <div
+            v-if="['aws', 'hybrid'].includes(protectionMode)"
+            class="flex items-center justify-between gap-2"
+          >
+            <label for="bot-evaluate-custom">{{
+              $t('AGENT_BOTS.SAFETY.EVALUATE')
+            }}</label>
+            <Switch
+              id="bot-evaluate-custom"
+              v-model="evaluationEnabled"
+              :disabled="!evaluationAvailable"
+            />
+          </div>
+          <p
+            v-if="['aws', 'hybrid'].includes(protectionMode)"
+            class="text-sm text-n-slate-11"
+          >
+            {{
+              $t(`AGENT_BOTS.SAFETY.EVALUATION_DESCRIPTIONS.${protectionMode}`)
             }}
           </p>
         </div>

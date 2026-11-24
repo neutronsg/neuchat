@@ -24,18 +24,27 @@ export function summarizeProvider(events, provider) {
 // A message may have several attempts, providers and stages. Keep all evidence,
 // but never count those checks as separate user requests.
 function dimensionStatus(checks, dimension) {
-  const values = checks.flatMap(check => {
-    if (check.notRequired) return [];
-    if (dimension === 'basic' && check.scope === 'basic') return [check.status];
-    if (check.scope !== 'split') return [];
-    if (
-      dimension === 'basic' &&
-      ['hybrid', 'hybrid_shadow'].includes(check.mode)
-    )
-      return [];
-    return [check[`${dimension}_status`] || check.status];
-  });
+  const values = checks
+    .filter(check => check.enforced)
+    .flatMap(check => {
+      if (check.notRequired) return [];
+      if (dimension === 'basic' && check.scope === 'basic')
+        return [check.status];
+      if (check.scope !== 'split') return [];
+      if (
+        dimension === 'basic' &&
+        ['hybrid', 'hybrid_shadow'].includes(check.mode)
+      )
+        return [];
+      return [check[`${dimension}_status`] || check.status];
+    });
   if (!values.length) {
+    if (
+      dimension === 'business' &&
+      checks.some(check => check.scope === 'basic') &&
+      !checks.some(check => check.provider === 'custom' && check.enforced)
+    )
+      return 'not_enabled';
     if (checks.some(check => !check.scope || check.scope === 'legacy'))
       return 'legacy';
     return checks.some(
@@ -114,13 +123,13 @@ export function summarizeSafety(events = []) {
         const aws = pair.find(check => check.provider === 'aws');
         const rawCustom = pair.find(check => check.provider === 'custom');
         const custom =
-          rawCustom?.mode === 'hybrid_shadow'
+          rawCustom?.scope === 'split'
             ? { ...rawCustom, status: rawCustom.basic_status }
             : rawCustom;
         if (
           !aws ||
           !custom ||
-          (custom.mode === 'hybrid_shadow' &&
+          (custom.scope === 'split' &&
             (!aws.evidence_hash ||
               aws.evidence_hash !== custom.evidence_hash)) ||
           ![aws.status, custom.status].every(status =>
@@ -175,7 +184,7 @@ export function summarizeSafety(events = []) {
             check.enforced &&
             check.status === 'block'
         ),
-        comparisonScope: checks.some(check => check.mode === 'hybrid_shadow')
+        comparisonScope: checks.some(check => check.scope === 'basic')
           ? 'basic'
           : 'legacy',
         aws: summarizeProvider(checks, 'aws'),

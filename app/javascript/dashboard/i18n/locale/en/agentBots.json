@@ -108,19 +108,23 @@
       "UNCONFIRMED": "Awaiting bot support confirmation."
     },
     "SAFETY": {
-      "LABEL": "Safety protection",
-      "DESCRIPTION": "Coordinated: AWS handles basic safety; custom guard enforces business scope. Shadow decisions do not block replies.",
+      "LABEL": "Protection",
       "UNAVAILABLE": "Safety settings are unavailable. Current protection is unchanged.",
       "MODES": {
-        "aws": "AWS Guardrails (legacy)",
-        "aws_shadow": "AWS + custom shadow (legacy)",
-        "custom": "Custom guard",
-        "aws_custom": "AWS + custom (legacy dual)",
-        "hybrid": "Coordinated protection (recommended)",
-        "hybrid_shadow": "Coordinated protection + basic shadow",
-        "dual": "Dual protection"
+        "aws": "AWS Guardrails",
+        "custom": "Custom Guard",
+        "hybrid": "AWS Guardrails + Custom Guard"
       },
-      "BASIC_SHADOW": "Compare custom basic safety in shadow mode"
+      "EVALUATE": "Evaluate Custom Guard",
+      "DESCRIPTIONS": {
+        "aws": "AWS Guardrails checks basic safety. The Bot handles OCA business scope.",
+        "custom": "Custom Guard checks basic safety and OCA business scope.",
+        "hybrid": "AWS Guardrails checks basic safety. Custom Guard enforces OCA business scope."
+      },
+      "EVALUATION_DESCRIPTIONS": {
+        "aws": "Run additional Custom Guard checks for evaluation. These checks do not affect replies.",
+        "hybrid": "Evaluate Custom Guard’s basic safety checks without affecting replies. Its OCA business checks remain enforced."
+      }
     }
   }
 }

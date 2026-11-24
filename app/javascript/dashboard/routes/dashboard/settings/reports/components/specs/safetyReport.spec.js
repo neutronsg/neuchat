@@ -259,3 +259,32 @@ describe('Coordinated responsibilities', () => {
     expect(summarizeSafety([event()]).requests[0].basic).toBe('legacy');
   });
 });
+
+describe('Custom Guard evaluation', () => {
+  it('keeps evaluated business blocks out of actual blocks and compares basic decisions only', () => {
+    const checks = [
+      event({ mode: 'aws_shadow', scope: 'basic', evidence_hash: 'same' }),
+      event({
+        mode: 'aws_shadow',
+        scope: 'split',
+        provider: 'custom',
+        enforced: false,
+        status: 'block',
+        reason: 'business_scope',
+        basic_status: 'allow',
+        business_status: 'block',
+        evidence_hash: 'same',
+      }),
+    ];
+    const result = summarizeSafety(checks);
+    expect(result.requests[0]).toMatchObject({
+      blocked: false,
+      basic: 'allow',
+      business: 'not_enabled',
+      comparisonScope: 'basic',
+    });
+    expect(result.comparison.both_allow).toBe(1);
+    checks[1].evidence_hash = 'different';
+    expect(summarizeSafety(checks).comparison.unavailable).toBe(1);
+  });
+});
