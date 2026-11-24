@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
+import SafetyReviewRuns from './SafetyReviewRuns.vue';
 import { useRoute } from 'vue-router';
 import { summarizeSafety } from './safetyReport';
 import { useI18n } from 'vue-i18n';
@@ -560,5 +561,6 @@ watch(status, () => {
         </p>
       </details>
     </template>
+    <SafetyReviewRuns :key="route.params.accountId" />
   </section>
 </template>

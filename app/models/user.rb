@@ -70,6 +70,8 @@ class User < ApplicationRecord
 
   validates :email, presence: true
 
+  has_many :bot_safety_review_runs, dependent: :nullify
+  has_many :bot_safety_review_notes, dependent: :nullify
   has_many :account_users, dependent: :destroy_async
   has_many :accounts, through: :account_users
   accepts_nested_attributes_for :account_users

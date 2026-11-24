@@ -36,6 +36,7 @@ const mountReport = () =>
       },
       stubs: {
         BarChart: true,
+        SafetyReviewRuns: true,
         RouterLink: { template: '<a><slot /></a>' },
         Button: {
           props: ['label', 'disabled'],

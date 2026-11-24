@@ -10,3 +10,6 @@ filter_regex = /\A(?!.*\bwebsite_token\b).*token/i
 
 # Apply the regex for filtering
 Rails.application.config.filter_parameters += [filter_regex]
+
+# Human audit annotations can quote private conversations.
+Rails.application.config.filter_parameters += [:review_note]

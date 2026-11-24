@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_24_010000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_24_040000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -255,6 +255,54 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_24_010000) do
     t.index ["account_id"], name: "index_bot_safety_changes_on_account_id"
     t.index ["agent_bot_id", "version"], name: "index_bot_safety_changes_on_agent_bot_id_and_version", unique: true
     t.index ["agent_bot_id"], name: "index_bot_safety_changes_on_agent_bot_id"
+  end
+
+  create_table "bot_safety_review_items", force: :cascade do |t|
+    t.bigint "bot_safety_review_run_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "message_id", null: false
+    t.string "status", default: "pending", null: false
+    t.jsonb "manifest", default: {}, null: false
+    t.jsonb "result", default: {}, null: false
+    t.datetime "lease_until"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bot_safety_review_run_id", "message_id"], name: "index_safety_items_unique_message", unique: true
+    t.index ["bot_safety_review_run_id"], name: "index_safety_items_run"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'running'::character varying, 'completed'::character varying, 'insufficient_evidence'::character varying, 'execution_error'::character varying, 'budget_exhausted'::character varying]::text[])", name: "safety_review_item_status"
+  end
+
+  create_table "bot_safety_review_notes", force: :cascade do |t|
+    t.bigint "bot_safety_review_item_id", null: false
+    t.bigint "user_id"
+    t.string "verdict", null: false
+    t.text "note", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bot_safety_review_item_id"], name: "index_safety_notes_item"
+    t.index ["user_id"], name: "index_bot_safety_review_notes_on_user_id"
+  end
+
+  create_table "bot_safety_review_runs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id"
+    t.string "idempotency_key", null: false
+    t.string "status", default: "queued", null: false
+    t.jsonb "settings", default: {}, null: false
+    t.jsonb "summary", default: {}, null: false
+    t.datetime "cutoff_at", null: false
+    t.bigint "high_water_id", null: false
+    t.integer "calls_reserved", default: 0, null: false
+    t.datetime "lease_until"
+    t.datetime "export_lease_until"
+    t.string "export_status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "idempotency_key"], name: "index_bot_safety_review_runs_on_account_id_and_idempotency_key", unique: true
+    t.index ["account_id"], name: "index_bot_safety_review_runs_on_account_id"
+    t.index ["user_id"], name: "index_bot_safety_review_runs_on_user_id"
+    t.check_constraint "calls_reserved >= 0", name: "safety_review_calls_positive"
+    t.check_constraint "status::text = ANY (ARRAY['queued'::character varying, 'running'::character varying, 'completed'::character varying, 'incomplete'::character varying, 'failed'::character varying]::text[])", name: "safety_review_run_status"
   end
 
   create_table "campaigns", force: :cascade do |t|
@@ -1243,6 +1291,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_24_010000) do
   add_foreign_key "bot_conversation_outcomes", "conversations"
   add_foreign_key "bot_safety_changes", "accounts"
   add_foreign_key "bot_safety_changes", "agent_bots"
+  add_foreign_key "bot_safety_review_items", "bot_safety_review_runs"
+  add_foreign_key "bot_safety_review_notes", "bot_safety_review_items"
+  add_foreign_key "bot_safety_review_notes", "users"
+  add_foreign_key "bot_safety_review_runs", "accounts"
+  add_foreign_key "bot_safety_review_runs", "users"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "kbase_documents", "kbase_knowledge_bases", column: "knowledge_base_id"
   add_foreign_key "kbase_documents", "users", column: "created_by_id"
