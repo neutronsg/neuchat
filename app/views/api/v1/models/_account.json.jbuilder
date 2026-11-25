@@ -26,4 +26,4 @@ json.support_email @account.support_email
 json.status @account.status
 json.cache_keys @account.cache_keys
 
-json.oca_bot_reports_enabled ENV['OCA_BOT_REPORTS_ENABLED'] == 'true' && resource.id.to_s == ENV['OCA_BOT_ACCOUNT_ID']
+json.oca_bot_reports_enabled ENV['OCA_BOT_REPORTS_ENABLED'] == 'true'

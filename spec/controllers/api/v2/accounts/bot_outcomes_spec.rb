@@ -6,9 +6,46 @@ RSpec.describe 'OCA bot report access', type: :request do
   let(:params) { { from: 1.day.ago.to_i, to: Time.current.to_i } }
 
   before do
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with('OCA_BOT_ACCOUNT_ID', '').and_return(account.id.to_s)
     allow(ENV).to receive(:[]).and_call_original
     allow(ENV).to receive(:[]).with('OCA_BOT_REPORTS_ENABLED').and_return('true')
     allow(ENV).to receive(:[]).with('OCA_BOT_ACCOUNT_ID').and_return(account.id.to_s)
+  end
+
+  it 'enables account reports independently of the Bot data tenant' do
+    allow(ENV).to receive(:[]).with('OCA_BOT_ACCOUNT_ID').and_return('other-account')
+    allow(ENV).to receive(:fetch).with('OCA_BOT_ACCOUNT_ID', '').and_return('other-account')
+    get "/api/v2/accounts/#{account.id}/reports/bot_outcomes", params: params, headers: admin.create_new_auth_token
+    expect(response).to have_http_status(:ok)
+    get "/api/v1/accounts/#{account.id}", headers: admin.create_new_auth_token
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body['oca_bot_reports_enabled']).to be(true)
+  end
+
+  it 'denies Bot data access for a different tenant without making an upstream request' do
+    allow(ENV).to receive(:fetch).with('OCA_BOT_ACCOUNT_ID', '').and_return('other-account')
+    expect(BotUsageReportClient).not_to receive(:fetch)
+    expect(BotSafetyClient).not_to receive(:fetch)
+    %w[bot_usage bot_safety].each do |endpoint|
+      get "/api/v2/accounts/#{account.id}/reports/#{endpoint}", params: params, headers: admin.create_new_auth_token
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  it 'keeps workbook tenant checks even though native report access is enabled' do
+    allow(ENV).to receive(:fetch).with('OCA_BOT_ACCOUNT_ID', '').and_return('other-account')
+    expect(Net::HTTP).not_to receive(:start)
+    get "/api/v2/accounts/#{account.id}/reports/bot_workbook", params: params, headers: admin.create_new_auth_token
+    expect(response).to have_http_status(:ok)
+    expect(response.body[0, 2]).to eq('PK')
+  end
+
+  it 'hides report capability when disabled regardless of the configured tenant' do
+    allow(ENV).to receive(:[]).with('OCA_BOT_REPORTS_ENABLED').and_return('false')
+    get "/api/v1/accounts/#{account.id}", headers: admin.create_new_auth_token
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body['oca_bot_reports_enabled']).to be(false)
   end
 
   it 'requires an authenticated report administrator' do

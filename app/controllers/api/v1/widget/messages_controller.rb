@@ -55,7 +55,7 @@ class Api::V1::Widget::MessagesController < Api::V1::Widget::BaseController
   end
 
   def closed_oca_conversation?
-    ENV['OCA_BOT_REPORTS_ENABLED'] == 'true' && inbox.account_id.to_s == ENV['OCA_BOT_ACCOUNT_ID'] &&
+    inbox.account_id.to_s == ENV['OCA_BOT_ACCOUNT_ID'] &&
       inbox.active_bot? && conversation.resolved?
   end
 

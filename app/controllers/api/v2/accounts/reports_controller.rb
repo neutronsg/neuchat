@@ -96,7 +96,7 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def bot_usage
-    return head :not_found unless oca_report?
+    return head :not_found unless oca_report? && BotSafetyClient.enabled?(Current.account.id)
 
     BotUsageReportClient.period(params)
     render json: BotUsageReportClient.fetch(Current.account.id, params)
@@ -109,7 +109,7 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def bot_safety
-    return head :not_found unless oca_report?
+    return head :not_found unless oca_report? && BotSafetyClient.enabled?(Current.account.id)
 
     from, to = BotUsageReportClient.period(params)
     report = BotSafetyClient.fetch(Current.account.id, '/internal/reports/safety',
@@ -127,7 +127,7 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   private
 
   def oca_report?
-    ENV['OCA_BOT_REPORTS_ENABLED'] == 'true' && Current.account.id.to_s == ENV['OCA_BOT_ACCOUNT_ID']
+    ENV['OCA_BOT_REPORTS_ENABLED'] == 'true'
   end
 
   def generate_csv(filename, template)

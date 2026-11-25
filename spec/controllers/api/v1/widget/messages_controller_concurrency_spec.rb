@@ -12,7 +12,7 @@ RSpec.describe Api::V1::Widget::MessagesController, type: :controller do
   before do
     create(:agent_bot_inbox, inbox: inbox, agent_bot: bot)
     allow(ENV).to receive(:[]).and_call_original
-    allow(ENV).to receive(:[]).with('OCA_BOT_REPORTS_ENABLED').and_return('true')
+    allow(ENV).to receive(:[]).with('OCA_BOT_REPORTS_ENABLED').and_return('false')
     allow(ENV).to receive(:[]).with('OCA_BOT_ACCOUNT_ID').and_return(account.id.to_s)
     controller.instance_variable_set(:@contact, Contact.find(old.contact_id))
     controller.instance_variable_set(:@contact_inbox, old.contact_inbox)
