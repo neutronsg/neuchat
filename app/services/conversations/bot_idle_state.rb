@@ -14,6 +14,15 @@ class Conversations::BotIdleState
     attributes['bot_idle_authorized'] == true && attributes['bot_idle_protocol'] == 1 && valid_notice?(attributes['bot_idle_notice'])
   end
 
+  # OCA currently replies in English only, including deadlines armed before rollout.
+  # Other tenants retain their bot-provided notice; no historical messages are rewritten.
+  def self.delivery_notice(message)
+    account_id = ENV.fetch('OCA_BOT_ACCOUNT_ID', '')
+    return I18n.t('conversations.oca_bot_idle_notice', locale: :en) if account_id.present? && message.account_id.to_s == account_id
+
+    message.content_attributes['bot_idle_notice']
+  end
+
   def self.valid_notice?(notice)
     notice.is_a?(String) && notice.strip.present? && notice.length <= 12_000
   end

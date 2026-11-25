@@ -34,6 +34,23 @@ RSpec.describe 'AgentBot idle protocol integration', type: :request do
     conversation.messages.outgoing.reorder(id: :desc).first
   end
 
+  it 'delivers English for an OCA deadline armed with a legacy Chinese notice without rewriting history' do
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with('OCA_BOT_ACCOUNT_ID', '').and_return(account.id.to_s)
+    old_reply = reply
+    expect(expire.status).to eq('resolved')
+    notice = conversation.messages.reload.find { |message| message.content_attributes['bot_close_reason'] == 'idle_timeout' }
+    expect(notice.content).to eq(I18n.t('conversations.oca_bot_idle_notice', locale: :en))
+    expect(old_reply.reload.content_attributes['bot_idle_notice']).to eq('闲置自动结束')
+  end
+
+  it 'retains bot notices for tenants outside the configured OCA account' do
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with('OCA_BOT_ACCOUNT_ID', '').and_return('other-account')
+    old_reply = reply
+    expect(Conversations::BotIdleState.delivery_notice(old_reply)).to eq('闲置自动结束')
+  end
+
   it 'arms image-only conversations and closes once without a model reply' do
     rejected = reject_image
     expect(conversation.reload.bot_idle_reply_id).to eq(rejected.id)

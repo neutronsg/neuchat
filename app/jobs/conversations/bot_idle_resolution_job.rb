@@ -29,7 +29,7 @@ class Conversations::BotIdleResolutionJob < ApplicationJob
     reply = conversation.messages.find(conversation.bot_idle_reply_id)
     public_notice = conversation.can_reply?
     content = if public_notice
-                reply.content_attributes['bot_idle_notice']
+                Conversations::BotIdleState.delivery_notice(reply)
               else
                 I18n.t('conversations.activity.auto_resolve.not_sent_due_to_messaging_window')
               end
